@@ -2,11 +2,14 @@ name: 신상 음식점 수집 및 배포
 
 on:
   schedule:
-    # 매일 오전 9시 (KST) = 00:00 UTC
-    - cron: "0 0 * * *"
-  push:
-    branches: [main]
+    # 원본이 매일 22:17~22:48(KST)에 갱신되므로 그 42분 뒤인 23:30(KST)에 돈다.
+    # 근거는 docs/data-source-findings.md의 '원본 갱신 시각' 절 참고.
+    # 23:30 KST = 14:30 UTC. 정각은 GitHub 작업이 몰려 밀리므로 피한다.
+    - cron: "30 14 * * *"
   workflow_dispatch:
+
+# 화면만 고쳤을 때는 30분짜리 전량 스캔을 돌릴 이유가 없다.
+# 그런 변경은 deploy.yml이 1분 안에 배포한다.
 
 permissions:
   contents: write

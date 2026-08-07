@@ -1,0 +1,35 @@
+name: 사이트 배포
+
+# 화면·문서만 고쳤을 때 쓰는 빠른 경로다. 이미 저장된 data/를 그대로 올리므로
+# 서울시 API를 호출하지 않고 1분 안에 끝난다.
+#
+# 데이터 갱신은 collect.yml이 매일 밤 따로 돌린다. collect.yml이 커밋하는
+# data/ 변경은 GITHUB_TOKEN으로 push되므로 이 워크플로를 다시 부르지 않는다.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
