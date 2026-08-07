@@ -1,4 +1,4 @@
-"""서울 열린데이터광장에서 신규 카페 인허가 건을 수집한다.
+"""서울 열린데이터광장에서 신규 음식점 인허가 건을 수집한다.
 
 데이터 소스 (2026-08-07 실제 호출로 검증됨):
   LOCALDATA_072405 = 휴게음식점 (서울 전역 146,710건)
@@ -33,17 +33,10 @@ SERVICES = {
     "일반음식점": "LOCALDATA_072404",
 }
 
-# UPTAENM(업태구분명) 중 카페로 볼 값.
-# 2026-08-07 전량 스캔으로 실제 값을 확인해 확정했다 (docs/data-source-findings.md 참고).
-# 일반음식점은 '카페'가 아니라 '까페'로 표기된다.
-CAFE_UPTAE = {
-    "휴게음식점": {"커피숍", "다방", "전통찻집", "떡카페", "과자점"},
-    "일반음식점": {"까페", "전통찻집"},
-}
-
-# 취향에 따라 위 집합에 넣을 만한 값들. 기본값에서는 제외했다.
-#   휴게음식점: 아이스크림(435), 키즈카페(70), 기타 휴게음식점(7,551)
-#   일반음식점: 라이브카페(술집 성격), 키즈카페
+# 기본값은 '전 업종 수집'이다. 업태를 좁히고 싶으면 환경변수로 지정한다.
+#   예) UPTAE="커피숍,다방,까페"  → 카페류만
+# 실제 업태값 목록은 docs/data-source-findings.md 참고 (전량 스캔으로 확인함).
+UPTAE_FILTER = {u.strip() for u in os.environ.get("UPTAE", "").split(",") if u.strip()}
 
 TRDSTATE_OPEN = "01"  # 영업/정상 (03 = 폐업)
 
@@ -133,7 +126,8 @@ def audit():
         counter = Counter()
         newest = None
         for row in fetch_all(service):
-            counter[clean(row.get("UPTAENM"))] += 1
+            if clean(row.get("TRDSTATEGBN")) == TRDSTATE_OPEN:
+                counter[clean(row.get("UPTAENM"))] += 1
             approved = parse_date(row.get("APVPERMYMD"))
             if approved and (newest is None or approved > newest):
                 newest = approved
@@ -147,8 +141,9 @@ def audit():
             flag = "정상" if age <= 14 else "⚠️ 갱신이 멈춘 것으로 보임"
             print(f"  최신 인허가일자: {newest} ({age}일 전) — {flag}")
 
+        print("  영업중 업태별 건수:")
         for name, count in counter.most_common():
-            mark = "←" if name in CAFE_UPTAE[category] else " "
+            mark = "←" if (not UPTAE_FILTER or name in UPTAE_FILTER) else " "
             print(f"  {mark} {name or '(빈값)'}: {count:,}")
 
 
@@ -165,7 +160,7 @@ def main():
         for row in fetch_all(service):
             if clean(row.get("TRDSTATEGBN")) != TRDSTATE_OPEN:
                 continue
-            if clean(row.get("UPTAENM")) not in CAFE_UPTAE[category]:
+            if UPTAE_FILTER and clean(row.get("UPTAENM")) not in UPTAE_FILTER:
                 continue
             approved = parse_date(row.get("APVPERMYMD"))
             if approved is None or approved < cutoff:
@@ -183,10 +178,10 @@ def main():
     if seen_path.exists():
         seen = set(json.loads(seen_path.read_text(encoding="utf-8")))
     first_run = not seen
-    for cafe in collected:
+    for place in collected:
         # 첫 실행에서는 전부 처음 보는 것이므로 NEW 표시가 의미가 없다.
-        cafe["isNew"] = (not first_run) and cafe["id"] not in seen
-    fresh_count = sum(1 for c in collected if c["isNew"])
+        place["isNew"] = (not first_run) and place["id"] not in seen
+    fresh_count = sum(1 for p in collected if p["isNew"])
 
     DATA_DIR.mkdir(exist_ok=True)
     (DATA_DIR / "latest.json").write_text(
@@ -196,7 +191,7 @@ def main():
                 "period": {"from": cutoff.isoformat(), "to": date.today().isoformat()},
                 "source": "sample" if API_KEY == "sample" else "seoul-opendata",
                 "newCount": fresh_count,
-                "cafes": collected,
+                "places": collected,
             },
             ensure_ascii=False,
             indent=2,
@@ -205,14 +200,17 @@ def main():
         encoding="utf-8",
     )
 
-    # seen 목록은 무한히 커지지 않도록 이번 회차 수집분까지만 유지한다.
-    seen.update(c["id"] for c in collected)
-    seen_path.write_text(json.dumps(sorted(seen), ensure_ascii=False), encoding="utf-8")
+    # 조회 기간에서 빠진 건은 다시 나타날 일이 없으므로 기억할 필요도 없다.
+    # 이번 회차 목록으로 통째로 갈아끼워 seen 파일이 무한히 커지는 것을 막는다.
+    seen_path.write_text(
+        json.dumps(sorted(p["id"] for p in collected), ensure_ascii=False),
+        encoding="utf-8",
+    )
 
-    print(f"\n최근 {WINDOW_DAYS}일 카페 {len(collected)}곳 / 이번에 새로 추가 {fresh_count}곳")
-    for c in collected:
-        if c["isNew"]:
-            print(f"  · {c['licenseDate']}  {c['name']}  ({c['district']}, {c['bizType']})")
+    print(f"\n최근 {WINDOW_DAYS}일 신규 {len(collected)}곳 / 이번에 새로 추가 {fresh_count}곳")
+    for p in collected:
+        if p["isNew"]:
+            print(f"  · {p['licenseDate']}  {p['name']}  ({p['district']}, {p['bizType']})")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>신상카페 레이더 — 신규 카페 대시보드</title>
+<title>서울 신상 레이더 — 신규 음식점 대시보드</title>
 <style>
   :root {
     --bg: #faf7f2;
@@ -77,6 +77,11 @@
   .controls input:focus, .controls select:focus { border-color: var(--accent); }
   .controls input { flex: 1 1 200px; }
 
+  .result-count {
+    margin-top: 18px; font-size: 13.5px; color: var(--ink-soft); font-weight: 600;
+  }
+  .result-count:empty { display: none; }
+
   .day-group { margin-top: 30px; }
   .day-group h2 {
     font-size: 15px; color: var(--ink-soft); font-weight: 700;
@@ -124,8 +129,8 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow">NEW CAFE RADAR</div>
-    <h1>신상카페 레이더 ☕</h1>
+    <div class="eyebrow">SEOUL NEW OPENINGS</div>
+    <h1>서울 신상 레이더 🍽️</h1>
     <div class="period" id="period"></div>
     <div class="updated" id="updated"></div>
     <div class="sample-banner" id="sampleBanner">
@@ -138,7 +143,7 @@
       <div class="num" id="statNew" style="color:var(--accent)">–</div>
       <div class="label">이번 갱신에 추가</div>
     </div>
-    <div class="stat"><div class="num" id="statTotal">–</div><div class="label">신규 카페</div></div>
+    <div class="stat"><div class="num" id="statTotal">–</div><div class="label">신규 음식점</div></div>
     <div class="stat"><div class="num" id="statDistricts">–</div><div class="label">지역(구)</div></div>
     <div class="stat"><div class="num" id="statRest">–</div><div class="label">휴게음식점</div></div>
     <div class="stat"><div class="num" id="statGeneral">–</div><div class="label">일반음식점</div></div>
@@ -147,15 +152,17 @@
   <div class="controls">
     <input type="search" id="search" placeholder="상호명 · 주소 검색">
     <select id="districtFilter"><option value="">전체 지역</option></select>
+    <select id="bizTypeFilter"><option value="">전체 업종</option></select>
     <select id="categoryFilter">
-      <option value="">전체 업종</option>
+      <option value="">전체 구분</option>
       <option value="휴게음식점">휴게음식점</option>
       <option value="일반음식점">일반음식점</option>
     </select>
   </div>
 
+  <div class="result-count" id="resultCount"></div>
   <main id="list"></main>
-  <div class="empty" id="empty">조건에 맞는 카페가 없어요.</div>
+  <div class="empty" id="empty">조건에 맞는 곳이 없어요.</div>
 
   <footer>
     <p>데이터 출처: 서울 열린데이터광장 — 휴게음식점(LOCALDATA_072405) · 일반음식점(LOCALDATA_072404) 신규 인허가 기준</p>
@@ -166,7 +173,7 @@
 <script>
 const FALLBACK_DATA = null; // fetch 실패 시 안내만 표시
 
-let allCafes = [];
+let allPlaces = [];
 
 const $ = id => document.getElementById(id);
 const fmtDate = iso => {
@@ -175,20 +182,25 @@ const fmtDate = iso => {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
 };
 
-function naverMapUrl(cafe) {
-  return "https://map.naver.com/p/search/" + encodeURIComponent(cafe.name + " " + cafe.address);
+function naverMapUrl(place) {
+  return "https://map.naver.com/p/search/" + encodeURIComponent(place.name + " " + place.address);
 }
 
 function render() {
   const q = $("search").value.trim().toLowerCase();
   const district = $("districtFilter").value;
+  const bizType = $("bizTypeFilter").value;
   const category = $("categoryFilter").value;
 
-  const filtered = allCafes.filter(c =>
+  const filtered = allPlaces.filter(c =>
     (!q || c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q)) &&
     (!district || c.district === district) &&
+    (!bizType || c.bizType === bizType) &&
     (!category || c.category === category)
   );
+
+  $("resultCount").textContent =
+    filtered.length === allPlaces.length ? "" : `${filtered.length}곳`;
 
   const byDate = {};
   filtered.forEach(c => (byDate[c.licenseDate] = byDate[c.licenseDate] || []).push(c));
@@ -230,7 +242,7 @@ function render() {
 }
 
 function init(data) {
-  allCafes = data.cafes || [];
+  allPlaces = data.places || data.cafes || [];
 
   if (data.period) {
     $("period").textContent = `최근 신규 인허가 · ${data.period.from} ~ ${data.period.to}`;
@@ -245,19 +257,34 @@ function init(data) {
     $("statNew").textContent = data.newCount;
     $("statNewBox").hidden = false;
   }
-  $("statTotal").textContent = allCafes.length;
-  $("statDistricts").textContent = new Set(allCafes.map(c => c.district)).size;
-  $("statRest").textContent = allCafes.filter(c => c.category === "휴게음식점").length;
-  $("statGeneral").textContent = allCafes.filter(c => c.category === "일반음식점").length;
+  $("statTotal").textContent = allPlaces.length;
+  $("statDistricts").textContent = new Set(allPlaces.map(c => c.district)).size;
+  $("statRest").textContent = allPlaces.filter(c => c.category === "휴게음식점").length;
+  $("statGeneral").textContent = allPlaces.filter(c => c.category === "일반음식점").length;
 
-  const districts = [...new Set(allCafes.map(c => c.district))].sort((a, b) => a.localeCompare(b, "ko"));
+  const districts = [...new Set(allPlaces.map(c => c.district))]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "ko"));
   districts.forEach(d => {
     const opt = document.createElement("option");
     opt.value = opt.textContent = d;
     $("districtFilter").appendChild(opt);
   });
 
-  ["search", "districtFilter", "categoryFilter"].forEach(id =>
+  // 업종은 종류가 많으므로 건수가 많은 순으로 정렬하고 개수를 함께 보여준다.
+  const bizCounts = new Map();
+  allPlaces.forEach(c => bizCounts.set(c.bizType, (bizCounts.get(c.bizType) || 0) + 1));
+  [...bizCounts.entries()]
+    .filter(([name]) => name)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
+    .forEach(([name, count]) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = `${name} (${count})`;
+      $("bizTypeFilter").appendChild(opt);
+    });
+
+  ["search", "districtFilter", "bizTypeFilter", "categoryFilter"].forEach(id =>
     $(id).addEventListener("input", render)
   );
   render();
