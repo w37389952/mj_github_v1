@@ -41,7 +41,7 @@ UPTAE_FILTER = {u.strip() for u in os.environ.get("UPTAE", "").split(",") if u.s
 TRDSTATE_OPEN = "01"  # 영업/정상 (03 = 폐업)
 
 
-def fetch(service, start, end):
+def fetch_once(service, start, end):
     url = f"{BASE}/{API_KEY}/json/{service}/{start}/{end}/"
     with urllib.request.urlopen(url, timeout=60) as resp:
         body = resp.read().decode("utf-8")
@@ -52,6 +52,26 @@ def fetch(service, start, end):
     if code != "INFO-000":
         raise RuntimeError(f"{code}: {payload['RESULT']['MESSAGE']}")
     return payload["list_total_count"], payload.get("row", [])
+
+
+def fetch(service, start, end, attempts=4):
+    """전량 스캔은 요청이 700회에 가까워 한 번쯤은 실패한다.
+
+    한 번 삐끗했다고 30분짜리 작업 전체를 버리지 않도록 재시도한다.
+    """
+    delay = 2
+    for attempt in range(1, attempts + 1):
+        try:
+            return fetch_once(service, start, end)
+        except Exception as exc:
+            if attempt == attempts:
+                raise
+            print(
+                f"    재시도 {attempt}/{attempts - 1} ({start}~{end}): {exc}",
+                file=sys.stderr,
+            )
+            time.sleep(delay)
+            delay *= 2
 
 
 def fetch_all(service):

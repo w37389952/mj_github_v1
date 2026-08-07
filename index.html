@@ -97,6 +97,8 @@
   }
   .card .name { font-weight: 700; font-size: 16.5px; letter-spacing: -0.01em; }
   .card .addr { color: var(--ink-soft); font-size: 14px; margin-top: 3px; }
+  .card .detail { color: var(--ink-faint); font-size: 13px; margin-top: 3px; }
+  .card .detail:empty { display: none; }
   .card .meta { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
   .badge {
     font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
@@ -182,6 +184,17 @@ const fmtDate = iso => {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
 };
 
+// 면적은 제곱미터로 들어온다. 평수가 더 직관적이라 함께 보여준다.
+function detailLine(place) {
+  const bits = [];
+  const area = parseFloat(place.area);
+  if (area > 0) {
+    bits.push(`${area.toLocaleString("ko-KR")}㎡ (약 ${Math.round(area / 3.3058)}평)`);
+  }
+  if (place.phone) bits.push(place.phone);
+  return bits.join("  ·  ");
+}
+
 function naverMapUrl(place) {
   return "https://map.naver.com/p/search/" + encodeURIComponent(place.name + " " + place.address);
 }
@@ -220,6 +233,7 @@ function render() {
         <div>
           <div class="name"></div>
           <div class="addr"></div>
+          <div class="detail"></div>
           <div class="meta">
             ${c.isNew ? `<span class="badge new">NEW</span>` : ""}
             <span class="badge ${badgeClass}">${c.category}</span>
@@ -230,6 +244,7 @@ function render() {
         <a class="map-link" target="_blank" rel="noopener">지도 보기 →</a>`;
       card.querySelector(".name").textContent = c.name;
       card.querySelector(".addr").textContent = c.address;
+      card.querySelector(".detail").textContent = detailLine(c);
       if (c.bizType) card.querySelector(".meta .plain").textContent = c.bizType;
       card.querySelector(".district-badge").textContent = c.district;
       card.querySelector(".map-link").href = naverMapUrl(c);
