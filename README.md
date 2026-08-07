@@ -1,0 +1,62 @@
+# 신상카페 레이더
+
+서울에 새로 문 여는 카페를 매일 자동으로 수집해서 웹 대시보드로 본다.
+새로 들어온 곳은 `NEW` 표시가 붙는다.
+
+## 지금 바로 확인해보기 (인증키 불필요)
+
+서울 열린데이터광장은 `sample`이라는 공개 샘플키를 제공한다. 요청당 5건 제한이 있지만
+파이프라인이 도는지 확인하는 데는 충분하다.
+
+```bash
+python scripts/collect.py
+```
+
+## 실제 운영
+
+1. [서울 열린데이터광장](https://data.seoul.go.kr)에 회원가입하고 인증키를 발급받는다 (심사 없이 즉시 발급).
+2. 저장소 **Settings > Secrets and variables > Actions > New repository secret**에서
+   이름 `SEOUL_API_KEY`로 키를 등록한다. 키는 이 화면에만 넣으면 되고,
+   코드나 채팅에 붙여넣을 필요가 없다.
+3. **Actions 탭 > "업태값 점검 (수동 실행)" > Run workflow**로 소스가 살아있는지 확인한다.
+   최신 인허가일자가 최근이면 정상이다. (2026-08-07 기준 확인 완료)
+
+4. **Settings > Pages**에서 Source를 **GitHub Actions**로 바꾼다. 그러면 수집이 끝날 때마다
+   대시보드가 자동으로 배포된다.
+5. 특정 자치구만 보려면 **Settings > Secrets and variables > Actions > Variables** 탭에
+   `DISTRICTS`를 넣는다 (예: `마포구,성동구,용산구`). 비워두면 서울 전역.
+
+> 인증키는 저장소 Secrets 밖으로 나갈 일이 없어야 한다. 코드에 넣지 말고,
+> 채팅·이슈·커밋 메시지에도 붙여넣지 말 것. 노출됐다면 열린데이터광장에서 재발급받으면 된다.
+
+`.github/workflows/collect.yml`이 매일 오전 9시(KST)에 돌면서 `data/`를 갱신하고
+GitHub Pages로 대시보드를 다시 배포한다.
+
+> ⚠️ GitHub의 예약 실행(cron)은 **기본 브랜치에 있는 워크플로만** 동작한다.
+> 작업 브랜치에 머물러 있으면 매일 자동 실행이 되지 않으니 `main`에 병합할 것.
+
+## 구성
+
+| 경로 | 역할 |
+|---|---|
+| `index.html` | 정적 대시보드. GitHub Pages에 그대로 올리면 된다 |
+| `data/latest.json` | 최근 N일간 수집된 카페 — 대시보드가 읽는 파일 |
+| `data/seen.json` | 이전에 본 관리번호 목록. 이번에 새로 들어온 건에 `NEW` 표시를 붙이는 데 쓴다 |
+| `scripts/collect.py` | 수집 · 필터 · 신규 표시 |
+| `docs/data-source-findings.md` | 데이터 소스 검증 기록 — **먼저 읽을 것** |
+
+## 알아둘 것
+
+- **인허가일자 ≠ 실제 오픈일.** 신고 후 개업까지 며칠~몇 주 걸린다.
+- **실시간 갱신은 불가능하다.** 원본이 하루 단위 배치로 갱신되므로 매일 1회가 실질적 최선이다.
+  인허가 등록에서 데이터 반영까지 2~3일 시차가 있다.
+- 검색 목록의 "수정일자"는 종료된 데이터셋에도 오늘 날짜로 표시된다. 신뢰하지 말 것
+  (자세한 내용은 `docs/data-source-findings.md`).
+
+## 로컬 미리보기
+
+Node나 Python이 없어도 되는 PowerShell 정적 서버가 들어있다.
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File .claude/serve.ps1 -Port 8735
+```
