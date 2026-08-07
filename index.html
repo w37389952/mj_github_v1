@@ -60,13 +60,34 @@
   }
   .sample-banner.show { display: block; }
 
-  .stats { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+  .stats-toggle {
+    display: block; margin: 20px 0 0 auto; padding: 4px 2px;
+    font: inherit; font-size: 12.5px; cursor: pointer;
+    color: var(--ink-faint); background: none; border: none;
+  }
+  .stats-toggle .caret { font-size: 10px; }
+  .stats-toggle:hover { color: var(--accent); }
+
+  .stats { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
+  .stats[hidden] { display: none; }
   .stat {
     flex: 1 1 130px; background: var(--surface); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 14px 18px;
   }
   .stat .num { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
   .stat .label { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+
+  /* 좁은 화면에서는 요약이 스크롤을 잡아먹지 않도록 한 줄로 눌러 담는다. */
+  @media (max-width: 620px) {
+    .stats { gap: 8px; flex-wrap: nowrap; }
+    .stat { flex: 1 1 0; min-width: 0; padding: 9px 10px; }
+    .stat .num { font-size: 18px; }
+    .stat .label {
+      font-size: 11px; margin-top: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .seen-btn { font-size: 11px; padding-top: 2px; }
+  }
   .seen-btn {
     font: inherit; font-size: 12px; cursor: pointer; color: var(--accent);
     background: none; border: none; padding: 4px 0 0; text-decoration: underline;
@@ -157,14 +178,23 @@
   }
   .card .map-link:hover { background: var(--accent-soft); }
 
-  .more-btn {
-    display: none; width: 100%; margin-top: 22px; padding: 13px;
-    font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
-    color: var(--accent); background: var(--surface);
-    border: 1px solid var(--line); border-radius: var(--radius);
+  .pager {
+    display: flex; gap: 6px; justify-content: center; align-items: center;
+    margin-top: 28px; flex-wrap: wrap;
   }
-  .more-btn.show { display: block; }
-  .more-btn:hover { background: var(--accent-soft); }
+  .pager[hidden] { display: none; }
+  .pager button {
+    font: inherit; font-size: 14px; cursor: pointer; min-width: 38px;
+    color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px;
+  }
+  .pager button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pager button[aria-current="page"] {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--bg); font-weight: 700;
+  }
+  .pager button:disabled { opacity: .35; cursor: default; }
+  .pager .gap { color: var(--ink-faint); padding: 0 2px; }
 
   .empty {
     margin-top: 40px; text-align: center; color: var(--ink-faint); font-size: 15px;
@@ -191,7 +221,10 @@
     </div>
   </header>
 
-  <div class="stats">
+  <button type="button" class="stats-toggle" id="statsToggle" aria-expanded="true">
+    <span id="statsToggleText">요약 숨기기</span> <span class="caret">▴</span>
+  </button>
+  <div class="stats" id="stats">
     <div class="stat" id="statNewBox" hidden>
       <div class="num" id="statNew" style="color:var(--accent)">–</div>
       <div class="label" id="statNewLabel">새로 추가</div>
@@ -215,8 +248,6 @@
         <option value="휴게음식점">휴게음식점</option>
         <option value="일반음식점">일반음식점</option>
       </select>
-    </div>
-    <div class="control-row">
       <select id="monthFilter" class="field"><option value="">전체 기간</option></select>
       <button type="button" class="multi-btn" id="rangeToggle">기간검색 <span class="caret">▾</span></button>
       <button type="button" class="reset-btn" id="resetBtn">필터 초기화</button>
@@ -230,7 +261,7 @@
 
   <div class="result-count" id="resultCount"></div>
   <main id="list"></main>
-  <button type="button" class="more-btn" id="moreBtn"></button>
+  <nav class="pager" id="pager" aria-label="페이지"></nav>
   <div class="empty" id="empty">조건에 맞는 곳이 없어요.</div>
 
   <footer>
@@ -240,12 +271,13 @@
 </div>
 
 <script>
-const PAGE_SIZE = 300;
+const PAGE_SIZE = 100;
+const STATS_KEY = "seoul-radar:statsHidden";
 const BASELINE_KEY = "seoul-radar:baseline";  // NEW 판정 기준일
 const LASTDAY_KEY = "seoul-radar:lastDay";    // 마지막으로 방문한 날짜
 
 let allPlaces = [];
-let shownCount = PAGE_SIZE;
+let currentPage = 1;
 let baseline = null;       // 이 날짜 이후 등장한 건을 NEW로 본다 (없으면 첫 방문)
 const selected = { district: new Set(), bizType: new Set() };
 
@@ -416,17 +448,75 @@ function matches(place, f) {
 }
 
 function resetPaging() {
-  shownCount = PAGE_SIZE;
+  currentPage = 1;
   render();
+}
+
+/** 현재 페이지 주변만 번호로 보여주고 사이는 …으로 접는다. */
+function pageNumbers(current, total) {
+  const nums = new Set([1, total, current, current - 1, current + 1]);
+  if (current <= 3) [2, 3, 4].forEach(n => nums.add(n));
+  if (current >= total - 2) [total - 1, total - 2, total - 3].forEach(n => nums.add(n));
+
+  const shown = [...nums].filter(n => n >= 1 && n <= total).sort((a, b) => a - b);
+  const out = [];
+  shown.forEach((n, i) => {
+    if (i > 0 && n - shown[i - 1] > 1) out.push("gap");
+    out.push(n);
+  });
+  return out;
+}
+
+function goToPage(n) {
+  currentPage = n;
+  render();
+  // 페이지를 넘기면 목록 맨 위로 올려준다. 안 그러면 아래쪽에 머문 채 내용만 바뀐다.
+  $("list").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderPager(totalItems) {
+  const pager = $("pager");
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+  pager.innerHTML = "";
+  pager.hidden = totalPages <= 1;
+  if (pager.hidden) return;
+
+  const button = (label, page, opts = {}) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    if (opts.current) b.setAttribute("aria-current", "page");
+    if (opts.disabled) b.disabled = true;
+    else b.addEventListener("click", () => goToPage(page));
+    pager.appendChild(b);
+  };
+
+  button("‹", currentPage - 1, { disabled: currentPage === 1 });
+  pageNumbers(currentPage, totalPages).forEach(n => {
+    if (n === "gap") {
+      const span = document.createElement("span");
+      span.className = "gap";
+      span.textContent = "…";
+      pager.appendChild(span);
+    } else {
+      button(String(n), n, { current: n === currentPage });
+    }
+  });
+  button("›", currentPage + 1, { disabled: currentPage === totalPages });
 }
 
 function render() {
   const f = currentFilters();
   const filtered = allPlaces.filter(p => matches(p, f));
-  const page = filtered.slice(0, shownCount);
 
-  $("resultCount").textContent =
-    filtered.length === allPlaces.length ? "" : `${filtered.length.toLocaleString("ko-KR")}곳`;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filtered.slice(start, start + PAGE_SIZE);
+
+  $("resultCount").textContent = filtered.length === 0 ? ""
+    : `${filtered.length.toLocaleString("ko-KR")}곳 중 ` +
+      `${(start + 1).toLocaleString("ko-KR")}–${(start + page.length).toLocaleString("ko-KR")}`;
 
   const byDate = {};
   page.forEach(p => (byDate[p.licenseDate] = byDate[p.licenseDate] || []).push(p));
@@ -467,13 +557,18 @@ function render() {
     list.appendChild(group);
   });
 
-  const remaining = filtered.length - page.length;
-  $("moreBtn").classList.toggle("show", remaining > 0);
-  $("moreBtn").textContent = `${remaining.toLocaleString("ko-KR")}곳 더 보기`;
+  renderPager(filtered.length);
   $("empty").classList.toggle("show", filtered.length === 0);
 }
 
 /* ---------- 초기화 ---------- */
+
+function setStatsHidden(hidden) {
+  $("stats").hidden = hidden;
+  $("statsToggle").setAttribute("aria-expanded", String(!hidden));
+  $("statsToggleText").textContent = hidden ? "요약 보기" : "요약 숨기기";
+  $("statsToggle").querySelector(".caret").textContent = hidden ? "▾" : "▴";
+}
 
 function countBy(key) {
   const counts = new Map();
@@ -543,9 +638,11 @@ function init(data) {
     $("rangeRow").classList.toggle("show");
     $("rangeToggle").classList.toggle("active", $("rangeRow").classList.contains("show"));
   });
-  $("moreBtn").addEventListener("click", () => {
-    shownCount += PAGE_SIZE;
-    render();
+  setStatsHidden(localStorage.getItem(STATS_KEY) === "1");
+  $("statsToggle").addEventListener("click", () => {
+    const nowHidden = !$("stats").hidden;
+    setStatsHidden(nowHidden);
+    try { localStorage.setItem(STATS_KEY, nowHidden ? "1" : "0"); } catch (e) { /* 무시 */ }
   });
   $("resetBtn").addEventListener("click", () => {
     $("search").value = "";
