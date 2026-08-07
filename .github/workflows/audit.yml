@@ -1,0 +1,24 @@
+name: 업태값 점검 (수동 실행)
+
+# CAFE_UPTAE에 넣을 값을 확정하기 위해 UPTAENM 실제 분포를 출력한다.
+# GitHub 저장소 > Actions > 이 워크플로 > Run workflow 로 실행하면
+# 로컬에 Python을 설치하지 않아도 된다.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 업태 분포 출력
+        env:
+          SEOUL_API_KEY: ${{ secrets.SEOUL_API_KEY }}
+          AUDIT: "1"
+        run: python scripts/collect.py
