@@ -38,8 +38,10 @@ python scripts/collect.py
 > 인증키는 저장소 Secrets 밖으로 나갈 일이 없어야 한다. 코드에 넣지 말고,
 > 채팅·이슈·커밋 메시지에도 붙여넣지 말 것. 노출됐다면 열린데이터광장에서 재발급받으면 된다.
 
-`.github/workflows/collect.yml`이 매일 오전 9시(KST)에 돌면서 `data/`를 갱신하고
-GitHub Pages로 대시보드를 다시 배포한다.
+`.github/workflows/collect.yml`이 매일 **밤 11시 30분(KST)** 에 돌면서 `data/`를 갱신하고
+GitHub Pages로 대시보드를 다시 배포한다. 원본이 매일 22:17~22:48에 갱신되므로
+그 직후를 노린 시각이다 (근거: `docs/data-source-findings.md`).
+수집에 25~30분이 걸리므로 자정 무렵에 반영이 끝난다.
 
 > ⚠️ GitHub의 예약 실행(cron)은 **기본 브랜치에 있는 워크플로만** 동작한다.
 > 작업 브랜치에 머물러 있으면 매일 자동 실행이 되지 않으니 `main`에 병합할 것.
