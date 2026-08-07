@@ -6,9 +6,10 @@ on:
     # 근거는 docs/data-source-findings.md의 '원본 갱신 시각' 절 참고.
     # 23:30 KST = 14:30 UTC. 정각은 GitHub 작업이 몰려 밀리므로 피한다.
     - cron: "30 14 * * *"
-  push:
-    branches: [main]
   workflow_dispatch:
+
+# 화면만 고쳤을 때는 30분짜리 전량 스캔을 돌릴 이유가 없다.
+# 그런 변경은 deploy.yml이 1분 안에 배포한다.
 
 permissions:
   contents: write
