@@ -30,7 +30,7 @@ jobs:
       - name: 수집
         env:
           SEOUL_API_KEY: ${{ secrets.SEOUL_API_KEY }}
-          WINDOW_DAYS: ${{ vars.WINDOW_DAYS || '14' }}
+          WINDOW_DAYS: ${{ vars.WINDOW_DAYS || '90' }}
           DISTRICTS: ${{ vars.DISTRICTS }}
           UPTAE: ${{ vars.UPTAE }}
         run: python scripts/collect.py

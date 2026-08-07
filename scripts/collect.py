@@ -22,8 +22,8 @@ PAGE = 5 if API_KEY == "sample" else 1000
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 
-# 최근 며칠 내 인허가 건을 신규로 볼 것인지
-WINDOW_DAYS = int(os.environ.get("WINDOW_DAYS", "7"))
+# 최근 며칠치를 보여줄 것인지. 스캔량은 이 값과 무관하므로 늘려도 느려지지 않는다.
+WINDOW_DAYS = int(os.environ.get("WINDOW_DAYS", "90"))
 
 # 어느 자치구를 볼 것인지. 비우면 서울 전역.
 DISTRICTS = [d.strip() for d in os.environ.get("DISTRICTS", "").split(",") if d.strip()]
@@ -192,16 +192,24 @@ def main():
 
     collected.sort(key=lambda c: (c["licenseDate"], c["name"]), reverse=True)
 
-    # 이전 회차에 없던 건에 표시를 달아 대시보드에서 'NEW'로 강조한다.
+    # 각 건을 '우리 데이터에 언제 처음 등장했는지'를 기록해둔다.
+    # 방문자마다 마지막 방문 시각과 비교해 NEW 표시를 띄우는 데 쓴다.
+    # (인허가일자는 데이터 반영까지 2~3일 시차가 있어 이 용도로 부정확하다.)
     seen_path = DATA_DIR / "seen.json"
-    seen = set()
+    seen = {}
     if seen_path.exists():
-        seen = set(json.loads(seen_path.read_text(encoding="utf-8")))
-    first_run = not seen
+        stored = json.loads(seen_path.read_text(encoding="utf-8"))
+        # 예전 형식은 id 배열이었다. 그 경우 인허가일자로 대체한다.
+        seen = stored if isinstance(stored, dict) else {}
+
+    today = date.today().isoformat()
     for place in collected:
-        # 첫 실행에서는 전부 처음 보는 것이므로 NEW 표시가 의미가 없다.
-        place["isNew"] = (not first_run) and place["id"] not in seen
-    fresh_count = sum(1 for p in collected if p["isNew"])
+        # 처음 보는 건이라도 첫 실행에서는 등장 시점을 알 수 없으므로
+        # 인허가일자로 근사한다. 이후 회차부터는 실제로 발견한 날이 들어간다.
+        place["firstSeen"] = seen.get(place["id"]) or (
+            today if seen else place["licenseDate"]
+        )
+    fresh_count = sum(1 for p in collected if p["firstSeen"] == today)
 
     DATA_DIR.mkdir(exist_ok=True)
     (DATA_DIR / "latest.json").write_text(
@@ -221,15 +229,19 @@ def main():
     )
 
     # 조회 기간에서 빠진 건은 다시 나타날 일이 없으므로 기억할 필요도 없다.
-    # 이번 회차 목록으로 통째로 갈아끼워 seen 파일이 무한히 커지는 것을 막는다.
+    # 이번 회차 목록으로 갈아끼워 seen 파일이 무한히 커지는 것을 막는다.
     seen_path.write_text(
-        json.dumps(sorted(p["id"] for p in collected), ensure_ascii=False),
+        json.dumps(
+            {p["id"]: p["firstSeen"] for p in collected},
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
 
     print(f"\n최근 {WINDOW_DAYS}일 신규 {len(collected)}곳 / 이번에 새로 추가 {fresh_count}곳")
     for p in collected:
-        if p["isNew"]:
+        if p["firstSeen"] == today:
             print(f"  · {p['licenseDate']}  {p['name']}  ({p['district']}, {p['bizType']})")
 
 

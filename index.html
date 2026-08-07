@@ -43,7 +43,7 @@
     color: var(--ink);
     line-height: 1.55;
   }
-  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
 
   header .eyebrow {
     font-size: 13px; letter-spacing: .12em; color: var(--accent);
@@ -62,20 +62,60 @@
 
   .stats { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
   .stat {
-    flex: 1 1 140px; background: var(--surface); border: 1px solid var(--line);
+    flex: 1 1 130px; background: var(--surface); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 14px 18px;
   }
   .stat .num { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
   .stat .label { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
 
-  .controls { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
-  .controls input, .controls select {
+  /* ---- 필터 ---- */
+  .controls { margin-top: 26px; display: flex; flex-direction: column; gap: 10px; }
+  .control-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .field {
     font: inherit; font-size: 14.5px; color: var(--ink);
     background: var(--surface); border: 1px solid var(--line);
     border-radius: 10px; padding: 9px 12px; outline: none;
   }
-  .controls input:focus, .controls select:focus { border-color: var(--accent); }
-  .controls input { flex: 1 1 200px; }
+  .field:focus { border-color: var(--accent); }
+  input.field[type="search"] { flex: 1 1 100%; }
+
+  .multi { position: relative; }
+  .multi-btn {
+    font: inherit; font-size: 14.5px; cursor: pointer; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 12px; display: flex; gap: 6px; align-items: center;
+  }
+  .multi-btn:hover { border-color: var(--accent); }
+  .multi-btn.active { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .multi-btn .caret { font-size: 10px; opacity: .6; }
+  .multi-panel {
+    position: absolute; z-index: 20; top: calc(100% + 6px); left: 0;
+    min-width: 230px; max-height: 320px; overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.14);
+  }
+  .multi-panel[hidden] { display: none; }
+  .multi-panel label {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+    border-radius: 7px; font-size: 14px; cursor: pointer;
+  }
+  .multi-panel label:hover { background: var(--accent-soft); }
+  .multi-panel .cnt { margin-left: auto; color: var(--ink-faint); font-size: 12.5px; }
+  .multi-clear {
+    width: 100%; font: inherit; font-size: 13px; cursor: pointer;
+    background: none; border: none; color: var(--accent); padding: 6px;
+    border-top: 1px solid var(--line); margin-top: 4px; text-align: left;
+  }
+
+  .range-row { display: none; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .range-row.show { display: flex; }
+  .range-row .sep { color: var(--ink-faint); }
+
+  .reset-btn {
+    font: inherit; font-size: 13.5px; cursor: pointer; color: var(--ink-soft);
+    background: none; border: none; text-decoration: underline; padding: 4px;
+  }
 
   .result-count {
     margin-top: 18px; font-size: 13.5px; color: var(--ink-soft); font-weight: 600;
@@ -95,25 +135,32 @@
     border-radius: var(--radius); padding: 16px 18px; margin-top: 12px;
     display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
   }
+  .card.is-new { border-color: var(--accent); }
   .card .name { font-weight: 700; font-size: 16.5px; letter-spacing: -0.01em; }
   .card .addr { color: var(--ink-soft); font-size: 14px; margin-top: 3px; }
   .card .detail { color: var(--ink-faint); font-size: 13px; margin-top: 3px; }
   .card .detail:empty { display: none; }
   .card .meta { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
-  .badge {
-    font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
-  }
+  .badge { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
   .badge.rest { background: var(--badge-rest); color: var(--badge-rest-ink); }
   .badge.general { background: var(--badge-general); color: var(--badge-general-ink); }
   .badge.plain { background: var(--accent-soft); color: var(--accent); }
   .badge.new { background: var(--accent); color: var(--bg); letter-spacing: .04em; }
-  .card.is-new { border-color: var(--accent); }
   .card .map-link {
     flex-shrink: 0; font-size: 13px; text-decoration: none; color: var(--accent);
     border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px;
     white-space: nowrap;
   }
   .card .map-link:hover { background: var(--accent-soft); }
+
+  .more-btn {
+    display: none; width: 100%; margin-top: 22px; padding: 13px;
+    font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
+    color: var(--accent); background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius);
+  }
+  .more-btn.show { display: block; }
+  .more-btn:hover { background: var(--accent-soft); }
 
   .empty {
     margin-top: 40px; text-align: center; color: var(--ink-faint); font-size: 15px;
@@ -143,27 +190,41 @@
   <div class="stats">
     <div class="stat" id="statNewBox" hidden>
       <div class="num" id="statNew" style="color:var(--accent)">–</div>
-      <div class="label">이번 갱신에 추가</div>
+      <div class="label">지난 방문 이후 새로 추가</div>
     </div>
     <div class="stat"><div class="num" id="statTotal">–</div><div class="label">신규 음식점</div></div>
     <div class="stat"><div class="num" id="statDistricts">–</div><div class="label">지역(구)</div></div>
-    <div class="stat"><div class="num" id="statRest">–</div><div class="label">휴게음식점</div></div>
-    <div class="stat"><div class="num" id="statGeneral">–</div><div class="label">일반음식점</div></div>
+    <div class="stat"><div class="num" id="statBiz">–</div><div class="label">업종</div></div>
   </div>
 
   <div class="controls">
-    <input type="search" id="search" placeholder="상호명 · 주소 검색">
-    <select id="districtFilter"><option value="">전체 지역</option></select>
-    <select id="bizTypeFilter"><option value="">전체 업종</option></select>
-    <select id="categoryFilter">
-      <option value="">전체 구분</option>
-      <option value="휴게음식점">휴게음식점</option>
-      <option value="일반음식점">일반음식점</option>
-    </select>
+    <div class="control-row">
+      <input type="search" id="search" class="field" placeholder="상호명 · 주소 검색">
+    </div>
+    <div class="control-row">
+      <div class="multi" id="districtMulti"></div>
+      <div class="multi" id="bizTypeMulti"></div>
+      <select id="categoryFilter" class="field">
+        <option value="">전체 구분</option>
+        <option value="휴게음식점">휴게음식점</option>
+        <option value="일반음식점">일반음식점</option>
+      </select>
+    </div>
+    <div class="control-row">
+      <select id="monthFilter" class="field"><option value="">전체 기간</option></select>
+      <button type="button" class="multi-btn" id="rangeToggle">기간검색 <span class="caret">▾</span></button>
+      <button type="button" class="reset-btn" id="resetBtn">필터 초기화</button>
+    </div>
+    <div class="control-row range-row" id="rangeRow">
+      <input type="date" id="fromDate" class="field">
+      <span class="sep">~</span>
+      <input type="date" id="toDate" class="field">
+    </div>
   </div>
 
   <div class="result-count" id="resultCount"></div>
   <main id="list"></main>
+  <button type="button" class="more-btn" id="moreBtn"></button>
   <div class="empty" id="empty">조건에 맞는 곳이 없어요.</div>
 
   <footer>
@@ -173,16 +234,32 @@
 </div>
 
 <script>
-const FALLBACK_DATA = null; // fetch 실패 시 안내만 표시
+const PAGE_SIZE = 300;
+const VISIT_KEY = "seoul-radar:lastVisit";
 
 let allPlaces = [];
+let shownCount = PAGE_SIZE;
+let lastVisit = null;      // 이전 방문 시각 (없으면 첫 방문)
+const selected = { district: new Set(), bizType: new Set() };
 
 const $ = id => document.getElementById(id);
+
 const fmtDate = iso => {
   const d = new Date(iso + "T00:00:00");
-  const days = ["일","월","화","수","목","금","토"];
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
 };
+
+// 주소에 붙은 층·호수·건물명은 지도 검색을 방해하므로 도로명 본문만 남긴다.
+//   "서울특별시 마포구 양화로16길 34, 2,3층 (서교동)" → "서울특별시 마포구 양화로16길 34"
+function searchableAddress(address) {
+  return address.split(",")[0].replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+function naverMapUrl(place) {
+  return "https://map.naver.com/p/search/" +
+    encodeURIComponent(searchableAddress(place.address) || place.address);
+}
 
 // 면적은 제곱미터로 들어온다. 평수가 더 직관적이라 함께 보여준다.
 function detailLine(place) {
@@ -195,28 +272,108 @@ function detailLine(place) {
   return bits.join("  ·  ");
 }
 
-function naverMapUrl(place) {
-  return "https://map.naver.com/p/search/" + encodeURIComponent(place.name + " " + place.address);
+// 이 방문자가 지난번에 왔을 때는 없었던 건인지.
+function isNewToVisitor(place) {
+  if (!lastVisit || !place.firstSeen) return false;
+  return place.firstSeen > lastVisit;
+}
+
+/* ---------- 다중 선택 드롭다운 ---------- */
+
+function buildMulti(container, field, label, entries) {
+  container.innerHTML = `
+    <button type="button" class="multi-btn"><span class="txt"></span><span class="caret">▾</span></button>
+    <div class="multi-panel" hidden></div>`;
+  const btn = container.querySelector(".multi-btn");
+  const panel = container.querySelector(".multi-panel");
+
+  entries.forEach(([name, count]) => {
+    const row = document.createElement("label");
+    row.innerHTML = `<input type="checkbox"><span></span><span class="cnt"></span>`;
+    row.querySelector("input").value = name;
+    row.querySelector("span").textContent = name;
+    row.querySelector(".cnt").textContent = count;
+    panel.appendChild(row);
+  });
+
+  const clear = document.createElement("button");
+  clear.type = "button";
+  clear.className = "multi-clear";
+  clear.textContent = "선택 해제";
+  panel.appendChild(clear);
+
+  const sync = () => {
+    const picked = selected[field];
+    btn.querySelector(".txt").textContent =
+      picked.size === 0 ? label
+      : picked.size === 1 ? [...picked][0]
+      : `${label.replace("전체 ", "")} ${picked.size}개`;
+    btn.classList.toggle("active", picked.size > 0);
+    panel.querySelectorAll("input").forEach(i => (i.checked = picked.has(i.value)));
+  };
+
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    document.querySelectorAll(".multi-panel").forEach(p => {
+      if (p !== panel) p.hidden = true;
+    });
+    panel.hidden = !panel.hidden;
+  });
+  panel.addEventListener("click", e => e.stopPropagation());
+  panel.addEventListener("change", e => {
+    if (e.target.checked) selected[field].add(e.target.value);
+    else selected[field].delete(e.target.value);
+    sync();
+    resetPaging();
+  });
+  clear.addEventListener("click", () => {
+    selected[field].clear();
+    sync();
+    resetPaging();
+  });
+
+  container.sync = sync;
+  sync();
+}
+
+/* ---------- 렌더링 ---------- */
+
+function currentFilters() {
+  const q = $("search").value.trim().toLowerCase();
+  const month = $("monthFilter").value;
+  const from = $("fromDate").value;
+  const to = $("toDate").value;
+  const category = $("categoryFilter").value;
+  return { q, month, from, to, category };
+}
+
+function matches(place, f) {
+  if (f.q && !place.name.toLowerCase().includes(f.q) &&
+      !place.address.toLowerCase().includes(f.q)) return false;
+  if (selected.district.size && !selected.district.has(place.district)) return false;
+  if (selected.bizType.size && !selected.bizType.has(place.bizType)) return false;
+  if (f.category && place.category !== f.category) return false;
+  if (f.month && !place.licenseDate.startsWith(f.month)) return false;
+  if (f.from && place.licenseDate < f.from) return false;
+  if (f.to && place.licenseDate > f.to) return false;
+  return true;
+}
+
+function resetPaging() {
+  shownCount = PAGE_SIZE;
+  render();
 }
 
 function render() {
-  const q = $("search").value.trim().toLowerCase();
-  const district = $("districtFilter").value;
-  const bizType = $("bizTypeFilter").value;
-  const category = $("categoryFilter").value;
-
-  const filtered = allPlaces.filter(c =>
-    (!q || c.name.toLowerCase().includes(q) || c.address.toLowerCase().includes(q)) &&
-    (!district || c.district === district) &&
-    (!bizType || c.bizType === bizType) &&
-    (!category || c.category === category)
-  );
+  const f = currentFilters();
+  const filtered = allPlaces.filter(p => matches(p, f));
+  const page = filtered.slice(0, shownCount);
 
   $("resultCount").textContent =
-    filtered.length === allPlaces.length ? "" : `${filtered.length}곳`;
+    filtered.length === allPlaces.length ? "" : `${filtered.length.toLocaleString("ko-KR")}곳`;
 
   const byDate = {};
-  filtered.forEach(c => (byDate[c.licenseDate] = byDate[c.licenseDate] || []).push(c));
+  page.forEach(p => (byDate[p.licenseDate] = byDate[p.licenseDate] || []).push(p));
   const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
 
   const list = $("list");
@@ -225,83 +382,132 @@ function render() {
     const group = document.createElement("section");
     group.className = "day-group";
     group.innerHTML = `<h2>${fmtDate(date)} 인허가 <span class="count">${byDate[date].length}곳</span></h2>`;
-    byDate[date].forEach(c => {
-      const badgeClass = c.category === "휴게음식점" ? "rest" : "general";
+    byDate[date].forEach(p => {
+      const fresh = isNewToVisitor(p);
+      const badgeClass = p.category === "휴게음식점" ? "rest" : "general";
       const card = document.createElement("article");
-      card.className = "card" + (c.isNew ? " is-new" : "");
+      card.className = "card" + (fresh ? " is-new" : "");
       card.innerHTML = `
         <div>
           <div class="name"></div>
           <div class="addr"></div>
           <div class="detail"></div>
           <div class="meta">
-            ${c.isNew ? `<span class="badge new">NEW</span>` : ""}
-            <span class="badge ${badgeClass}">${c.category}</span>
-            ${c.bizType ? `<span class="badge plain"></span>` : ""}
+            ${fresh ? `<span class="badge new">NEW</span>` : ""}
+            <span class="badge ${badgeClass}">${p.category}</span>
+            ${p.bizType ? `<span class="badge plain biz-badge"></span>` : ""}
             <span class="badge plain district-badge"></span>
           </div>
         </div>
         <a class="map-link" target="_blank" rel="noopener">지도 보기 →</a>`;
-      card.querySelector(".name").textContent = c.name;
-      card.querySelector(".addr").textContent = c.address;
-      card.querySelector(".detail").textContent = detailLine(c);
-      if (c.bizType) card.querySelector(".meta .plain").textContent = c.bizType;
-      card.querySelector(".district-badge").textContent = c.district;
-      card.querySelector(".map-link").href = naverMapUrl(c);
+      card.querySelector(".name").textContent = p.name;
+      card.querySelector(".addr").textContent = p.address;
+      card.querySelector(".detail").textContent = detailLine(p);
+      if (p.bizType) card.querySelector(".biz-badge").textContent = p.bizType;
+      card.querySelector(".district-badge").textContent = p.district;
+      card.querySelector(".map-link").href = naverMapUrl(p);
       group.appendChild(card);
     });
     list.appendChild(group);
   });
 
+  const remaining = filtered.length - page.length;
+  $("moreBtn").classList.toggle("show", remaining > 0);
+  $("moreBtn").textContent = `${remaining.toLocaleString("ko-KR")}곳 더 보기`;
   $("empty").classList.toggle("show", filtered.length === 0);
+}
+
+/* ---------- 초기화 ---------- */
+
+function countBy(key) {
+  const counts = new Map();
+  allPlaces.forEach(p => p[key] && counts.set(p[key], (counts.get(p[key]) || 0) + 1));
+  return counts;
 }
 
 function init(data) {
   allPlaces = data.places || data.cafes || [];
 
+  // 이번 방문 시각을 기록하기 전에 지난 방문 시각을 읽어둔다.
+  lastVisit = localStorage.getItem(VISIT_KEY);
+  try {
+    localStorage.setItem(VISIT_KEY, new Date().toISOString().slice(0, 10));
+  } catch (e) { /* 사생활 보호 모드 등에서 저장이 막혀도 동작에는 지장 없음 */ }
+
   if (data.period) {
     $("period").textContent = `최근 신규 인허가 · ${data.period.from} ~ ${data.period.to}`;
   }
   if (data.generatedAt) {
-    const d = new Date(data.generatedAt);
-    $("updated").textContent = `마지막 업데이트: ${d.toLocaleString("ko-KR")}`;
+    $("updated").textContent =
+      `마지막 업데이트: ${new Date(data.generatedAt).toLocaleString("ko-KR")}`;
   }
   if (data.source === "sample") $("sampleBanner").classList.add("show");
 
-  if (data.newCount > 0) {
-    $("statNew").textContent = data.newCount;
+  const freshCount = allPlaces.filter(isNewToVisitor).length;
+  if (freshCount > 0) {
+    $("statNew").textContent = freshCount;
     $("statNewBox").hidden = false;
   }
-  $("statTotal").textContent = allPlaces.length;
-  $("statDistricts").textContent = new Set(allPlaces.map(c => c.district)).size;
-  $("statRest").textContent = allPlaces.filter(c => c.category === "휴게음식점").length;
-  $("statGeneral").textContent = allPlaces.filter(c => c.category === "일반음식점").length;
+  $("statTotal").textContent = allPlaces.length.toLocaleString("ko-KR");
+  $("statDistricts").textContent = countBy("district").size;
+  $("statBiz").textContent = countBy("bizType").size;
 
-  const districts = [...new Set(allPlaces.map(c => c.district))]
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b, "ko"));
-  districts.forEach(d => {
-    const opt = document.createElement("option");
-    opt.value = opt.textContent = d;
-    $("districtFilter").appendChild(opt);
-  });
+  buildMulti(
+    $("districtMulti"), "district", "전체 지역",
+    [...countBy("district").entries()].sort((a, b) => a[0].localeCompare(b[0], "ko"))
+  );
+  buildMulti(
+    $("bizTypeMulti"), "bizType", "전체 업종",
+    [...countBy("bizType").entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
+  );
 
-  // 업종은 종류가 많으므로 건수가 많은 순으로 정렬하고 개수를 함께 보여준다.
-  const bizCounts = new Map();
-  allPlaces.forEach(c => bizCounts.set(c.bizType, (bizCounts.get(c.bizType) || 0) + 1));
-  [...bizCounts.entries()]
-    .filter(([name]) => name)
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
-    .forEach(([name, count]) => {
+  // 데이터에 실제로 존재하는 달만 목록에 넣는다.
+  [...new Set(allPlaces.map(p => p.licenseDate.slice(0, 7)))]
+    .sort((a, b) => b.localeCompare(a))
+    .forEach(ym => {
       const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = `${name} (${count})`;
-      $("bizTypeFilter").appendChild(opt);
+      opt.value = ym;
+      opt.textContent = `${ym.slice(0, 4)}년 ${Number(ym.slice(5, 7))}월`;
+      $("monthFilter").appendChild(opt);
     });
 
-  ["search", "districtFilter", "bizTypeFilter", "categoryFilter"].forEach(id =>
-    $(id).addEventListener("input", render)
+  $("search").addEventListener("input", resetPaging);
+  $("categoryFilter").addEventListener("input", resetPaging);
+  $("monthFilter").addEventListener("input", () => {
+    // 달 선택과 기간검색은 서로 헷갈리므로 한쪽을 고르면 다른 쪽을 비운다.
+    if ($("monthFilter").value) { $("fromDate").value = ""; $("toDate").value = ""; }
+    resetPaging();
+  });
+  ["fromDate", "toDate"].forEach(id =>
+    $(id).addEventListener("input", () => {
+      if ($(id).value) $("monthFilter").value = "";
+      resetPaging();
+    })
   );
+  $("rangeToggle").addEventListener("click", () => {
+    $("rangeRow").classList.toggle("show");
+    $("rangeToggle").classList.toggle("active", $("rangeRow").classList.contains("show"));
+  });
+  $("moreBtn").addEventListener("click", () => {
+    shownCount += PAGE_SIZE;
+    render();
+  });
+  $("resetBtn").addEventListener("click", () => {
+    $("search").value = "";
+    $("categoryFilter").value = "";
+    $("monthFilter").value = "";
+    $("fromDate").value = "";
+    $("toDate").value = "";
+    selected.district.clear();
+    selected.bizType.clear();
+    $("districtMulti").sync();
+    $("bizTypeMulti").sync();
+    resetPaging();
+  });
+  document.addEventListener("click", () =>
+    document.querySelectorAll(".multi-panel").forEach(p => (p.hidden = true))
+  );
+
   render();
 }
 
