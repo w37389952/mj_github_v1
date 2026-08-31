@@ -230,6 +230,12 @@
     font-size: 11.5px; color: var(--ink-faint); padding: 6px 9px 2px;
     border-top: 1px solid var(--line); margin-top: 4px;
   }
+  .insta-group {
+    font-size: 11px; font-weight: 700; color: var(--ink-faint);
+    letter-spacing: .04em; padding: 8px 9px 3px;
+  }
+  .insta-group:first-child { padding-top: 3px; }
+  .insta-panel { max-height: 340px; overflow-y: auto; }
 
   .pager {
     display: flex; gap: 6px; justify-content: center; align-items: center;
@@ -408,15 +414,34 @@ const RR_TAIL = ["","k","k","k","n","n","n","t","l","k","m","l","l","l","p","l",
 // 상호에 자주 쓰이는 외래어. 소리대로 옮기면 원래 철자와 어긋나므로
 // (하트 → hateu, 실제로는 heart) 먼저 제 철자로 바꿔둔다.
 const LOANWORDS = {
-  "하트": "heart", "허브": "hub", "피자": "pizza", "푸드": "food",
-  "브루어리": "brewery", "베이글": "bagel", "쿠키": "cookie", "케이크": "cake",
-  "밀크": "milk", "그린": "green", "블루": "blue", "화이트": "white",
-  "블랙": "black", "레드": "red", "가든": "garden", "스푼": "spoon",
-  "포크": "fork", "테이블": "table", "룸": "room", "숍": "shop",
-  "스토어": "store", "마켓": "market", "랩": "lab", "클럽": "club",
-  "스탠드": "stand", "코너": "corner", "플레이스": "place", "스페이스": "space",
-  "데이": "day", "나이트": "night", "문": "moon", "스타": "star",
+  // 음식·메뉴
+  "피자": "pizza", "파스타": "pasta", "버거": "burger", "샌드위치": "sandwich",
+  "베이글": "bagel", "쿠키": "cookie", "케이크": "cake", "타르트": "tart",
+  "크로플": "croffle", "와플": "waffle", "도넛": "donut", "젤라또": "gelato",
+  "푸딩": "pudding", "스콘": "scone", "샐러드": "salad", "스테이크": "steak",
+  "치킨": "chicken", "누들": "noodle", "라멘": "ramen", "커리": "curry",
+  "푸드": "food", "밀크": "milk", "티": "tea", "라떼": "latte", "에스프레소": "espresso",
+  // 색·자연
+  "그린": "green", "블루": "blue", "화이트": "white", "블랙": "black",
+  "레드": "red", "핑크": "pink", "옐로우": "yellow", "브라운": "brown",
+  "문": "moon", "스타": "star", "선": "sun", "스카이": "sky", "클라우드": "cloud",
+  "가든": "garden", "포레스트": "forest", "리버": "river", "레이크": "lake",
   "레몬": "lemon", "체리": "cherry", "베리": "berry", "피치": "peach",
+  "올리브": "olive", "허브": "hub", "로즈": "rose", "데이지": "daisy",
+  // 동물
+  "퍼그": "pug", "베어": "bear", "래빗": "rabbit", "버니": "bunny",
+  "캣": "cat", "독": "dog", "폭스": "fox", "울프": "wolf", "버드": "bird",
+  "펭귄": "penguin", "래빗": "rabbit", "타이거": "tiger", "웨일": "whale",
+  // 장소·사물
+  "하우스": "house", "홈": "home", "룸": "room", "숍": "shop", "스토어": "store",
+  "마켓": "market", "랩": "lab", "클럽": "club", "스탠드": "stand",
+  "코너": "corner", "플레이스": "place", "스페이스": "space", "스튜디오": "studio",
+  "테이블": "table", "스푼": "spoon", "포크": "fork", "컵": "cup", "잔": "jan",
+  "브루어리": "brewery", "팩토리": "factory", "워크숍": "workshop",
+  // 시간·느낌
+  "하트": "heart", "데이": "day", "나이트": "night", "모닝": "morning",
+  "슬로우": "slow", "굿": "good", "베스트": "best", "리틀": "little",
+  "빅": "big", "뉴": "new", "올드": "old", "소울": "soul", "드림": "dream",
 };
 
 /** 한글을 로마자로 옮긴다. 표시 이름을 영문으로만 써둔 계정을 찾기 위한 후보다.
@@ -424,11 +449,17 @@ const LOANWORDS = {
  * 음운 변화(자음동화 등)까지는 반영하지 않는 근사값이다. 외래어는 위 표로
  * 먼저 걸러내지만, 표에 없는 외래어는 여전히 소리대로 옮겨진다.
  */
+function applyLoanwords(text) {
+  // 긴 단어부터 바꿔야 '베리'가 '블루베리'를 쪼개지 않는다.
+  Object.entries(LOANWORDS)
+    .sort((a, b) => b[0].length - a[0].length)
+    .forEach(([ko, en]) => {
+      text = text.replace(new RegExp(ko, "g"), ` ${en} `);
+    });
+  return text.replace(/\s+/g, " ").trim();
+}
+
 function romanize(text) {
-  Object.entries(LOANWORDS).forEach(([ko, en]) => {
-    text = text.replace(new RegExp(ko, "g"), ` ${en} `);
-  });
-  text = text.replace(/\s+/g, " ").trim();
   let out = "";
   for (const ch of text) {
     const code = ch.charCodeAt(0) - 0xac00;
@@ -441,6 +472,79 @@ function romanize(text) {
          + RR_TAIL[code % 28];
   }
   return out.replace(/\s+/g, " ").trim();
+}
+
+/** 계정 아이디로 쓸 법한 영문 표기를 여러 갈래로 만든다.
+ *
+ * 아이디는 영문·숫자·밑줄·마침표만 쓸 수 있으므로 띄어쓰기를 없앤 형태로 뽑는다.
+ * 어느 철자를 골랐을지는 알 수 없으니(퍼그 → pug일 수도 peogeu일 수도 있다)
+ * 외래어 표를 적용한 것과 소리대로 옮긴 것을 모두 만들고, 한국어에서 자음 뒤에
+ * 붙는 '으'(eu)를 뺀 형태도 함께 넣는다.
+ */
+/** 상호를 외래어 단위로 쪼갠다. "퍼그피자" → ["퍼그", "피자"] */
+function segment(core) {
+  const keys = Object.keys(LOANWORDS).sort((a, b) => b.length - a.length);
+  const segs = [];
+  let buffer = "";
+  let i = 0;
+  while (i < core.length) {
+    const hit = keys.find(k => core.startsWith(k, i));
+    if (hit) {
+      if (buffer.trim()) segs.push({ ko: buffer.trim() });
+      segs.push({ ko: hit, en: LOANWORDS[hit] });
+      buffer = "";
+      i += hit.length;
+    } else {
+      buffer += core[i];
+      i += 1;
+    }
+  }
+  if (buffer.trim()) segs.push({ ko: buffer.trim() });
+  return segs;
+}
+
+/** 한 조각을 어떻게 적었을지 후보를 낸다. 많아야 세 갈래. */
+function spellings(seg) {
+  const out = [];
+  const push = s => {
+    s = (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (s && !out.includes(s)) out.push(s);
+  };
+  if (seg.en) push(seg.en);                      // 표에 있는 외래어 철자
+  const rr = romanize(seg.ko);
+  push(rr);                                      // 소리대로 옮긴 것
+  push(rr.replace(/eu/g, ""));                   // 자음 뒤 '으'를 뺀 것
+  return out.slice(0, 3);
+}
+
+/** 계정 아이디로 쓸 법한 영문 표기를 여러 갈래로 만든다.
+ *
+ * 아이디는 영문·숫자·밑줄·마침표만 쓸 수 있어 띄어쓰기 없는 형태로 뽑는다.
+ * 가게 주인이 어느 철자를 골랐을지는 알 수 없으므로(퍼그 → pug일 수도,
+ * peogeu일 수도 있다) 조각마다 갈래를 내고 조합한다.
+ *   퍼그피자 → pugpizza / pugpija / peogeupizza / peogpizza / peogpija ...
+ */
+function handleCandidates(core, english) {
+  const segs = segment(core).map(spellings).filter(s => s.length);
+  const combos = segs.reduce(
+    (acc, choices) => acc.flatMap(prefix => choices.map(c => prefix + c)),
+    [""]
+  );
+
+  const handles = [];
+  const push = h => {
+    if (h && h.length >= 3 && h.length <= 30 && !handles.includes(h)) handles.push(h);
+  };
+  if (english) push(english.toLowerCase().replace(/[^a-z0-9]/g, ""));
+  combos.forEach(push);
+  // 두 단어 이상이면 밑줄로 끊어 쓰는 계정도 흔하다.
+  if (segs.length > 1) {
+    const first = combos[0];
+    const parts = segs.map(s => s[0]);
+    push(parts.join("_"));
+    if (parts.length > 1 && first) push(parts.join("."));
+  }
+  return handles.slice(0, 10);
 }
 
 // 괄호 안 법정동을 뽑는다. "…, 1층 (도화동)" → "도화동"
@@ -480,26 +584,27 @@ function instagramQueries(place) {
   if (!core) core = stripBizWords(raw) || raw;
 
   const hood = neighborhoodOf(place.address);
-  const queries = [];
-  const add = (q, note) => {
+  const out = [];
+  const add = (q, note, group) => {
     q = (q || "").trim();
-    if (q && !queries.some(x => x.q === q)) queries.push({ q, note });
+    if (q && !out.some(x => x.label === q)) out.push({ label: q, note, group });
   };
 
-  add(core);                                  // 표시 이름·해시태그가 한글인 계정
-  if (english) add(english, "영문 상호");      // 상호에 영문이 붙어 있던 경우
-  if (!english && /[가-힣]/.test(core)) {
-    add(romanize(core), "로마자");             // 표시 이름을 영문으로만 써둔 계정
-  }
-  if (hood) add(`${core} ${hood}`, "동네 포함");
-  // 카페가 아닌 곳에 '○○동카페'를 권하면 엉뚱하므로 업종에 맞춰 바꾼다.
-  if (hood) add(`${hood}${isCafeLike(place) ? "카페" : "맛집"}`, "동네 해시태그");
-  add(raw, "원본 상호");
+  // 아이디 후보를 먼저. 계정을 직접 찾는 것이 목적이다.
+  handleCandidates(core, english).forEach(h => add(h, "", "아이디 후보"));
 
-  return queries.map(({ q, note }) => ({
-    label: q,
-    note: note || "",
-    url: "https://www.instagram.com/explore/search/keyword/?q=" + encodeURIComponent(q),
+  // 표시 이름이나 게시물이 한글인 계정을 위한 보조 검색.
+  add(core, "한글 상호", "이름으로 검색");
+  if (hood) add(`${core} ${hood}`, "동네 포함", "이름으로 검색");
+  add(raw, "원본 상호", "이름으로 검색");
+
+  return out.map(q => ({
+    ...q,
+    // 아이디 후보는 그 계정으로 바로 간다. 없으면 인스타가 '페이지 없음'을
+    // 보여주므로, 계정이 있는지 빠르게 확인할 수 있다.
+    url: q.group === "아이디 후보"
+      ? `https://www.instagram.com/${encodeURIComponent(q.label)}/`
+      : "https://www.instagram.com/explore/search/keyword/?q=" + encodeURIComponent(q.label),
   }));
 }
 
@@ -660,7 +765,32 @@ function buildInstaMenu(card, place) {
   const btn = card.querySelector(".insta-btn");
   const panel = card.querySelector(".insta-panel");
 
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    // 검색어 만들기와 DOM 생성은 실제로 누른 카드에서만 한다.
+    // 한 화면에 카드가 100개라 미리 다 만들면 그만큼 무거워진다.
+    if (!panel.dataset.built) {
+      fillInstaPanel(panel, place);
+      panel.dataset.built = "1";
+    }
+    document.querySelectorAll(".insta-panel").forEach(p => {
+      if (p !== panel) p.hidden = true;
+    });
+    panel.hidden = !panel.hidden;
+  });
+  panel.addEventListener("click", e => e.stopPropagation());
+}
+
+function fillInstaPanel(panel, place) {
+  let lastGroup = null;
   instagramQueries(place).forEach(q => {
+    if (q.group !== lastGroup) {
+      const h = document.createElement("p");
+      h.className = "insta-group";
+      h.textContent = q.group;
+      panel.appendChild(h);
+      lastGroup = q.group;
+    }
     const a = document.createElement("a");
     a.href = q.url;
     a.target = "_blank";
@@ -672,17 +802,8 @@ function buildInstaMenu(card, place) {
   });
   const note = document.createElement("p");
   note.className = "insta-note";
-  note.textContent = "인스타 검색 결과로 이동합니다";
+  note.textContent = "아이디는 계정으로, 나머지는 검색 결과로 이동합니다";
   panel.appendChild(note);
-
-  btn.addEventListener("click", e => {
-    e.stopPropagation();
-    document.querySelectorAll(".insta-panel").forEach(p => {
-      if (p !== panel) p.hidden = true;
-    });
-    panel.hidden = !panel.hidden;
-  });
-  panel.addEventListener("click", e => e.stopPropagation());
 }
 
 /* ---------- 렌더링 ---------- */
