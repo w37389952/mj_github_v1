@@ -1,8 +1,13 @@
-"""서울 열린데이터광장에서 신규 음식점 인허가 건을 수집한다.
+"""서울 열린데이터광장에서 신규·변경된 음식점 인허가 건을 수집한다.
 
 데이터 소스 (2026-08-07 실제 호출로 검증됨):
-  LOCALDATA_072405 = 휴게음식점 (서울 전역 146,710건)
-  LOCALDATA_072404 = 일반음식점 (서울 전역 536,045건)
+  LOCALDATA_072405 = 휴게음식점 (서울 전역 약 14.7만건)
+  LOCALDATA_072404 = 일반음식점 (서울 전역 약 53.6만건)
+
+두 갈래로 나눠 담는다.
+  신규 오픈 : 최근 WINDOW_DAYS 안에 새로 인허가가 난 곳
+  간판 교체 : 인허가는 그 전이지만 최근 WINDOW_DAYS 안에 기록이 수정된 곳
+              (기존 허가를 넘겨받아 상호만 바뀌는 경우가 여기 들어온다)
 
 인증키 없이 돌려보려면 SEOUL_API_KEY=sample — 단, 요청당 5건까지만 응답한다.
 """
@@ -38,7 +43,26 @@ SERVICES = {
 # 실제 업태값 목록은 docs/data-source-findings.md 참고 (전량 스캔으로 확인함).
 UPTAE_FILTER = {u.strip() for u in os.environ.get("UPTAE", "").split(",") if u.strip()}
 
+# 목록에서 빼고 싶은 체인. EXCLUDE 환경변수로 통째로 갈아끼울 수 있다.
+DEFAULT_EXCLUDE = [
+    "씨유", "CU ", "지에스25", "GS25", "세븐일레븐", "이마트24", "미니스톱",
+    "스타벅스", "투썸플레이스", "이디야", "메가엠지씨", "메가커피", "컴포즈커피",
+    "빽다방", "더벤티", "커피빈", "탐앤탐스", "할리스", "파스쿠찌", "엔제리너스",
+    "파리바게뜨", "뚜레쥬르", "던킨", "배스킨라빈스",
+    "롯데리아", "맥도날드", "버거킹", "KFC", "맘스터치", "써브웨이",
+]
+_exclude_env = os.environ.get("EXCLUDE")
+EXCLUDE = [
+    e.strip()
+    for e in (_exclude_env.split(",") if _exclude_env is not None else DEFAULT_EXCLUDE)
+    if e.strip()
+]
+
 TRDSTATE_OPEN = "01"  # 영업/정상 (03 = 폐업)
+
+# 한 페이지가 끝내 실패해도 이만큼까지는 넘어간다. 700번 가까운 요청 중
+# 한두 번의 일시적 실패로 30분짜리 작업을 통째로 버리지 않기 위한 여유다.
+MAX_SKIPPED_PAGES = int(os.environ.get("MAX_SKIPPED_PAGES", "5"))
 
 
 def fetch_once(service, start, end):
@@ -54,12 +78,13 @@ def fetch_once(service, start, end):
     return payload["list_total_count"], payload.get("row", [])
 
 
-def fetch(service, start, end, attempts=4):
+def fetch(service, start, end, attempts=6):
     """전량 스캔은 요청이 700회에 가까워 한 번쯤은 실패한다.
 
-    한 번 삐끗했다고 30분짜리 작업 전체를 버리지 않도록 재시도한다.
+    지수 백오프로 재시도하되, 마지막에도 실패하면 예외를 그대로 올린다.
+    호출하는 쪽에서 건너뛸지 중단할지 결정한다.
     """
-    delay = 2
+    delay = 3
     for attempt in range(1, attempts + 1):
         try:
             return fetch_once(service, start, end)
@@ -71,7 +96,7 @@ def fetch(service, start, end, attempts=4):
                 file=sys.stderr,
             )
             time.sleep(delay)
-            delay *= 2
+            delay = min(delay * 2, 60)
 
 
 def fetch_all(service):
@@ -85,16 +110,34 @@ def fetch_all(service):
     if API_KEY == "sample":
         print("  (샘플키 — 5건만 수집합니다)", file=sys.stderr)
         return
+
+    skipped = 0
     start = PAGE + 1
     while start <= total:
-        _, page = fetch(service, start, min(start + PAGE - 1, total))
+        end = min(start + PAGE - 1, total)
+        try:
+            _, page = fetch(service, start, end)
+        except Exception as exc:
+            skipped += 1
+            print(f"    !! {start}~{end} 건너뜀 ({skipped}/{MAX_SKIPPED_PAGES}): {exc}",
+                  file=sys.stderr)
+            if skipped > MAX_SKIPPED_PAGES:
+                raise RuntimeError(
+                    f"건너뛴 페이지가 {MAX_SKIPPED_PAGES}개를 넘었습니다. "
+                    "일시적 장애가 아닐 수 있으니 중단합니다."
+                ) from exc
+            start = end + 1
+            continue
         if not page:
             break
         yield from page
-        start += PAGE
+        start = end + 1
         if start % 50000 < PAGE:
             print(f"    ... {start:,}/{total:,}", file=sys.stderr)
         time.sleep(0.05)
+
+    if skipped:
+        print(f"  {service}: {skipped}개 페이지를 건너뛰었습니다.", file=sys.stderr)
 
 
 def clean(value):
@@ -121,6 +164,22 @@ def district_of(row):
     return ""
 
 
+def is_excluded(name):
+    """체인 지점인지 판단한다.
+
+    단순 포함 검사는 쓰지 않는다. '씨유'를 넣었다고 '메이 씨유' 같은
+    개인 가게까지 걸러지면 안 되기 때문이다. 체인 지점은 거의 예외 없이
+    브랜드명으로 시작하므로 앞부분만 본다. 뒤에 붙는 형태는 '…점'으로
+    끝나는 경우만 함께 처리한다.
+    """
+    for keyword in EXCLUDE:
+        if name.startswith(keyword):
+            return True
+        if name.endswith("점") and keyword in name:
+            return True
+    return False
+
+
 def normalize(row, category):
     return {
         "id": clean(row.get("MGTNO")),
@@ -128,6 +187,7 @@ def normalize(row, category):
         "address": clean(row.get("RDNWHLADDR")) or clean(row.get("SITEWHLADDR")),
         "district": district_of(row),
         "licenseDate": clean(row.get("APVPERMYMD"))[:10],
+        "modifiedDate": clean(row.get("LASTMODTS"))[:10],
         "category": category,
         "bizType": clean(row.get("UPTAENM")),
         "phone": clean(row.get("SITETEL")),
@@ -136,10 +196,7 @@ def normalize(row, category):
 
 
 def audit():
-    """UPTAENM(업태구분명)에 실제로 어떤 값이 오는지 세어본다.
-
-    CAFE_UPTAE를 확정하기 전에 AUDIT=1 로 한 번 돌려서 눈으로 확인할 것.
-    """
+    """UPTAENM(업태구분명)에 실제로 어떤 값이 오는지 세어본다."""
     from collections import Counter
 
     for category, service in SERVICES.items():
@@ -167,13 +224,40 @@ def audit():
             print(f"  {mark} {name or '(빈값)'}: {count:,}")
 
 
+def load_seen(path):
+    """관리번호 → 우리 데이터에 처음 등장한 날짜."""
+    if not path.exists():
+        return {}
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    return stored if isinstance(stored, dict) else {}
+
+
+def stamp_first_seen(items, seen, today):
+    """각 건이 언제 처음 등장했는지 표시한다.
+
+    방문자마다 마지막 방문 시각과 비교해 NEW 표시를 띄우는 데 쓴다.
+    첫 실행에서는 등장 시점을 알 수 없으므로 날짜 필드로 근사한다.
+    """
+    for item in items:
+        fallback = item["modifiedDate"] or item["licenseDate"]
+        item["firstSeen"] = seen.get(item["id"]) or (today if seen else fallback)
+
+
+def write_json(path, payload):
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def main():
     if os.environ.get("AUDIT") == "1":
         audit()
         return
 
-    cutoff = date.today() - timedelta(days=WINDOW_DAYS)
-    collected = []
+    today = date.today()
+    cutoff = today - timedelta(days=WINDOW_DAYS)
+    opened, changed = [], []
+    excluded = 0
 
     for category, service in SERVICES.items():
         print(f"수집 중: {category}", file=sys.stderr)
@@ -182,67 +266,64 @@ def main():
                 continue
             if UPTAE_FILTER and clean(row.get("UPTAENM")) not in UPTAE_FILTER:
                 continue
+
             approved = parse_date(row.get("APVPERMYMD"))
-            if approved is None or approved < cutoff:
+            if approved is None:
                 continue
+            modified = parse_date(row.get("LASTMODTS"))
+
+            if approved >= cutoff:
+                bucket = opened
+            elif modified is not None and modified >= cutoff:
+                bucket = changed
+            else:
+                continue
+
             item = normalize(row, category)
             if DISTRICTS and item["district"] not in DISTRICTS:
                 continue
-            collected.append(item)
+            if is_excluded(item["name"]):
+                excluded += 1
+                continue
+            bucket.append(item)
 
-    collected.sort(key=lambda c: (c["licenseDate"], c["name"]), reverse=True)
-
-    # 각 건을 '우리 데이터에 언제 처음 등장했는지'를 기록해둔다.
-    # 방문자마다 마지막 방문 시각과 비교해 NEW 표시를 띄우는 데 쓴다.
-    # (인허가일자는 데이터 반영까지 2~3일 시차가 있어 이 용도로 부정확하다.)
-    seen_path = DATA_DIR / "seen.json"
-    seen = {}
-    if seen_path.exists():
-        stored = json.loads(seen_path.read_text(encoding="utf-8"))
-        # 예전 형식은 id 배열이었다. 그 경우 인허가일자로 대체한다.
-        seen = stored if isinstance(stored, dict) else {}
-
-    today = date.today().isoformat()
-    for place in collected:
-        # 처음 보는 건이라도 첫 실행에서는 등장 시점을 알 수 없으므로
-        # 인허가일자로 근사한다. 이후 회차부터는 실제로 발견한 날이 들어간다.
-        place["firstSeen"] = seen.get(place["id"]) or (
-            today if seen else place["licenseDate"]
-        )
-    fresh_count = sum(1 for p in collected if p["firstSeen"] == today)
+    opened.sort(key=lambda p: (p["licenseDate"], p["name"]), reverse=True)
+    changed.sort(key=lambda p: (p["modifiedDate"], p["name"]), reverse=True)
 
     DATA_DIR.mkdir(exist_ok=True)
-    (DATA_DIR / "latest.json").write_text(
-        json.dumps(
-            {
-                "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
-                "period": {"from": cutoff.isoformat(), "to": date.today().isoformat()},
-                "source": "sample" if API_KEY == "sample" else "seoul-opendata",
-                "newCount": fresh_count,
-                "places": collected,
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
+    seen_opened = load_seen(DATA_DIR / "seen.json")
+    seen_changed = load_seen(DATA_DIR / "seen-changed.json")
+    stamp_first_seen(opened, seen_opened, today.isoformat())
+    stamp_first_seen(changed, seen_changed, today.isoformat())
+
+    meta = {
+        "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "period": {"from": cutoff.isoformat(), "to": today.isoformat()},
+        "source": "sample" if API_KEY == "sample" else "seoul-opendata",
+    }
+
+    # '간판 교체' 목록은 탭을 눌렀을 때만 받아가도록 파일을 나눈다.
+    # 탭에 붙일 뱃지 숫자는 첫 등장일 집계만 있으면 계산할 수 있다.
+    first_seen_counts = {}
+    for item in changed:
+        first_seen_counts[item["firstSeen"]] = first_seen_counts.get(item["firstSeen"], 0) + 1
+
+    write_json(DATA_DIR / "latest.json", {
+        **meta,
+        "places": opened,
+        "changedCount": len(changed),
+        "changedFirstSeen": first_seen_counts,
+    })
+    write_json(DATA_DIR / "changed.json", {**meta, "places": changed})
 
     # 조회 기간에서 빠진 건은 다시 나타날 일이 없으므로 기억할 필요도 없다.
-    # 이번 회차 목록으로 갈아끼워 seen 파일이 무한히 커지는 것을 막는다.
-    seen_path.write_text(
-        json.dumps(
-            {p["id"]: p["firstSeen"] for p in collected},
-            ensure_ascii=False,
-            sort_keys=True,
-        ),
-        encoding="utf-8",
-    )
+    write_json(DATA_DIR / "seen.json", {p["id"]: p["firstSeen"] for p in opened})
+    write_json(DATA_DIR / "seen-changed.json", {p["id"]: p["firstSeen"] for p in changed})
 
-    print(f"\n최근 {WINDOW_DAYS}일 신규 {len(collected)}곳 / 이번에 새로 추가 {fresh_count}곳")
-    for p in collected:
-        if p["firstSeen"] == today:
-            print(f"  · {p['licenseDate']}  {p['name']}  ({p['district']}, {p['bizType']})")
+    print(f"\n최근 {WINDOW_DAYS}일")
+    print(f"  신규 오픈: {len(opened):,}곳")
+    print(f"  간판 교체: {len(changed):,}곳")
+    print(f"  체인 제외: {excluded:,}곳")
 
 
 if __name__ == "__main__":

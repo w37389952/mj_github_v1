@@ -36,6 +36,7 @@ jobs:
           WINDOW_DAYS: ${{ vars.WINDOW_DAYS || '90' }}
           DISTRICTS: ${{ vars.DISTRICTS }}
           UPTAE: ${{ vars.UPTAE }}
+          EXCLUDE: ${{ vars.EXCLUDE }}
         run: python scripts/collect.py
 
       - name: 결과 커밋

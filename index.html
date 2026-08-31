@@ -60,6 +60,28 @@
   }
   .sample-banner.show { display: block; }
 
+  .tabs {
+    display: flex; gap: 6px; margin-top: 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab {
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    color: var(--ink-soft); background: none; border: none;
+    padding: 10px 14px; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .dot {
+    background: var(--accent); color: var(--bg);
+    font-size: 11px; font-weight: 700; border-radius: 999px;
+    padding: 1px 7px; min-width: 20px; text-align: center;
+  }
+  .tab .dot[hidden] { display: none; }
+  .tab-hint {
+    font-size: 12.5px; color: var(--ink-faint); margin-top: 8px;
+  }
+
   .stats-toggle {
     display: block; margin: 8px 0 0 auto; padding: 2px;
     font: inherit; font-size: 12.5px; cursor: pointer;
@@ -221,6 +243,16 @@
     </div>
   </header>
 
+  <div class="tabs" role="tablist">
+    <button type="button" class="tab" id="tabOpened" role="tab" aria-selected="true">
+      신규 오픈 <span class="dot" id="dotOpened" hidden></span>
+    </button>
+    <button type="button" class="tab" id="tabChanged" role="tab" aria-selected="false">
+      간판 교체 <span class="dot" id="dotChanged" hidden></span>
+    </button>
+  </div>
+  <div class="tab-hint" id="tabHint"></div>
+
   <button type="button" class="stats-toggle" id="statsToggle" aria-expanded="true">
     <span id="statsToggleText">요약 숨기기</span> <span class="caret">▴</span>
   </button>
@@ -273,12 +305,34 @@
 <script>
 const PAGE_SIZE = 100;
 const STATS_KEY = "seoul-radar:statsHidden";
-const BASELINE_KEY = "seoul-radar:baseline";  // NEW 판정 기준일
-const LASTDAY_KEY = "seoul-radar:lastDay";    // 마지막으로 방문한 날짜
+const FIRST_VISIT_KEY = "seoul-radar:firstVisit";  // 이 사이트를 처음 쓴 날
 
-let allPlaces = [];
-let currentPage = 1;
-let baseline = null;       // 이 날짜 이후 등장한 건을 NEW로 본다 (없으면 첫 방문)
+// 탭마다 목록도, NEW 판정 기준일도 따로 관리한다.
+// '간판 교체' 탭을 한 번도 누르지 않았다면 그 목록은 안 본 것이므로
+// 기준일이 움직이지 않고 NEW가 계속 쌓인다.
+const TABS = {
+  opened: {
+    file: "data/latest.json",
+    tabId: "tabOpened", dotId: "dotOpened",
+    baselineKey: "seoul-radar:baseline", lastDayKey: "seoul-radar:lastDay",
+    hint: "최근 90일 안에 새로 인허가가 난 곳입니다.",
+    dateField: "licenseDate", dateLabel: "인허가",
+    places: null, baseline: null, page: 1,
+  },
+  changed: {
+    file: "data/changed.json",
+    tabId: "tabChanged", dotId: "dotChanged",
+    baselineKey: "seoul-radar:baseline:changed", lastDayKey: "seoul-radar:lastDay:changed",
+    hint: "인허가는 그 전이지만 최근 90일 안에 기록이 바뀐 곳입니다. " +
+          "기존 허가를 넘겨받아 상호만 바뀐 경우가 여기 들어옵니다.",
+    dateField: "modifiedDate", dateLabel: "정보 변경",
+    places: null, baseline: null, page: 1,
+  },
+};
+
+let activeTab = "opened";
+const tab = () => TABS[activeTab];
+let today = null;
 const selected = { district: new Set(), bizType: new Set() };
 
 const $ = id => document.getElementById(id);
@@ -311,57 +365,86 @@ function detailLine(place) {
   return bits.join("  ·  ");
 }
 
-// 이 방문자가 지난번에 왔을 때는 없었던 건인지.
+// 이 방문자가 이 탭을 지난번에 봤을 때는 없었던 건인지.
 function isNewToVisitor(place) {
-  if (!baseline || !place.firstSeen) return false;
-  return place.firstSeen > baseline;
+  const base = tab().baseline;
+  if (!base || !place.firstSeen) return false;
+  return place.firstSeen > base;
+}
+
+function store(key, value) {
+  try { localStorage.setItem(key, value); } catch (e) { /* 사생활 보호 모드 등 */ }
+}
+
+/** 이 사이트를 처음 쓴 날. 없으면 오늘로 기록한다. */
+function siteFirstVisit() {
+  let stored;
+  try {
+    stored = localStorage.getItem(FIRST_VISIT_KEY);
+    if (!stored) {
+      // 이 키가 생기기 전부터 쓰던 사람은 기존 방문 기록을 물려받는다.
+      stored = localStorage.getItem(TABS.opened.lastDayKey) || today;
+      store(FIRST_VISIT_KEY, stored);
+    }
+  } catch (e) {
+    return today;
+  }
+  return stored;
 }
 
 /**
- * NEW 판정 기준일을 정한다.
+ * 이 탭의 NEW 판정 기준일을 정한다. 탭을 실제로 열었을 때만 호출한다.
  *
  * 기준일은 하루에 한 번만 앞으로 움직인다. 오랜만에 들어온 날 새로고침을 하거나
  * 창을 껐다 다시 켜도 그날 안에는 NEW가 그대로 남아 있어야, 미처 다 보지 못한
  * 목록을 놓치지 않는다.
  */
-function resolveBaseline(today) {
+function resolveBaseline(t) {
   let lastDay, stored;
   try {
-    lastDay = localStorage.getItem(LASTDAY_KEY);
-    stored = localStorage.getItem(BASELINE_KEY);
+    lastDay = localStorage.getItem(t.lastDayKey);
+    stored = localStorage.getItem(t.baselineKey);
   } catch (e) {
     return null;  // 저장이 막힌 환경에서는 NEW 표시를 포기한다
   }
 
   if (!lastDay) {
-    // 첫 방문. 기준을 오늘로 잡아 전부 NEW로 뜨는 것을 막는다.
-    save(today, today);
-    return today;
+    // 이 탭을 한 번도 연 적이 없다. 사이트를 쓰기 시작한 날을 기준으로 삼는다.
+    // 그래야 "사이트는 계속 봤지만 이 탭은 안 눌렀다"면 그동안 쌓인 것이 NEW로 뜬다.
+    // 사이트 자체가 첫 방문이면 firstVisit이 오늘이므로 NEW는 뜨지 않는다.
+    const base = siteFirstVisit();
+    store(t.lastDayKey, today); store(t.baselineKey, base);
+    return base;
   }
-  if (lastDay === today) {
-    // 오늘 이미 왔었다. 기준을 그대로 두어 NEW가 유지되게 한다.
-    return stored;
-  }
-  // 날이 바뀌었다. 직전 방문일을 새 기준으로 삼는다.
-  save(today, lastDay);
-  return lastDay;
+  if (lastDay === today) return stored;  // 오늘 이미 봤다. 기준 유지.
 
-  function save(day, base) {
-    try {
-      localStorage.setItem(LASTDAY_KEY, day);
-      localStorage.setItem(BASELINE_KEY, base);
-    } catch (e) { /* 사생활 보호 모드 등 */ }
-  }
+  // 날이 바뀌었다. 직전 열람일을 새 기준으로 삼는다.
+  store(t.lastDayKey, today); store(t.baselineKey, lastDay);
+  return lastDay;
+}
+
+/** 아직 열지 않은 탭에 몇 건이 쌓였는지. 목록을 받지 않고 집계만으로 센다. */
+function pendingCount(t, firstSeenCounts) {
+  let base;
+  try {
+    // 한 번도 안 연 탭이면 사이트를 쓰기 시작한 날이 기준이 된다.
+    base = localStorage.getItem(t.lastDayKey)
+      ? localStorage.getItem(t.baselineKey)
+      : siteFirstVisit();
+  } catch (e) { return 0; }
+  if (!base) return 0;
+  return Object.entries(firstSeenCounts || {})
+    .filter(([day]) => day > base)
+    .reduce((sum, [, n]) => sum + n, 0);
 }
 
 // 사용자가 직접 '다 봤다'고 알릴 때만 기준일을 오늘로 당긴다.
 // 목록에서 항목을 지우는 것이 아니라 NEW 표시만 없앤다.
-function markAllSeen(today) {
-  try {
-    localStorage.setItem(BASELINE_KEY, today);
-    localStorage.setItem(LASTDAY_KEY, today);
-  } catch (e) { /* 무시 */ }
-  baseline = today;
+function markAllSeen() {
+  const t = tab();
+  store(t.baselineKey, today);
+  store(t.lastDayKey, today);
+  t.baseline = today;
   $("statNewBox").hidden = true;
   render();
 }
@@ -435,20 +518,23 @@ function currentFilters() {
   return { q, month, from, to, category };
 }
 
-function matches(place, f) {
+function matches(place, f, t) {
+  // 날짜 조건은 탭마다 기준이 다르다. 신규 오픈은 인허가일자,
+  // 간판 교체는 기록이 바뀐 날짜로 걸러야 말이 된다.
+  const day = place[t.dateField] || place.licenseDate;
   if (f.q && !place.name.toLowerCase().includes(f.q) &&
       !place.address.toLowerCase().includes(f.q)) return false;
   if (selected.district.size && !selected.district.has(place.district)) return false;
   if (selected.bizType.size && !selected.bizType.has(place.bizType)) return false;
   if (f.category && place.category !== f.category) return false;
-  if (f.month && !place.licenseDate.startsWith(f.month)) return false;
-  if (f.from && place.licenseDate < f.from) return false;
-  if (f.to && place.licenseDate > f.to) return false;
+  if (f.month && !day.startsWith(f.month)) return false;
+  if (f.from && day < f.from) return false;
+  if (f.to && day > f.to) return false;
   return true;
 }
 
 function resetPaging() {
-  currentPage = 1;
+  tab().page = 1;
   render();
 }
 
@@ -468,7 +554,7 @@ function pageNumbers(current, total) {
 }
 
 function goToPage(n) {
-  currentPage = n;
+  tab().page = n;
   render();
   // 페이지를 넘기면 목록 맨 위로 올려준다. 안 그러면 아래쪽에 머문 채 내용만 바뀐다.
   $("list").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -476,6 +562,7 @@ function goToPage(n) {
 
 function renderPager(totalItems) {
   const pager = $("pager");
+  const currentPage = tab().page;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
   pager.innerHTML = "";
   pager.hidden = totalPages <= 1;
@@ -506,12 +593,14 @@ function renderPager(totalItems) {
 }
 
 function render() {
+  const t = tab();
+  const allPlaces = t.places || [];
   const f = currentFilters();
-  const filtered = allPlaces.filter(p => matches(p, f));
+  const filtered = allPlaces.filter(p => matches(p, f, t));
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  if (currentPage > totalPages) currentPage = totalPages;
-  const start = (currentPage - 1) * PAGE_SIZE;
+  if (t.page > totalPages) t.page = totalPages;
+  const start = (t.page - 1) * PAGE_SIZE;
   const page = filtered.slice(start, start + PAGE_SIZE);
 
   $("resultCount").textContent = filtered.length === 0 ? ""
@@ -519,7 +608,10 @@ function render() {
       `${(start + 1).toLocaleString("ko-KR")}–${(start + page.length).toLocaleString("ko-KR")}`;
 
   const byDate = {};
-  page.forEach(p => (byDate[p.licenseDate] = byDate[p.licenseDate] || []).push(p));
+  page.forEach(p => {
+    const day = p[t.dateField] || p.licenseDate;
+    (byDate[day] = byDate[day] || []).push(p);
+  });
   const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
 
   const list = $("list");
@@ -527,7 +619,7 @@ function render() {
   dates.forEach(date => {
     const group = document.createElement("section");
     group.className = "day-group";
-    group.innerHTML = `<h2>${fmtDate(date)} 인허가 <span class="count">${byDate[date].length}곳</span></h2>`;
+    group.innerHTML = `<h2>${fmtDate(date)} ${t.dateLabel} <span class="count">${byDate[date].length}곳</span></h2>`;
     byDate[date].forEach(p => {
       const fresh = isNewToVisitor(p);
       const badgeClass = p.category === "휴게음식점" ? "rest" : "general";
@@ -570,20 +662,86 @@ function setStatsHidden(hidden) {
   $("statsToggle").querySelector(".caret").textContent = hidden ? "▾" : "▴";
 }
 
-function countBy(key) {
+function countBy(places, key) {
   const counts = new Map();
-  allPlaces.forEach(p => p[key] && counts.set(p[key], (counts.get(p[key]) || 0) + 1));
+  places.forEach(p => p[key] && counts.set(p[key], (counts.get(p[key]) || 0) + 1));
   return counts;
 }
 
-function init(data) {
-  allPlaces = data.places || data.cafes || [];
+/** 활성 탭의 목록에 맞춰 통계·필터 선택지를 다시 채운다. */
+function refreshForTab() {
+  const t = tab();
+  const places = t.places || [];
 
-  const today = new Date().toLocaleDateString("sv-SE");  // 현지 시간 기준 YYYY-MM-DD
-  baseline = resolveBaseline(today);
+  $("tabHint").textContent = t.hint;
+  Object.entries(TABS).forEach(([key, other]) =>
+    $(other.tabId).setAttribute("aria-selected", String(key === activeTab))
+  );
+
+  const freshCount = places.filter(isNewToVisitor).length;
+  $("statNewBox").hidden = freshCount === 0;
+  $("statNew").textContent = freshCount > 0 ? freshCount.toLocaleString("ko-KR") : "–";
+  $("statNewLabel").textContent =
+    freshCount > 0 ? `${t.baseline} 이후 새로 추가` : "새로 추가";
+  $("statTotal").textContent = places.length.toLocaleString("ko-KR");
+  $("statDistricts").textContent = countBy(places, "district").size;
+  $("statBiz").textContent = countBy(places, "bizType").size;
+
+  buildMulti(
+    $("districtMulti"), "district", "전체 지역",
+    [...countBy(places, "district").entries()].sort((a, b) => a[0].localeCompare(b[0], "ko"))
+  );
+  buildMulti(
+    $("bizTypeMulti"), "bizType", "전체 업종",
+    [...countBy(places, "bizType").entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
+  );
+
+  // 데이터에 실제로 존재하는 달만 목록에 넣는다.
+  const monthSel = $("monthFilter");
+  const keepMonth = monthSel.value;
+  monthSel.innerHTML = `<option value="">전체 기간</option>`;
+  [...new Set(places.map(p => (p[t.dateField] || p.licenseDate).slice(0, 7)))]
+    .filter(Boolean)
+    .sort((a, b) => b.localeCompare(a))
+    .forEach(ym => {
+      const opt = document.createElement("option");
+      opt.value = ym;
+      opt.textContent = `${ym.slice(0, 4)}년 ${Number(ym.slice(5, 7))}월`;
+      monthSel.appendChild(opt);
+    });
+  monthSel.value = [...monthSel.options].some(o => o.value === keepMonth) ? keepMonth : "";
+
+  render();
+}
+
+/** 탭을 연다. 이때 비로소 그 탭의 NEW 기준일이 갱신된다. */
+async function openTab(key) {
+  activeTab = key;
+  const t = tab();
+  if (!t.places) {
+    try {
+      const res = await fetch(t.file);
+      if (!res.ok) throw new Error(res.status);
+      t.places = (await res.json()).places || [];
+    } catch (e) {
+      t.places = [];
+      $("tabHint").textContent = "이 목록을 불러오지 못했습니다.";
+    }
+  }
+  // 목록을 실제로 화면에 띄우는 시점에 기준일을 옮긴다.
+  if (t.baseline === null) t.baseline = resolveBaseline(t);
+  $(t.dotId).hidden = true;
+  t.page = 1;
+  refreshForTab();
+}
+
+function init(data) {
+  today = new Date().toLocaleDateString("sv-SE");  // 현지 시간 기준 YYYY-MM-DD
+  TABS.opened.places = data.places || data.cafes || [];
 
   if (data.period) {
-    $("period").textContent = `최근 신규 인허가 · ${data.period.from} ~ ${data.period.to}`;
+    $("period").textContent = `최근 90일 · ${data.period.from} ~ ${data.period.to}`;
   }
   if (data.generatedAt) {
     $("updated").textContent =
@@ -591,35 +749,17 @@ function init(data) {
   }
   if (data.source === "sample") $("sampleBanner").classList.add("show");
 
-  const freshCount = allPlaces.filter(isNewToVisitor).length;
-  if (freshCount > 0) {
-    $("statNew").textContent = freshCount.toLocaleString("ko-KR");
-    $("statNewLabel").textContent = `${baseline} 이후 새로 추가`;
-    $("statNewBox").hidden = false;
+  // 아직 열지 않은 '간판 교체' 탭에 몇 건이 쌓였는지 뱃지로 알린다.
+  const pending = pendingCount(TABS.changed, data.changedFirstSeen);
+  if (pending > 0) {
+    $("dotChanged").textContent = pending.toLocaleString("ko-KR");
+    $("dotChanged").hidden = false;
   }
-  $("markSeenBtn").addEventListener("click", () => markAllSeen(today));
-  $("statTotal").textContent = allPlaces.length.toLocaleString("ko-KR");
-  $("statDistricts").textContent = countBy("district").size;
-  $("statBiz").textContent = countBy("bizType").size;
 
-  buildMulti(
-    $("districtMulti"), "district", "전체 지역",
-    [...countBy("district").entries()].sort((a, b) => a[0].localeCompare(b[0], "ko"))
+  Object.entries(TABS).forEach(([key, t]) =>
+    $(t.tabId).addEventListener("click", () => { if (activeTab !== key) openTab(key); })
   );
-  buildMulti(
-    $("bizTypeMulti"), "bizType", "전체 업종",
-    [...countBy("bizType").entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"))
-  );
-
-  // 데이터에 실제로 존재하는 달만 목록에 넣는다.
-  [...new Set(allPlaces.map(p => p.licenseDate.slice(0, 7)))]
-    .sort((a, b) => b.localeCompare(a))
-    .forEach(ym => {
-      const opt = document.createElement("option");
-      opt.value = ym;
-      opt.textContent = `${ym.slice(0, 4)}년 ${Number(ym.slice(5, 7))}월`;
-      $("monthFilter").appendChild(opt);
-    });
+  $("markSeenBtn").addEventListener("click", markAllSeen);
 
   $("search").addEventListener("input", resetPaging);
   $("categoryFilter").addEventListener("input", resetPaging);
@@ -660,7 +800,7 @@ function init(data) {
     document.querySelectorAll(".multi-panel").forEach(p => (p.hidden = true))
   );
 
-  render();
+  openTab("opened");
 }
 
 fetch("data/latest.json")
