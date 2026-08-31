@@ -215,9 +215,15 @@
   }
   .insta-panel[hidden] { display: none; }
   .insta-panel a {
-    display: block; padding: 7px 9px; border-radius: 7px;
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 7px 9px; border-radius: 7px;
     font-size: 13.5px; color: var(--ink); text-decoration: none;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .insta-panel a .q {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .insta-panel a .note {
+    margin-left: auto; flex-shrink: 0; font-size: 11px; color: var(--ink-faint);
   }
   .insta-panel a:hover { background: var(--accent-soft); color: var(--accent); }
   .insta-note {
@@ -392,6 +398,51 @@ const BIZ_WORDS = [
   "스튜디오", "하우스", "공방", "키친", "팩토리", "coffee", "cafe", "roasters",
 ];
 
+// 국어의 로마자 표기법(문화체육관광부 고시) 기준 음절 조합표.
+const RR_LEAD = ["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
+const RR_VOWEL = ["a","ae","ya","yae","eo","e","yeo","ye","o","wa","wae","oe","yo",
+                  "u","wo","we","wi","yu","eu","ui","i"];
+const RR_TAIL = ["","k","k","k","n","n","n","t","l","k","m","l","l","l","p","l","m",
+                 "p","p","t","t","ng","t","t","k","t","p","t"];
+
+// 상호에 자주 쓰이는 외래어. 소리대로 옮기면 원래 철자와 어긋나므로
+// (하트 → hateu, 실제로는 heart) 먼저 제 철자로 바꿔둔다.
+const LOANWORDS = {
+  "하트": "heart", "허브": "hub", "피자": "pizza", "푸드": "food",
+  "브루어리": "brewery", "베이글": "bagel", "쿠키": "cookie", "케이크": "cake",
+  "밀크": "milk", "그린": "green", "블루": "blue", "화이트": "white",
+  "블랙": "black", "레드": "red", "가든": "garden", "스푼": "spoon",
+  "포크": "fork", "테이블": "table", "룸": "room", "숍": "shop",
+  "스토어": "store", "마켓": "market", "랩": "lab", "클럽": "club",
+  "스탠드": "stand", "코너": "corner", "플레이스": "place", "스페이스": "space",
+  "데이": "day", "나이트": "night", "문": "moon", "스타": "star",
+  "레몬": "lemon", "체리": "cherry", "베리": "berry", "피치": "peach",
+};
+
+/** 한글을 로마자로 옮긴다. 표시 이름을 영문으로만 써둔 계정을 찾기 위한 후보다.
+ *
+ * 음운 변화(자음동화 등)까지는 반영하지 않는 근사값이다. 외래어는 위 표로
+ * 먼저 걸러내지만, 표에 없는 외래어는 여전히 소리대로 옮겨진다.
+ */
+function romanize(text) {
+  Object.entries(LOANWORDS).forEach(([ko, en]) => {
+    text = text.replace(new RegExp(ko, "g"), ` ${en} `);
+  });
+  text = text.replace(/\s+/g, " ").trim();
+  let out = "";
+  for (const ch of text) {
+    const code = ch.charCodeAt(0) - 0xac00;
+    if (code < 0 || code > 11171) {
+      out += ch;
+      continue;
+    }
+    out += RR_LEAD[Math.floor(code / 588)]
+         + RR_VOWEL[Math.floor((code % 588) / 28)]
+         + RR_TAIL[code % 28];
+  }
+  return out.replace(/\s+/g, " ").trim();
+}
+
 // 괄호 안 법정동을 뽑는다. "…, 1층 (도화동)" → "도화동"
 function neighborhoodOf(address) {
   const m = address.match(/\(([^)]*동[0-9]*가?)\)\s*$/);
@@ -405,6 +456,14 @@ function stripBizWords(text) {
     out = out.replace(new RegExp(w, "gi"), " ");
   });
   return out.replace(/\s+/g, " ").trim();
+}
+
+// 업태값은 docs/data-source-findings.md의 실측 목록을 따른다.
+const CAFE_LIKE = new Set([
+  "커피숍", "다방", "전통찻집", "떡카페", "과자점", "아이스크림", "까페", "키즈카페",
+]);
+function isCafeLike(place) {
+  return CAFE_LIKE.has(place.bizType) || /카페|커피|베이커리|디저트/.test(place.name);
 }
 
 function instagramQueries(place) {
@@ -422,18 +481,24 @@ function instagramQueries(place) {
 
   const hood = neighborhoodOf(place.address);
   const queries = [];
-  const add = q => {
+  const add = (q, note) => {
     q = (q || "").trim();
-    if (q && !queries.includes(q)) queries.push(q);
+    if (q && !queries.some(x => x.q === q)) queries.push({ q, note });
   };
 
-  add(core);
-  if (english) add(english);
-  if (hood) add(`${core} ${hood}`);
-  add(raw);  // 정리한 이름으로 안 나올 때를 위한 원본
+  add(core);                                  // 표시 이름·해시태그가 한글인 계정
+  if (english) add(english, "영문 상호");      // 상호에 영문이 붙어 있던 경우
+  if (!english && /[가-힣]/.test(core)) {
+    add(romanize(core), "로마자");             // 표시 이름을 영문으로만 써둔 계정
+  }
+  if (hood) add(`${core} ${hood}`, "동네 포함");
+  // 카페가 아닌 곳에 '○○동카페'를 권하면 엉뚱하므로 업종에 맞춰 바꾼다.
+  if (hood) add(`${hood}${isCafeLike(place) ? "카페" : "맛집"}`, "동네 해시태그");
+  add(raw, "원본 상호");
 
-  return queries.map(q => ({
+  return queries.map(({ q, note }) => ({
     label: q,
+    note: note || "",
     url: "https://www.instagram.com/explore/search/keyword/?q=" + encodeURIComponent(q),
   }));
 }
@@ -600,7 +665,9 @@ function buildInstaMenu(card, place) {
     a.href = q.url;
     a.target = "_blank";
     a.rel = "noopener";
-    a.textContent = q.label;
+    a.innerHTML = `<span class="q"></span><span class="note"></span>`;
+    a.querySelector(".q").textContent = q.label;
+    a.querySelector(".note").textContent = q.note;
     panel.appendChild(a);
   });
   const note = document.createElement("p");
