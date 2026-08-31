@@ -199,6 +199,31 @@
     white-space: nowrap;
   }
   .card .map-link:hover { background: var(--accent-soft); }
+  .card .actions {
+    flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; align-items: stretch;
+  }
+  .insta { position: relative; }
+  .insta-btn {
+    font: inherit; width: 100%; cursor: pointer; background: var(--surface);
+    display: flex; justify-content: center; gap: 4px; align-items: center;
+  }
+  .insta-panel {
+    position: absolute; z-index: 30; right: 0; top: calc(100% + 6px);
+    min-width: 190px; max-width: 260px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 6px; box-shadow: 0 8px 28px rgba(0,0,0,.16);
+  }
+  .insta-panel[hidden] { display: none; }
+  .insta-panel a {
+    display: block; padding: 7px 9px; border-radius: 7px;
+    font-size: 13.5px; color: var(--ink); text-decoration: none;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .insta-panel a:hover { background: var(--accent-soft); color: var(--accent); }
+  .insta-note {
+    font-size: 11.5px; color: var(--ink-faint); padding: 6px 9px 2px;
+    border-top: 1px solid var(--line); margin-top: 4px;
+  }
 
   .pager {
     display: flex; gap: 6px; justify-content: center; align-items: center;
@@ -354,6 +379,65 @@ function naverMapUrl(place) {
     encodeURIComponent(searchableAddress(place.address) || place.address);
 }
 
+/* ---------- 인스타 검색어 만들기 ----------
+ * 인스타그램은 계정 검색 API를 공개하지 않아 '이 가게의 계정'을 자동으로
+ * 찾아줄 수는 없다. 대신 사람이 직접 쳐보던 검색어 후보를 대신 만들어
+ * 한 번에 넘어갈 수 있게 한다.
+ */
+
+// 상호에 붙는 업종어. 계정명에는 잘 안 들어가므로 검색어에서 뺀다.
+const BIZ_WORDS = [
+  "커피숍", "커피", "로스터스", "로스터리", "로스터", "카페", "까페",
+  "베이커리", "브레드", "제과점", "제과", "디저트", "티하우스", "찻집",
+  "스튜디오", "하우스", "공방", "키친", "팩토리", "coffee", "cafe", "roasters",
+];
+
+// 괄호 안 법정동을 뽑는다. "…, 1층 (도화동)" → "도화동"
+function neighborhoodOf(address) {
+  const m = address.match(/\(([^)]*동[0-9]*가?)\)\s*$/);
+  if (!m) return "";
+  return m[1].split(",").pop().trim();
+}
+
+function stripBizWords(text) {
+  let out = text;
+  BIZ_WORDS.forEach(w => {
+    out = out.replace(new RegExp(w, "gi"), " ");
+  });
+  return out.replace(/\s+/g, " ").trim();
+}
+
+function instagramQueries(place) {
+  const raw = place.name;
+
+  // 괄호 안에 로마자가 있으면 영문 상호로 본다. "탁트(TAKT) 커피" → "TAKT"
+  const paren = raw.match(/[（(]([^）)]+)[）)]/);
+  const english = paren && /[A-Za-z]/.test(paren[1]) ? paren[1].trim() : "";
+
+  let core = raw.replace(/[（(][^）)]*[）)]/g, " ");
+  // 지점 표기는 계정명에 없는 경우가 많다. 이름이 충분히 길 때만 떼어낸다.
+  core = core.replace(/\s*[^\s]{0,10}(본점|직영점|\d+호점|점)\s*$/, " ");
+  core = stripBizWords(core);
+  if (!core) core = stripBizWords(raw) || raw;
+
+  const hood = neighborhoodOf(place.address);
+  const queries = [];
+  const add = q => {
+    q = (q || "").trim();
+    if (q && !queries.includes(q)) queries.push(q);
+  };
+
+  add(core);
+  if (english) add(english);
+  if (hood) add(`${core} ${hood}`);
+  add(raw);  // 정리한 이름으로 안 나올 때를 위한 원본
+
+  return queries.map(q => ({
+    label: q,
+    url: "https://www.instagram.com/explore/search/keyword/?q=" + encodeURIComponent(q),
+  }));
+}
+
 // 면적은 제곱미터로 들어온다. 평수가 더 직관적이라 함께 보여준다.
 function detailLine(place) {
   const bits = [];
@@ -507,6 +591,33 @@ function buildMulti(container, field, label, entries) {
   sync();
 }
 
+function buildInstaMenu(card, place) {
+  const btn = card.querySelector(".insta-btn");
+  const panel = card.querySelector(".insta-panel");
+
+  instagramQueries(place).forEach(q => {
+    const a = document.createElement("a");
+    a.href = q.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = q.label;
+    panel.appendChild(a);
+  });
+  const note = document.createElement("p");
+  note.className = "insta-note";
+  note.textContent = "인스타 검색 결과로 이동합니다";
+  panel.appendChild(note);
+
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    document.querySelectorAll(".insta-panel").forEach(p => {
+      if (p !== panel) p.hidden = true;
+    });
+    panel.hidden = !panel.hidden;
+  });
+  panel.addEventListener("click", e => e.stopPropagation());
+}
+
 /* ---------- 렌더링 ---------- */
 
 function currentFilters() {
@@ -637,13 +748,20 @@ function render() {
             <span class="badge plain district-badge"></span>
           </div>
         </div>
-        <a class="map-link" target="_blank" rel="noopener">지도 보기 →</a>`;
+        <div class="actions">
+          <a class="map-link" target="_blank" rel="noopener">지도 보기 →</a>
+          <div class="insta">
+            <button type="button" class="map-link insta-btn">인스타 <span class="caret">▾</span></button>
+            <div class="insta-panel" hidden></div>
+          </div>
+        </div>`;
       card.querySelector(".name").textContent = p.name;
       card.querySelector(".addr").textContent = p.address;
       card.querySelector(".detail").textContent = detailLine(p);
       if (p.bizType) card.querySelector(".biz-badge").textContent = p.bizType;
       card.querySelector(".district-badge").textContent = p.district;
       card.querySelector(".map-link").href = naverMapUrl(p);
+      buildInstaMenu(card, p);
       group.appendChild(card);
     });
     list.appendChild(group);
@@ -797,7 +915,8 @@ function init(data) {
     resetPaging();
   });
   document.addEventListener("click", () =>
-    document.querySelectorAll(".multi-panel").forEach(p => (p.hidden = true))
+    document.querySelectorAll(".multi-panel, .insta-panel")
+      .forEach(p => (p.hidden = true))
   );
 
   openTab("opened");
