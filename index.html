@@ -618,6 +618,13 @@ const EN_WORDS = new Set((
   "chemistry physics biology history nature culture nation world global " +
   "seoul busan jeju asia europe america paris london tokyo " +
   // 흔한 접미·기타
+  // 방향·위치
+  "east west north south left right up down top bottom front back inside " +
+  "outside upper lower next near far end ends start begin finish " +
+  // 사람을 가리키는 흔한 -er 꼴
+  "winner winners maker makers owner owners player players singer diner " +
+  "corner banner runner ranger rider builder holder leader reader writer " +
+  "worker helper "  +
   "official original select choice premium special limited signature " +
   "standard basic classic edition version project studio works collective " +
   "society brothers sons daughters and company co inc ltd " +
@@ -653,7 +660,7 @@ const MIN_WORD = 4;
 /* 영어 낱말이 이름의 상당 부분을 덮을 때만 표준 표기를 제친다.
  * '골라유 도시락'에서 cola 하나가 걸렸다고 gollayu를 colayu로 바꾸면 곤란하다.
  * craft+root처럼 이름을 거의 다 덮을 때만 영어로 본다. */
-const EN_THRESHOLD = 0.3;
+const EN_THRESHOLD = 2.5;
 const enWeight = en => (en >= EN_THRESHOLD ? en : 0);
 
 /* 영어 낱말이 한글로 적히면 반드시 음절 단위로 떨어진다. craft는 크·래·프·트
@@ -678,7 +685,7 @@ function englishness(s, bounds) {
       }
     }
   }
-  return score[n] / (n * n);
+  return score[n] / n;
 }
 
 /* 아직 다 만들지 않은 철자를 평가한다. 끝부분이 어떤 낱말의 앞부분이면
@@ -710,7 +717,7 @@ function partialEnglishness(s, bounds) {
       best = Math.max(best, score[n - len] + len * len * 0.8);
     }
   }
-  return best / (n * n);
+  return best / n;
 }
 
 /* 영어 자음군은 한글로 옮길 때 '으'가 끼어든다.
@@ -730,7 +737,7 @@ function formsCluster(leadLatin, nextLeadLatin) {
 }
 
 /** 한 음절의 표기 후보. 앞쪽일수록 표준에 가깝고, 그 순서가 곧 비용이 된다. */
-function syllableSpellings(ch, nextCh) {
+function syllableSpellings(ch, nextCh, atWordEnd) {
   const code = ch.charCodeAt(0) - 0xac00;
   if (code < 0 || code > 11171) {
     const plain = ch.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -746,6 +753,10 @@ function syllableSpellings(ch, nextCh) {
   if (vowelIdx === 18) {
     // 받침 ㄹ이 붙은 '으' 음절은 그 자체가 자음군이다. 플라이 → fly
     if (tailIdx === 8 && CLUSTER_WITH_L.has(lead[0])) {
+      vowel = ["", "eu", "u"];
+    } else if (tailIdx === 0 && atWordEnd) {
+      // 낱말 끝의 '으'. 영어는 자음으로 끝나는데 한글은 홀소리를 붙인다.
+      // end → 엔드, west → 웨스트. 표준 표기도 뒤에 남겨 둔다.
       vowel = ["", "eu", "u"];
     } else if (tailIdx === 0 && nextCh) {
       const nextCode = nextCh.charCodeAt(0) - 0xac00;
@@ -790,7 +801,9 @@ function spellVariants(text, nextChar) {
   let combos = [{ s: "", cost: 0, bounds: [] }];
   const chars = [...text];
   for (let i = 0; i < chars.length; i++) {
-    const options = syllableSpellings(chars[i], chars[i + 1] || nextChar);
+    // 조각의 마지막 글자는 낱말 끝이다. '웨스트엔드'+'브루잉'에서 '드'가 그렇다.
+    const options = syllableSpellings(
+      chars[i], chars[i + 1] || nextChar, i === chars.length - 1);
     if (!options.length) continue;
     const next = [];
     combos.forEach(p => options.forEach(o => {
@@ -859,18 +872,26 @@ function baseSpellings(core, english) {
            : spellVariants(seg.ko, segs[i + 1] && segs[i + 1].ko[0]).slice(0, 5)
   ).filter(s => s.length);
 
-  let combos = [{ s: "", cost: 0, bounds: [] }];
-  perSegment.forEach(choices => {
+  /* 채점은 '아직 모르는 부분'만 한다.
+   *
+   * 히어커피의 coffee나 구름카페의 cafe는 어느 후보에나 똑같이 들어가므로
+   * 함께 세면 짧은 쪽이 유리해질 뿐이다(hiucoffee가 hieocoffee를 이긴다).
+   * 외래어로 확정된 조각은 빼고 한글에서 추측한 부분만 비교한다. */
+  let combos = [{ s: "", cost: 0, ko: "", koBounds: [] }];
+  perSegment.forEach((choices, i) => {
+    const certain = Boolean(segs[i] && segs[i].en);
     const next = [];
     combos.forEach(p => choices.forEach(c => {
       const s = joinPart(p.s, c.s);
-      const shift = s.length - c.s.length;
+      const ko = certain ? p.ko : joinPart(p.ko, c.s);
+      const shift = ko.length - c.s.length;
       next.push({
-        s, cost: p.cost + c.cost,
-        bounds: [...p.bounds, ...c.bounds.map(b => b + shift)],
+        s, ko, cost: p.cost + c.cost,
+        koBounds: certain ? p.koBounds
+                          : [...p.koBounds, ...c.bounds.map(b => b + shift)],
       });
     }));
-    next.forEach(c => { c.en = partialEnglishness(c.s, c.bounds); });
+    next.forEach(c => { c.en = partialEnglishness(c.ko, c.koBounds); });
     combos = prune(next);
   });
 
@@ -879,7 +900,7 @@ function baseSpellings(core, english) {
   combos.forEach(c => {
     if (!c.s || seen.has(c.s)) return;
     seen.add(c.s);
-    scored.push({ s: c.s, cost: c.cost, en: englishness(c.s, c.bounds) });
+    scored.push({ s: c.s, cost: c.cost, en: englishness(c.ko, c.koBounds) });
   });
   scored.sort((a, b) => (enWeight(b.en) - enWeight(a.en)) || (a.cost - b.cost) || (a.s.length - b.s.length));
 
