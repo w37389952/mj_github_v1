@@ -311,6 +311,11 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
   font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .04em; margin-bottom: 3px;
 }
 .ai-block p { margin: 0 0 7px; font-size: 12.5px; color: var(--text); line-height: 1.65; }
+.ai-block .ai-sec {
+  font-size: 12.5px; font-weight: 700; color: var(--text);
+  margin: 10px 0 4px; letter-spacing: -.01em;
+}
+.ai-block .ai-sec:first-of-type { margin-top: 2px; }
 .ai-block ul { margin: 0; padding-left: 16px; }
 .ai-block li { font-size: 12.5px; color: var(--text-2); line-height: 1.55; margin-bottom: 3px; }
 .topic.ai .topic-title::before {
@@ -1145,8 +1150,13 @@ const SYS_DAY = `너는 오픈채팅방 대화를 정리하는 편집자다.
 - 짧고 담백한 문어체로 쓴다. 존댓말과 군더더기를 뺀다.
 - 반드시 JSON만 출력한다. 코드블록 표시나 앞뒤 설명을 붙이지 않는다.
 
+줄글로 늘어놓지 말고 대항목과 소항목으로 나눈다. 나중에 그대로 옮겨 적어 공부할 수 있어야 한다.
+- 대항목(heading)은 2~5개. 명사로 끝나는 15자 이내로 쓴다.
+- 소항목(points)은 대항목마다 2~5개. 한 줄에 하나씩, 도구 이름과 구체적인 방법을 담는다.
+
 출력 형식:
-{"day":"이 날 전체를 3~5문장으로","topics":[{"n":1,"title":"명사로 끝나는 20자 이내 제목","summary":"3~5문장 정리","points":["나중에 찾아 쓸 정보"]}]}`;
+{"day":{"sections":[{"heading":"대항목","points":["소항목","소항목"]}]},
+ "topics":[{"n":1,"title":"명사로 끝나는 20자 이내 제목","summary":"2~4문장 정리","points":["나중에 찾아 쓸 정보"]}]}`;
 
 const SYS_MONTH = `너는 오픈채팅방 대화 정리를 한 달 단위로 묶는 편집자다.
 아래는 날짜별 정리다. 이것을 한 달 흐름으로 다시 정리한다.
@@ -1159,7 +1169,8 @@ const SYS_MONTH = `너는 오픈채팅방 대화 정리를 한 달 단위로 묶
 - 반드시 JSON만 출력한다.
 
 출력 형식:
-{"month":"이 달 전체를 5~8문장으로","themes":[{"title":"명사로 끝나는 20자 이내 제목","summary":"3~5문장","days":["2026-08-06"]}]}`;
+{"month":{"sections":[{"heading":"대항목","points":["소항목","소항목"]}]},
+ "themes":[{"title":"명사로 끝나는 20자 이내 제목","summary":"2~4문장","days":["2026-08-06"]}]}`;
 
 // 모델이 앞뒤에 말을 붙이는 경우가 있어 중괄호 범위를 다시 잘라 본다.
 function parseJSON(text) {
@@ -1565,6 +1576,23 @@ function renderSummary(main) {
   main.appendChild(right);
 }
 
+// 줄글로 늘어놓으면 눈에 안 들어온다. 대항목·소항목으로 세워 보여준다.
+// 예전에 문장으로 저장해둔 요약도 있어서 두 모양을 다 받는다.
+function outlineSections(v) {
+  if (!v) return [];
+  if (typeof v === "string") return [{ heading: "", points: v.split(/\n+/).filter(Boolean) }];
+  return (v.sections || []).filter(s => s && (s.heading || (s.points || []).length));
+}
+
+function aiOutline(tag, v) {
+  const b = el("div", "ai-block");
+  b.innerHTML = `<div class="ai-tag">${tag}</div>` + outlineSections(v).map(s =>
+    (s.heading ? `<div class="ai-sec">${esc(s.heading)}</div>` : "") +
+    ((s.points || []).length ? `<ul>${s.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : "")
+  ).join("");
+  return b;
+}
+
 // 오른쪽 남는 폭에 '지금 보고 있는 것'의 정리를 채운다.
 // 요약 카드를 고르면 그 덩어리의 알맹이 발언을, 날짜만 고르면 그 날 개요를 보여준다.
 function renderDigest(d) {
@@ -1584,7 +1612,7 @@ function renderDigest(d) {
   const aiBlock = (tag, body, points) => {
     const b = el("div", "ai-block");
     b.innerHTML = `<div class="ai-tag">${tag}</div>` +
-      body.split(/\n+/).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join("") +
+      String(body || "").split(/\n+/).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join("") +
       (points && points.length ? `<ul>${points.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
     return b;
   };
@@ -1628,7 +1656,7 @@ function renderDigest(d) {
     `전체 ${d.total.toLocaleString()}건 가운데 ${kept}건만 알맹이로 남았어요`));
 
   const dayAI = aiDay(r, d.date);
-  if (dayAI && dayAI.day) box.appendChild(aiBlock("이 날 AI 정리", dayAI.day));
+  if (dayAI && dayAI.day) box.appendChild(aiOutline("이 날 AI 정리", dayAI.day));
   else box.appendChild(el("div", "sub",
     `AI로 정리하면 약 ${dayPayload(d).length.toLocaleString()}자를 보내요. 원문 전체가 아니라 걸러 남은 것만이에요.`));
 
@@ -1960,7 +1988,7 @@ function renderMonth(main) {
       h.appendChild(go);
       card.appendChild(h);
       const body = el("div", "card-body");
-      body.innerHTML = `<div style="font-size:12.5px;line-height:1.65">${esc(s.day)}</div>`;
+      body.appendChild(aiOutline("정리", s.day));
       const titles = d.topics.map(t => (s.topics[t.id] || {}).title).filter(Boolean);
       if (titles.length) {
         body.innerHTML += `<div class="topic-meta" style="margin-top:8px">${
@@ -1979,12 +2007,7 @@ function renderMonth(main) {
 
 function aiMonthBlock(rec) {
   const wrap = el("div");
-  if (rec.month) {
-    const p = el("div", "ai-block");
-    p.innerHTML = `<div class="ai-tag">한 달 흐름</div>` +
-      rec.month.split(/\n+/).filter(Boolean).map(x => `<p>${esc(x)}</p>`).join("");
-    wrap.appendChild(p);
-  }
+  if (rec.month) wrap.appendChild(aiOutline("한 달 흐름", rec.month));
   for (const t of rec.themes || []) {
     const b = el("div", "ai-block");
     b.innerHTML = `<div class="ai-tag">${esc(t.title || "주제")}</div><p>${esc(t.summary || "")}</p>` +
@@ -2159,10 +2182,24 @@ function renderKeeping(sel) {
 
 /* ── 요약 복사 (마크다운) ── */
 function copyDay(d) {
-  const lines = [`## ${fmtDateFull(d.date)} — ${room().name}`, ""];
+  const r = room();
+  const lines = [`## ${fmtDateFull(d.date)} — ${r.name}`, ""];
+
+  // AI 정리가 있으면 그것부터 담는다. 공부하려고 옮겨 적는 게 이 버튼의 쓸모다.
+  const s = aiDay(r, d.date);
+  if (s) {
+    for (const sec of outlineSections(s.day)) {
+      if (sec.heading) lines.push(`### ${sec.heading}`);
+      for (const p of sec.points || []) lines.push(`- ${p}`);
+      lines.push("");
+    }
+  }
+
   for (const t of d.topics) {
-    lines.push(`### ${t.title}  (${t.time}, ${t.users}명)`);
-    for (const b of t.bullets) lines.push(`- ${b}`);
+    const ai = s && s.topics[t.id];
+    lines.push(`### ${ai && ai.title ? ai.title : t.title}  (${t.time}, ${t.users}명)`);
+    if (ai && ai.summary) lines.push(ai.summary, "");
+    for (const b of (ai && ai.points && ai.points.length ? ai.points : t.bullets)) lines.push(`- ${b}`);
     lines.push("");
   }
   if (d.prompts.length) {
