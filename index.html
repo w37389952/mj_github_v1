@@ -202,6 +202,16 @@
   .card .actions {
     flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; align-items: stretch;
   }
+
+  .copy-btn {
+    font: inherit; font-size: 12px; line-height: 1; cursor: pointer;
+    background: none; border: none; padding: 3px 5px; border-radius: 6px;
+    color: var(--ink-faint); opacity: .65;
+  }
+  .copy-btn:hover { opacity: 1; background: var(--accent-soft); }
+  .copy-btn.done { opacity: 1; color: var(--accent); }
+  .name-copy { margin-left: 6px; vertical-align: middle; }
+
   .insta { position: relative; }
   .insta-btn {
     font: inherit; width: 100%; cursor: pointer; background: var(--surface);
@@ -209,33 +219,29 @@
   }
   .insta-panel {
     position: absolute; z-index: 30; right: 0; top: calc(100% + 6px);
-    min-width: 190px; max-width: 260px;
+    min-width: 210px; max-width: 280px; max-height: 340px; overflow-y: auto;
     background: var(--surface); border: 1px solid var(--line);
     border-radius: 12px; padding: 6px; box-shadow: 0 8px 28px rgba(0,0,0,.16);
   }
   .insta-panel[hidden] { display: none; }
-  .insta-panel a {
-    display: flex; align-items: baseline; gap: 8px;
-    padding: 7px 9px; border-radius: 7px;
-    font-size: 13.5px; color: var(--ink); text-decoration: none;
+  .insta-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 2px 4px 2px 5px; border-radius: 7px;
   }
-  .insta-panel a .q {
+  .insta-row:hover { background: var(--accent-soft); }
+  .insta-row a {
+    flex: 1; min-width: 0; padding: 5px 0; font-size: 13.5px;
+    color: var(--ink); text-decoration: none;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .insta-panel a .note {
-    margin-left: auto; flex-shrink: 0; font-size: 11px; color: var(--ink-faint);
+  .insta-row:hover a { color: var(--accent); }
+  .insta-row .note {
+    flex-shrink: 0; font-size: 10.5px; color: var(--ink-faint);
   }
-  .insta-panel a:hover { background: var(--accent-soft); color: var(--accent); }
   .insta-note {
     font-size: 11.5px; color: var(--ink-faint); padding: 6px 9px 2px;
     border-top: 1px solid var(--line); margin-top: 4px;
   }
-  .insta-group {
-    font-size: 11px; font-weight: 700; color: var(--ink-faint);
-    letter-spacing: .04em; padding: 8px 9px 3px;
-  }
-  .insta-group:first-child { padding-top: 3px; }
-  .insta-panel { max-height: 340px; overflow-y: auto; }
 
   .pager {
     display: flex; gap: 6px; justify-content: center; align-items: center;
@@ -391,97 +397,91 @@ function naverMapUrl(place) {
     encodeURIComponent(searchableAddress(place.address) || place.address);
 }
 
-/* ---------- 인스타 검색어 만들기 ----------
+/* ---------- 인스타 계정 아이디 후보 ----------
  * 인스타그램은 계정 검색 API를 공개하지 않아 '이 가게의 계정'을 자동으로
- * 찾아줄 수는 없다. 대신 사람이 직접 쳐보던 검색어 후보를 대신 만들어
- * 한 번에 넘어갈 수 있게 한다.
+ * 찾아줄 수 없다. 대신 가게 주인이 지었을 법한 아이디를 여러 갈래로 만들어
+ * 복사해 쓰도록 한다. 아이디에는 밑줄과 점을 넣지 않는다.
  */
 
-// 상호에 붙는 업종어. 계정명에는 잘 안 들어가므로 검색어에서 뺀다.
+// 상호에 붙는 업종어. 계정명에는 잘 안 들어가므로 뺀다.
 const BIZ_WORDS = [
   "커피숍", "커피", "로스터스", "로스터리", "로스터", "카페", "까페",
   "베이커리", "브레드", "제과점", "제과", "디저트", "티하우스", "찻집",
-  "스튜디오", "하우스", "공방", "키친", "팩토리", "coffee", "cafe", "roasters",
+  "스튜디오", "공방", "키친", "팩토리", "coffee", "cafe", "roasters",
 ];
 
-// 국어의 로마자 표기법(문화체육관광부 고시) 기준 음절 조합표.
-const RR_LEAD = ["g","kk","n","d","tt","r","m","b","pp","s","ss","","j","jj","ch","k","t","p","h"];
-const RR_VOWEL = ["a","ae","ya","yae","eo","e","yeo","ye","o","wa","wae","oe","yo",
-                  "u","wo","we","wi","yu","eu","ui","i"];
-const RR_TAIL = ["","k","k","k","n","n","n","t","l","k","m","l","l","l","p","l","m",
-                 "p","p","t","t","ng","t","t","k","t","p","t"];
-
-// 상호에 자주 쓰이는 외래어. 소리대로 옮기면 원래 철자와 어긋나므로
-// (하트 → hateu, 실제로는 heart) 먼저 제 철자로 바꿔둔다.
+// 자주 쓰이는 외래어. 소리대로 옮기면 철자가 어긋나므로 먼저 바꾼다.
 const LOANWORDS = {
-  // 음식·메뉴
-  "피자": "pizza", "파스타": "pasta", "버거": "burger", "샌드위치": "sandwich",
-  "베이글": "bagel", "쿠키": "cookie", "케이크": "cake", "타르트": "tart",
-  "크로플": "croffle", "와플": "waffle", "도넛": "donut", "젤라또": "gelato",
-  "푸딩": "pudding", "스콘": "scone", "샐러드": "salad", "스테이크": "steak",
-  "치킨": "chicken", "누들": "noodle", "라멘": "ramen", "커리": "curry",
-  "푸드": "food", "밀크": "milk", "티": "tea", "라떼": "latte", "에스프레소": "espresso",
-  // 색·자연
-  "그린": "green", "블루": "blue", "화이트": "white", "블랙": "black",
-  "레드": "red", "핑크": "pink", "옐로우": "yellow", "브라운": "brown",
-  "문": "moon", "스타": "star", "선": "sun", "스카이": "sky", "클라우드": "cloud",
-  "가든": "garden", "포레스트": "forest", "리버": "river", "레이크": "lake",
+  "피자": "pizza", "파스타": "pasta", "버거": "burger", "베이글": "bagel",
+  "쿠키": "cookie", "케이크": "cake", "와플": "waffle", "도넛": "donut",
+  "젤라또": "gelato", "스콘": "scone", "샐러드": "salad", "치킨": "chicken",
+  "라멘": "ramen", "누들": "noodle", "푸드": "food", "밀크": "milk",
+  "라떼": "latte", "브루어리": "brewery", "하우스": "house", "홈": "home",
+  "룸": "room", "숍": "shop", "스토어": "store", "마켓": "market",
+  "랩": "lab", "클럽": "club", "플레이스": "place", "스페이스": "space",
+  "테이블": "table", "스푼": "spoon", "그린": "green", "블루": "blue",
+  "화이트": "white", "블랙": "black", "레드": "red", "핑크": "pink",
+  "문": "moon", "스타": "star", "가든": "garden", "포레스트": "forest",
   "레몬": "lemon", "체리": "cherry", "베리": "berry", "피치": "peach",
-  "올리브": "olive", "허브": "hub", "로즈": "rose", "데이지": "daisy",
-  // 동물
-  "퍼그": "pug", "베어": "bear", "래빗": "rabbit", "버니": "bunny",
-  "캣": "cat", "독": "dog", "폭스": "fox", "울프": "wolf", "버드": "bird",
-  "펭귄": "penguin", "래빗": "rabbit", "타이거": "tiger", "웨일": "whale",
-  // 장소·사물
-  "하우스": "house", "홈": "home", "룸": "room", "숍": "shop", "스토어": "store",
-  "마켓": "market", "랩": "lab", "클럽": "club", "스탠드": "stand",
-  "코너": "corner", "플레이스": "place", "스페이스": "space", "스튜디오": "studio",
-  "테이블": "table", "스푼": "spoon", "포크": "fork", "컵": "cup", "잔": "jan",
-  "브루어리": "brewery", "팩토리": "factory", "워크숍": "workshop",
-  // 시간·느낌
-  "하트": "heart", "데이": "day", "나이트": "night", "모닝": "morning",
-  "슬로우": "slow", "굿": "good", "베스트": "best", "리틀": "little",
-  "빅": "big", "뉴": "new", "올드": "old", "소울": "soul", "드림": "dream",
+  "하트": "heart", "허브": "hub", "퍼그": "pug", "베어": "bear",
+  "래빗": "rabbit", "버니": "bunny", "폭스": "fox", "데이": "day",
+  "모닝": "morning", "슬로우": "slow", "리틀": "little", "드림": "dream",
+  "소울": "soul", "굿": "good", "뉴": "new",
 };
 
-/** 한글을 로마자로 옮긴다. 표시 이름을 영문으로만 써둔 계정을 찾기 위한 후보다.
- *
- * 음운 변화(자음동화 등)까지는 반영하지 않는 근사값이다. 외래어는 위 표로
- * 먼저 걸러내지만, 표에 없는 외래어는 여전히 소리대로 옮겨진다.
- */
-function applyLoanwords(text) {
-  // 긴 단어부터 바꿔야 '베리'가 '블루베리'를 쪼개지 않는다.
-  Object.entries(LOANWORDS)
-    .sort((a, b) => b[0].length - a[0].length)
-    .forEach(([ko, en]) => {
-      text = text.replace(new RegExp(ko, "g"), ` ${en} `);
-    });
-  return text.replace(/\s+/g, " ").trim();
-}
+// 음절을 이루는 자모의 로마자 표기. 첫 값이 국어의 로마자 표기법 기준이고
+// 나머지는 사람들이 아이디에 실제로 자주 쓰는 변형이다.
+const LEAD_ALT = [
+  ["g","k"], ["kk","gg"], ["n"], ["d","t"], ["tt","dd"], ["r","l"], ["m"],
+  ["b","p"], ["pp","bb"], ["s"], ["ss"], [""], ["j","z"], ["jj"], ["ch","c"],
+  ["k"], ["t"], ["p","f"], ["h"],
+];
+const VOWEL_ALT = [
+  ["a"], ["ae","ai"], ["ya"], ["yae"], ["eo","u","o"], ["e"], ["yeo","yo"],
+  ["ye"], ["o","oh"], ["wa"], ["wae"], ["oe","we"], ["yo"], ["u","oo"],
+  ["wo","weo"], ["we"], ["wi","ui"], ["yu"], ["eu","u",""], ["ui","i"],
+  ["i","ee"],
+];
+const TAIL_ALT = [
+  [""], ["k","g"], ["k"], ["k"], ["n"], ["n"], ["n"], ["t","s"], ["l","r"],
+  ["k"], ["m"], ["l"], ["l"], ["l"], ["p"], ["l"], ["m"], ["p","b"], ["p"],
+  ["t","s"], ["t"], ["ng"], ["t"], ["t"], ["k"], ["t"], ["p"], ["t"],
+];
 
-function romanize(text) {
-  let out = "";
-  for (const ch of text) {
-    const code = ch.charCodeAt(0) - 0xac00;
-    if (code < 0 || code > 11171) {
-      out += ch;
-      continue;
-    }
-    out += RR_LEAD[Math.floor(code / 588)]
-         + RR_VOWEL[Math.floor((code % 588) / 28)]
-         + RR_TAIL[code % 28];
+const MAX_BASES = 6;
+
+/** 한 음절이 어떻게 적힐 수 있는지 후보를 낸다. */
+function syllableSpellings(ch) {
+  const code = ch.charCodeAt(0) - 0xac00;
+  if (code < 0 || code > 11171) {
+    const plain = ch.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return plain ? [plain] : [];
   }
-  return out.replace(/\s+/g, " ").trim();
+  const lead = LEAD_ALT[Math.floor(code / 588)];
+  const vowel = VOWEL_ALT[Math.floor((code % 588) / 28)];
+  const tail = TAIL_ALT[code % 28];
+  const out = [];
+  lead.forEach(l => vowel.forEach(v => tail.forEach(t => {
+    const s = l + v + t;
+    if (s && !out.includes(s)) out.push(s);
+  })));
+  return out;
 }
 
-/** 계정 아이디로 쓸 법한 영문 표기를 여러 갈래로 만든다.
- *
- * 아이디는 영문·숫자·밑줄·마침표만 쓸 수 있으므로 띄어쓰기를 없앤 형태로 뽑는다.
- * 어느 철자를 골랐을지는 알 수 없으니(퍼그 → pug일 수도 peogeu일 수도 있다)
- * 외래어 표를 적용한 것과 소리대로 옮긴 것을 모두 만들고, 한국어에서 자음 뒤에
- * 붙는 '으'(eu)를 뺀 형태도 함께 넣는다.
- */
-/** 상호를 외래어 단위로 쪼갠다. "퍼그피자" → ["퍼그", "피자"] */
+/** 문자열을 여러 철자로 옮긴다. 표준 표기가 항상 첫 번째에 온다. */
+function spellVariants(text) {
+  let combos = [""];
+  for (const ch of text) {
+    const options = syllableSpellings(ch);
+    if (!options.length) continue;
+    combos = combos.flatMap(prefix => options.map(o => prefix + o));
+    // 음절마다 갈래가 늘어나므로 그때그때 잘라낸다. 앞쪽이 표준 표기다.
+    if (combos.length > MAX_BASES * 4) combos = combos.slice(0, MAX_BASES * 4);
+  }
+  return [...new Set(combos)].filter(Boolean);
+}
+
+/** 상호를 외래어 조각과 한글 조각으로 나눈다. */
 function segment(core) {
   const keys = Object.keys(LOANWORDS).sort((a, b) => b.length - a.length);
   const segs = [];
@@ -503,63 +503,65 @@ function segment(core) {
   return segs;
 }
 
-/** 한 조각을 어떻게 적었을지 후보를 낸다. 많아야 세 갈래. */
-function spellings(seg) {
-  const out = [];
-  const push = s => {
-    s = (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (s && !out.includes(s)) out.push(s);
-  };
-  if (seg.en) push(seg.en);                      // 표에 있는 외래어 철자
-  const rr = romanize(seg.ko);
-  push(rr);                                      // 소리대로 옮긴 것
-  push(rr.replace(/eu/g, ""));                   // 자음 뒤 '으'를 뺀 것
-  return out.slice(0, 3);
-}
+function baseSpellings(core, english) {
+  const perSegment = segment(core).map(seg => {
+    const out = [];
+    if (seg.en) out.push(seg.en);
+    spellVariants(seg.ko).forEach(v => out.includes(v) || out.push(v));
+    return out.slice(0, 4);
+  }).filter(s => s.length);
 
-/** 계정 아이디로 쓸 법한 영문 표기를 여러 갈래로 만든다.
- *
- * 아이디는 영문·숫자·밑줄·마침표만 쓸 수 있어 띄어쓰기 없는 형태로 뽑는다.
- * 가게 주인이 어느 철자를 골랐을지는 알 수 없으므로(퍼그 → pug일 수도,
- * peogeu일 수도 있다) 조각마다 갈래를 내고 조합한다.
- *   퍼그피자 → pugpizza / pugpija / peogeupizza / peogpizza / peogpija ...
- */
-function handleCandidates(core, english) {
-  const segs = segment(core).map(spellings).filter(s => s.length);
-  const combos = segs.reduce(
-    (acc, choices) => acc.flatMap(prefix => choices.map(c => prefix + c)),
+  let combos = perSegment.reduce(
+    (acc, choices) => acc.flatMap(p => choices.map(c => p + c)).slice(0, MAX_BASES * 4),
     [""]
   );
-
-  const handles = [];
-  const push = h => {
-    if (h && h.length >= 3 && h.length <= 30 && !handles.includes(h)) handles.push(h);
-  };
-  if (english) push(english.toLowerCase().replace(/[^a-z0-9]/g, ""));
-  combos.forEach(push);
-  // 두 단어 이상이면 밑줄로 끊어 쓰는 계정도 흔하다.
-  if (segs.length > 1) {
-    const first = combos[0];
-    const parts = segs.map(s => s[0]);
-    push(parts.join("_"));
-    if (parts.length > 1 && first) push(parts.join("."));
+  combos = combos.filter(Boolean);
+  if (english) {
+    const e = english.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (e) combos = [e, ...combos.filter(c => c !== e)];
   }
-  return handles.slice(0, 10);
+  return [...new Set(combos)].slice(0, MAX_BASES);
 }
 
-// 괄호 안 법정동을 뽑는다. "…, 1층 (도화동)" → "도화동"
-function neighborhoodOf(address) {
-  const m = address.match(/\(([^)]*동[0-9]*가?)\)\s*$/);
-  if (!m) return "";
-  return m[1].split(",").pop().trim();
-}
+/* 계정 아이디 뒤에 동네 이름이 붙는 것은 그 동네가 이름값을 할 때다.
+ * 법정동으로 들어오는 값을 사람들이 실제로 쓰는 표기로 옮긴다. */
+const HOTSPOTS = {
+  "연남동": ["yeonnam"], "연희동": ["yeonhui", "yeonhee"],
+  "성수동": ["seongsu", "sungsu"], "서교동": ["hongdae"], "동교동": ["hongdae"],
+  "망원동": ["mangwon"], "합정동": ["hapjeong"], "상수동": ["sangsu"],
+  "익선동": ["ikseon"], "삼청동": ["samcheong"], "가회동": ["bukchon"],
+  "소격동": ["bukchon"], "안국동": ["anguk"],
+  "체부동": ["seochon"], "통의동": ["seochon"], "누상동": ["seochon"],
+  "누하동": ["seochon"], "옥인동": ["seochon"], "효자동": ["seochon"],
+  "창성동": ["seochon"], "필운동": ["seochon"],
+  "을지로": ["euljiro"], "을지로2가": ["euljiro"], "을지로3가": ["euljiro"],
+  "을지로4가": ["euljiro"], "충무로": ["chungmuro"],
+  "한남동": ["hannam"], "이태원동": ["itaewon"],
+  "용산동2가": ["hbc", "haebang", "haebangchon"],
+  "후암동": ["huam"], "한강로2가": ["yongsan"], "한강로3가": ["yongsan"],
+  "신사동": ["garosugil", "sinsa"], "압구정동": ["apgujeong"],
+  "청담동": ["cheongdam"], "역삼동": ["yeoksam"], "논현동": ["nonhyeon"],
+  "삼성동": ["samseong"], "대치동": ["daechi"],
+  "서초동": ["seocho"], "반포동": ["banpo"], "방배동": ["bangbae"],
+  "성북동": ["seongbuk"], "혜화동": ["daehangno", "hyehwa"],
+  "문래동": ["mullae"], "문래동3가": ["mullae"], "여의도동": ["yeouido"],
+  "송파동": ["songpa"], "잠실동": ["jamsil"], "석촌동": ["seokchon"],
+  "봉천동": ["sharosu"], "공덕동": ["gongdeok"], "신촌동": ["sinchon"],
+  "창천동": ["sinchon"], "대흥동": ["daeheung"], "염리동": ["yeomni"],
+  "부암동": ["buam"], "평창동": ["pyeongchang"], "성산동": ["seongsan"],
+  "구의동": ["guui"], "자양동": ["ttukseom"], "화양동": ["konkuk"],
+};
 
-function stripBizWords(text) {
-  let out = text;
-  BIZ_WORDS.forEach(w => {
-    out = out.replace(new RegExp(w, "gi"), " ");
-  });
-  return out.replace(/\s+/g, " ").trim();
+function hotspotTokens(address) {
+  const m = address.match(/\(([^)]*)\)\s*$/);
+  const inside = m ? m[1].split(",").map(s => s.trim()) : [];
+  for (const name of inside) {
+    if (HOTSPOTS[name]) return HOTSPOTS[name];
+    // "성수동1가"처럼 뒤에 가지가 붙는 경우
+    const base = name.replace(/\d+가$/, "");
+    if (HOTSPOTS[base]) return HOTSPOTS[base];
+  }
+  return [];
 }
 
 // 업태값은 docs/data-source-findings.md의 실측 목록을 따른다.
@@ -567,45 +569,45 @@ const CAFE_LIKE = new Set([
   "커피숍", "다방", "전통찻집", "떡카페", "과자점", "아이스크림", "까페", "키즈카페",
 ]);
 function isCafeLike(place) {
-  return CAFE_LIKE.has(place.bizType) || /카페|커피|베이커리|디저트/.test(place.name);
+  return CAFE_LIKE.has(place.bizType) || /카페|커피|베이커리|디저트|로스터/.test(place.name);
 }
 
-function instagramQueries(place) {
-  const raw = place.name;
+function stripBizWords(text) {
+  let out = text;
+  BIZ_WORDS.forEach(w => { out = out.replace(new RegExp(w, "gi"), " "); });
+  return out.replace(/\s+/g, " ").trim();
+}
 
-  // 괄호 안에 로마자가 있으면 영문 상호로 본다. "탁트(TAKT) 커피" → "TAKT"
+/** 계정 아이디 후보. 앞쪽일수록 그럴듯한 순서다. */
+function instagramHandles(place) {
+  const raw = place.name;
   const paren = raw.match(/[（(]([^）)]+)[）)]/);
   const english = paren && /[A-Za-z]/.test(paren[1]) ? paren[1].trim() : "";
 
   let core = raw.replace(/[（(][^）)]*[）)]/g, " ");
-  // 지점 표기는 계정명에 없는 경우가 많다. 이름이 충분히 길 때만 떼어낸다.
   core = core.replace(/\s*[^\s]{0,10}(본점|직영점|\d+호점|점)\s*$/, " ");
   core = stripBizWords(core);
   if (!core) core = stripBizWords(raw) || raw;
 
-  const hood = neighborhoodOf(place.address);
+  const bases = baseSpellings(core, english);
+  const hoods = hotspotTokens(place.address);
+  const cats = isCafeLike(place) ? ["cafe", "coffee"] : ["room", "eatery"];
+
   const out = [];
-  const add = (q, note, group) => {
-    q = (q || "").trim();
-    if (q && !out.some(x => x.label === q)) out.push({ label: q, note, group });
+  const push = (handle, note) => {
+    if (handle.length < 3 || handle.length > 30) return;
+    if (out.some(x => x.handle === handle)) return;
+    out.push({ handle, note });
   };
 
-  // 아이디 후보를 먼저. 계정을 직접 찾는 것이 목적이다.
-  handleCandidates(core, english).forEach(h => add(h, "", "아이디 후보"));
-
-  // 표시 이름이나 게시물이 한글인 계정을 위한 보조 검색.
-  add(core, "한글 상호", "이름으로 검색");
-  if (hood) add(`${core} ${hood}`, "동네 포함", "이름으로 검색");
-  add(raw, "원본 상호", "이름으로 검색");
-
-  return out.map(q => ({
-    ...q,
-    // 아이디 후보는 그 계정으로 바로 간다. 없으면 인스타가 '페이지 없음'을
-    // 보여주므로, 계정이 있는지 빠르게 확인할 수 있다.
-    url: q.group === "아이디 후보"
-      ? `https://www.instagram.com/${encodeURIComponent(q.label)}/`
-      : "https://www.instagram.com/explore/search/keyword/?q=" + encodeURIComponent(q.label),
-  }));
+  bases.forEach(b => push(b, ""));
+  hoods.forEach(h => bases.slice(0, 2).forEach(b => push(b + h, "지역")));
+  cats.forEach(c => bases.slice(0, 2).forEach(b => push(b + c, "업종")));
+  if (bases[0]) {
+    ["seoul", "kr", "official"].forEach(g => push(bases[0] + g, "기타"));
+    if (isCafeLike(place)) push(bases[0] + "kafe", "변형");
+  }
+  return out.slice(0, 20);
 }
 
 // 면적은 제곱미터로 들어온다. 평수가 더 직관적이라 함께 보여준다.
@@ -782,28 +784,70 @@ function buildInstaMenu(card, place) {
 }
 
 function fillInstaPanel(panel, place) {
-  let lastGroup = null;
-  instagramQueries(place).forEach(q => {
-    if (q.group !== lastGroup) {
-      const h = document.createElement("p");
-      h.className = "insta-group";
-      h.textContent = q.group;
-      panel.appendChild(h);
-      lastGroup = q.group;
-    }
-    const a = document.createElement("a");
-    a.href = q.url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.innerHTML = `<span class="q"></span><span class="note"></span>`;
-    a.querySelector(".q").textContent = q.label;
-    a.querySelector(".note").textContent = q.note;
-    panel.appendChild(a);
+  instagramHandles(place).forEach(({ handle, note }) => {
+    const row = document.createElement("div");
+    row.className = "insta-row";
+    row.innerHTML = `
+      <a target="_blank" rel="noopener"><span class="q"></span></a>
+      <span class="note"></span>`;
+    const link = row.querySelector("a");
+    link.href = `https://www.instagram.com/${encodeURIComponent(handle)}/`;
+    row.querySelector(".q").textContent = handle;
+    row.querySelector(".note").textContent = note;
+    row.appendChild(copyButton(handle));
+    panel.appendChild(row);
   });
   const note = document.createElement("p");
   note.className = "insta-note";
-  note.textContent = "아이디는 계정으로, 나머지는 검색 결과로 이동합니다";
+  note.textContent = "누르면 그 계정으로, 📋는 아이디 복사";
   panel.appendChild(note);
+}
+
+/** 클립보드에 넣는다. 최신 API가 막히면 예전 방식으로 한 번 더 시도한다. */
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) { /* 아래 예전 방식으로 */ }
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+/** 눌러서 클립보드에 복사하는 버튼. 복사되면 잠깐 표시가 바뀐다. */
+function copyButton(text, extraClass = "") {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = `copy-btn ${extraClass}`.trim();
+  btn.textContent = "📋";
+  btn.title = "복사";
+  btn.setAttribute("aria-label", `${text} 복사`);
+  btn.addEventListener("click", async e => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (await copyText(text)) {
+      btn.textContent = "✓";
+      btn.classList.add("done");
+    } else {
+      btn.textContent = "!";  // 클립보드가 막힌 환경
+    }
+    setTimeout(() => {
+      btn.textContent = "📋";
+      btn.classList.remove("done");
+    }, 1200);
+  });
+  return btn;
 }
 
 /* ---------- 렌더링 ---------- */
@@ -944,6 +988,7 @@ function render() {
           </div>
         </div>`;
       card.querySelector(".name").textContent = p.name;
+      card.querySelector(".name").appendChild(copyButton(p.name, "name-copy"));
       card.querySelector(".addr").textContent = p.address;
       card.querySelector(".detail").textContent = detailLine(p);
       if (p.bizType) card.querySelector(".biz-badge").textContent = p.bizType;
