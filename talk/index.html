@@ -993,7 +993,7 @@ function apiError(data, status) {
   return err;
 }
 
-async function askClaude(system, user) {
+async function claudeFetch(body) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -1003,19 +1003,27 @@ async function askClaude(system, user) {
       // 브라우저에서 직접 부르려면 이 헤더가 필요하다
       "anthropic-dangerous-direct-browser-access": "true",
     },
-    body: JSON.stringify({
-      model: AI.model || AI_DEFAULT_MODEL.claude,
-      max_tokens: 8000,
-      system,
-      // 요약은 깊이 생각할 일이 아니라서 낮은 단계로 둔다. 값도 그만큼 덜 나간다.
-      output_config: { effort: "low" },
-      messages: [{ role: "user", content: user }],
-    }),
+    body: JSON.stringify(body),
   });
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw apiError(data, res.status);
-  if (data.stop_reason === "refusal") throw new Error("모델이 이 내용의 요약을 거절했어요.");
-  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+  return { ok: res.ok, status: res.status, data: await res.json().catch(() => null) };
+}
+
+async function askClaude(system, user) {
+  const base = {
+    model: AI.model || AI_DEFAULT_MODEL.claude,
+    max_tokens: 8000,
+    system,
+    messages: [{ role: "user", content: user }],
+  };
+  // 요약은 깊이 생각할 일이 아니라서 낮은 단계로 둔다. 값도 그만큼 덜 나간다.
+  // 다만 값싼 옛 모델은 이 항목 자체를 안 받으므로, 거절당하면 빼고 다시 보낸다.
+  let r = await claudeFetch({ ...base, output_config: { effort: "low" } });
+  if (!r.ok && r.status === 400 && /output_config|effort/i.test(r.data?.error?.message || "")) {
+    r = await claudeFetch(base);
+  }
+  if (!r.ok) throw apiError(r.data, r.status);
+  if (r.data.stop_reason === "refusal") throw new Error("모델이 이 내용의 요약을 거절했어요.");
+  return (r.data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
 }
 
 async function geminiFetch(version, model, body) {
@@ -1319,8 +1327,7 @@ function openAISettings() {
         <select id="aiModel" style="flex:1"></select>
         <button class="btn" id="aiLoad">키 확인 · 모델 불러오기</button>
       </div>
-      <div class="help">키를 넣고 이 버튼을 누르면 키가 살아있는지 바로 확인되고, 쓸 수 있는 모델이 채워져요.
-        요약은 가벼운 작업이라 값싼 모델로도 충분해요.</div>
+      <div class="help" id="modelHelp"></div>
     </div>
     <div class="sheet-foot">
       <button class="btn" id="aiClear">키 지우기</button>
@@ -1354,11 +1361,18 @@ function openAISettings() {
     // 저장해둔 모델이 목록에 없으면 맨 위(추천)가 그대로 선택된 채로 남는다
     if (AI.model && items.includes(AI.model)) modelSel.value = AI.model;
   };
+  const mHelp = sheet.querySelector("#modelHelp");
   const syncHelp = () => {
     help.innerHTML = prov.value === "gemini"
       ? `Google AI Studio(aistudio.google.com)의 <b>Get API key</b>에서 발급해요.`
       : `Anthropic 콘솔(console.anthropic.com)의 <b>Settings → API keys</b>에서 발급해요.
          용도별로 여러 개 만들어 두면 하나만 따로 폐기할 수 있어요.`;
+    // 모델에 따라 값이 몇 배씩 차이 난다. 고르기 전에 알고 골라야 한다.
+    mHelp.innerHTML = prov.value === "claude"
+      ? `키를 넣으면 쓸 수 있는 모델이 채워져요. <b>값 차이가 큽니다</b> — 100만 토큰당 대략
+         <b>Haiku</b> 입력 $1 · 출력 $5, <b>Sonnet</b> $2 · $10, <b>Opus</b> $5 · $25.
+         요약은 가벼운 작업이라 <b>Haiku로도 충분</b>해요. 정확한 값은 콘솔 가격표에서 확인하세요.`
+      : `키를 넣으면 쓸 수 있는 모델이 채워져요. 요약은 가벼운 작업이라 값싼 모델로도 충분해요.`;
   };
 
   prov.value = AI.provider;
