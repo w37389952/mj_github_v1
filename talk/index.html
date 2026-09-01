@@ -276,6 +276,50 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
 .note li { margin-bottom: 3px; }
 .note code { background: var(--line-soft); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
 
+/* AI 요약 설정 */
+#modal {
+  position: fixed; inset: 0; background: rgba(16,20,30,.42); z-index: 60;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+#modal[hidden] { display: none; }
+.sheet {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(16,20,30,.22); width: 100%; max-width: 520px;
+  max-height: 86vh; overflow-y: auto; padding: 20px 22px;
+}
+.sheet h2 { margin: 0 0 4px; font-size: 17px; letter-spacing: -.02em; }
+.sheet .lead { margin: 0 0 16px; font-size: 12.5px; color: var(--text-2); }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 700; color: var(--text-2); margin-bottom: 5px; }
+.field input, .field select {
+  width: 100%; border: 1px solid var(--line); background: var(--panel-2);
+  border-radius: 8px; padding: 8px 11px; font-size: 13px; color: var(--text); font-family: inherit;
+}
+.field input:focus, .field select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.field .help { font-size: 11.5px; color: var(--text-3); margin-top: 5px; line-height: 1.5; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row .btn { flex: none; }
+.sheet-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.warn-box {
+  background: var(--warn-soft); color: var(--warn); border-radius: 8px;
+  padding: 10px 12px; font-size: 12px; line-height: 1.55; margin-bottom: 16px;
+}
+
+/* AI 정리 결과 */
+.ai-block { border-left: 2px solid var(--accent); padding-left: 11px; margin-bottom: 14px; }
+.ai-block .ai-tag {
+  font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .04em; margin-bottom: 3px;
+}
+.ai-block p { margin: 0 0 7px; font-size: 12.5px; color: var(--text); line-height: 1.65; }
+.ai-block ul { margin: 0; padding-left: 16px; }
+.ai-block li { font-size: 12.5px; color: var(--text-2); line-height: 1.55; margin-bottom: 3px; }
+.topic.ai .topic-title::before {
+  content: "AI"; font-size: 9px; font-weight: 800; color: var(--accent);
+  background: var(--accent-soft); border-radius: 3px; padding: 1px 4px; margin-right: 5px; vertical-align: 1px;
+}
+.spin { display: inline-block; animation: sp 1s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
 #toast {
   position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(14px);
   background: var(--text); color: var(--bg); padding: 8px 15px; border-radius: 8px;
@@ -295,11 +339,13 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
     <div class="top-row">
       <div class="brand"><span class="dot"></span>단톡 정리함</div>
       <div class="rooms" id="rooms"></div>
+      <button class="btn" id="aiBtn">AI 요약 설정</button>
       <button class="btn primary" id="addBtn">+ 대화 불러오기</button>
     </div>
     <div class="views" id="views">
       <button class="view-tab on" data-view="summary">요약</button>
       <button class="view-tab" data-view="vault">자료함</button>
+      <button class="view-tab" data-view="month">월간</button>
       <button class="view-tab" data-view="search">검색</button>
     </div>
   </header>
@@ -307,6 +353,7 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
 </div>
 <input type="file" id="fileInput" accept=".txt,.csv" multiple hidden>
 <div id="toast"></div>
+<div id="modal" hidden><div class="sheet" id="sheet"></div></div>
 
 <script>
 "use strict";
@@ -651,6 +698,47 @@ function snippet(t, n) {
 // 카테고리 이름('자동화 · 유튜브')만으로는 무슨 얘기였는지 알 수 없다.
 // 덩어리를 대표하는 한 문장을 실제 대화에서 뽑아 제목으로 쓴다. 질문이 있으면
 // 질문이 곧 주제이므로 그것을 먼저 고른다.
+// 어절 끝에 붙는 조사. 떼어내야 '자동화를'과 '자동화가'가 같은 말로 세어진다.
+const RE_JOSA = /(으로서|으로써|이라고|라고|에서는|에서도|에게서|한테서|으로는|이라는|라는|에서|에게|한테|보다|처럼|까지|부터|이랑|하고|이며|으로|만큼|조차|마저|밖에|따라|와의|과의|의|을|를|이|가|은|는|에|도|만|로|와|과|랑|께|요)$/;
+// 서술어로 끝나는 어절은 명사가 아니므로 제목 후보에서 뺀다.
+const RE_YONGEON = /(습니다|합니다|했어요|하는데|해요|하죠|한다|하네|하는|해서|하고|하면|되요|돼요|되는|된다|있어요|있는|없어요|없는|같아요|같은|였어요|이에요|예요|거든요|네요|더라구요|더라고요|나요|까요|는데|은데|어요|아요|았어|었어|드려요|주세요|드립니다|봤어요|봅니다)$/;
+const STOPWORDS = new Set([
+  "그냥","진짜","정말","근데","그런데","그래서","그리고","하지만","저는","제가","우리","이거","그거","저거",
+  "지금","오늘","어제","내일","이번","저번","다들","여기","저기","거기","뭔가","혹시","한번","처음","마지막",
+  "얘기","이야기","사람","사람들","분들","때문","경우","정도","생각","감사","안녕","네네","진행","가능",
+  "여러분","자기","자신","이런","저런","그런","무슨","어떤","이제","아직","다시","조금","많이","계속",
+  // 관형형은 명사가 아니라 꾸미는 말이라 제목에 들어가면 어색하다
+  "필요한","가능한","좋은","많은","다른","같은","새로운","중요한","대한","위한","어려운","쉬운",
+  "빠른","느린","작은","비슷한","확실한","간단한","괜찮은","어디","언제","누가","어떻게","아주","너무","매우",
+]);
+
+// 제목은 '단어로 끝나는 한 줄'이어야 읽자마자 무슨 얘긴지 잡힌다.
+// 덩어리에서 자주·여럿이 쓴 명사를 뽑아 이어 붙인다.
+function keyphrase(items) {
+  const count = new Map();
+  const who = new Map();
+  for (const m of items) {
+    const boost = /[?？]/.test(m.text) ? 2 : 1;   // 질문에 나온 말이 주제어일 확률이 높다
+    for (const rawWord of m.text.replace(RE_URL, " ").split(/[\s,.!?~"'()\[\]{}<>·…]+/)) {
+      let w = rawWord.replace(/[^가-힣A-Za-z0-9]/g, "");
+      if (RE_YONGEON.test(w)) continue;
+      w = w.replace(RE_JOSA, "");
+      if (w.length < 2 || w.length > 10) continue;
+      if (STOPWORDS.has(w)) continue;
+      if (/^\d+$/.test(w)) continue;
+      count.set(w, (count.get(w) || 0) + boost);
+      if (!who.has(w)) who.set(w, new Set());
+      who.get(w).add(m.user);
+    }
+  }
+  const ranked = [...count.entries()]
+    .map(([w, n]) => [w, n + (who.get(w).size - 1)])   // 여러 사람이 쓴 말에 힘을 준다
+    .filter(([, n]) => n >= 2)
+    .sort((a, b) => b[1] - a[1]);
+  if (ranked.length < 2) return null;
+  return ranked.slice(0, 3).map(e => e[0]).join(" · ");
+}
+
 function sentences(t) {
   return t.replace(RE_URL, " ").split(/(?<=[.!?？。])\s+|\n+/)
     .map(s => s.replace(/\s+/g, " ").trim()).filter(Boolean);
@@ -723,7 +811,8 @@ function buildTopics(dayMsgs, all) {
     for (const m of items) for (const t of m.topics) counts.set(t, (counts.get(t) || 0) + 1);
     const labels = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(e => e[0]);
 
-    const title = headline(items);
+    // 명사구가 안 잡히는 짧은 덩어리는 원문 한 문장으로 대신한다.
+    const title = keyphrase(items) || headline(items);
 
     const bullets = [...items].sort((a, b) => b.score - a.score).slice(0, 4)
       .sort((a, b) => a.i - b.i).map(m => snippet(m.text, 74));
@@ -779,17 +868,39 @@ function analyze(room) {
    3. 저장 (IndexedDB — 대화 파일이 커도 견딘다)
    ══════════════════════════════════════════════════════════ */
 
-const DB_NAME = "dantok-organizer", STORE = "rooms";
+const DB_NAME = "dantok-organizer", STORE = "rooms", SUMS = "summaries";
 let dbp = null;
 function db() {
   if (dbp) return dbp;
   dbp = new Promise((res, rej) => {
-    const r = indexedDB.open(DB_NAME, 1);
-    r.onupgradeneeded = () => r.result.createObjectStore(STORE, { keyPath: "id" });
+    const r = indexedDB.open(DB_NAME, 2);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE, { keyPath: "id" });
+      if (!d.objectStoreNames.contains(SUMS)) d.createObjectStore(SUMS, { keyPath: "id" });
+    };
     r.onsuccess = () => res(r.result);
     r.onerror = () => rej(r.error);
   });
   return dbp;
+}
+
+// AI 요약 결과. id는 "방id|2026-08-06" 또는 월 요약이면 "방id|2026-08"
+async function sumGetAll() {
+  try {
+    const d = await db();
+    return await new Promise((res, rej) => {
+      const q = d.transaction(SUMS).objectStore(SUMS).getAll();
+      q.onsuccess = () => res(q.result || []);
+      q.onerror = () => rej(q.error);
+    });
+  } catch (_) { return []; }
+}
+async function sumPut(rec) {
+  try {
+    const d = await db();
+    d.transaction(SUMS, "readwrite").objectStore(SUMS).put(rec);
+  } catch (_) {}
 }
 async function dbAll() {
   try {
@@ -818,6 +929,186 @@ async function dbDel(id) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   3.5 AI 요약 (선택 기능)
+   키는 이 브라우저에만 저장된다. 코드에도, 저장소에도 들어가지 않는다.
+   여기서만 대화가 바깥으로 나가므로, 보내는 것은 걸러 남긴 알맹이뿐이다.
+   ══════════════════════════════════════════════════════════ */
+
+const AI_STORE = "dantok-ai";
+const AI = { provider: "claude", key: "", model: "claude-opus-5" };
+const AI_DEFAULT_MODEL = { claude: "claude-opus-5", gemini: "gemini-2.5-flash" };
+
+function loadAI() {
+  try { Object.assign(AI, JSON.parse(localStorage.getItem(AI_STORE) || "{}")); } catch (_) {}
+}
+function saveAI() {
+  try { localStorage.setItem(AI_STORE, JSON.stringify(AI)); } catch (_) {}
+}
+const aiReady = () => !!(AI.key || "").trim();
+
+function apiError(data, status) {
+  const msg = (data && (data.error?.message || data.message)) || "";
+  if (status === 401 || status === 403) return "API 키가 맞지 않아요. 설정에서 다시 확인해 주세요.";
+  if (status === 429) return "요청이 잠시 몰렸어요. 조금 뒤에 다시 시도해 주세요.";
+  if (status === 400 && /model/i.test(msg)) return "모델 이름이 맞지 않아요. 설정에서 '모델 불러오기'를 눌러 골라 주세요.";
+  return `요약에 실패했어요 (${status}) ${msg}`.trim();
+}
+
+async function askClaude(system, user) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": AI.key.trim(),
+      "anthropic-version": "2023-06-01",
+      // 브라우저에서 직접 부르려면 이 헤더가 필요하다
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: AI.model || AI_DEFAULT_MODEL.claude,
+      max_tokens: 8000,
+      system,
+      // 요약은 깊이 생각할 일이 아니라서 낮은 단계로 둔다. 값도 그만큼 덜 나간다.
+      output_config: { effort: "low" },
+      messages: [{ role: "user", content: user }],
+    }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(apiError(data, res.status));
+  if (data.stop_reason === "refusal") throw new Error("모델이 이 내용의 요약을 거절했어요.");
+  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+}
+
+async function askGemini(system, user) {
+  const model = AI.model || AI_DEFAULT_MODEL.gemini;
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    // 키를 주소에 붙이면 기록에 남는다. 헤더로 보낸다.
+    headers: { "content-type": "application/json", "x-goog-api-key": AI.key.trim() },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: user }] }],
+      generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+    }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(apiError(data, res.status));
+  return (data.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
+}
+
+const askAI = (system, user) => (AI.provider === "gemini" ? askGemini : askClaude)(system, user);
+
+async function listModels() {
+  if (AI.provider === "gemini") {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100",
+      { headers: { "x-goog-api-key": AI.key.trim() } });
+    const d = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(apiError(d, res.status));
+    return (d.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => m.name.replace(/^models\//, ""));
+  }
+  const res = await fetch("https://api.anthropic.com/v1/models?limit=100", {
+    headers: {
+      "x-api-key": AI.key.trim(),
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+  });
+  const d = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(apiError(d, res.status));
+  return (d.data || []).map(m => m.id);
+}
+
+const SYS_DAY = `너는 오픈채팅방 대화를 정리하는 편집자다.
+이 방은 AI와 자동화로 수익을 내려는 사람들이 모인 곳이다. 읽는 사람은 자동화에 필요한
+시스템·도구·재료·방법을 배우려고 이 방을 본다.
+
+지켜야 할 것:
+- 인사, 사담, 리액션, 기수 모집이나 세미나 신청 같은 광고는 정리하지 않는다.
+- 대화에 없는 사실은 절대 지어내지 않는다. 확실하지 않으면 아예 쓰지 않는다.
+- 도구 이름, 모델 이름, 수치, 설정값처럼 나중에 찾아 쓸 수 있는 정보를 가장 앞에 둔다.
+- 질문과 답이 오갔다면 무엇을 물었고 결론이 무엇이었는지를 분명히 쓴다.
+- 짧고 담백한 문어체로 쓴다. 존댓말과 군더더기를 뺀다.
+- 반드시 JSON만 출력한다. 코드블록 표시나 앞뒤 설명을 붙이지 않는다.
+
+출력 형식:
+{"day":"이 날 전체를 3~5문장으로","topics":[{"n":1,"title":"명사로 끝나는 20자 이내 제목","summary":"3~5문장 정리","points":["나중에 찾아 쓸 정보"]}]}`;
+
+const SYS_MONTH = `너는 오픈채팅방 대화 정리를 한 달 단위로 묶는 편집자다.
+아래는 날짜별 정리다. 이것을 한 달 흐름으로 다시 정리한다.
+
+지켜야 할 것:
+- 주어진 정리에 없는 사실은 지어내지 않는다.
+- 여러 날에 걸쳐 반복해서 나온 주제를 앞에 둔다.
+- 도구 이름과 구체적인 방법을 살린다.
+- 짧고 담백한 문어체로 쓴다.
+- 반드시 JSON만 출력한다.
+
+출력 형식:
+{"month":"이 달 전체를 5~8문장으로","themes":[{"title":"명사로 끝나는 20자 이내 제목","summary":"3~5문장","days":["2026-08-06"]}]}`;
+
+// 모델이 앞뒤에 말을 붙이는 경우가 있어 중괄호 범위를 다시 잘라 본다.
+function parseJSON(text) {
+  const t = (text || "").trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  try { return JSON.parse(t); } catch (_) {}
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (_) {} }
+  throw new Error("요약 결과를 읽지 못했어요. 다시 시도해 주세요.");
+}
+
+// 보내는 양이 곧 요금이다. 전체가 아니라 걸러 남긴 알맹이만, 그것도 길이를 잘라 보낸다.
+function dayPayload(d) {
+  const out = [`[날짜] ${d.date}`, `[전체 ${d.total}건 가운데 아래가 걸러 남은 대화다]`, ""];
+  d.topics.forEach((t, i) => {
+    out.push(`## 덩어리 ${i + 1} (${t.time})`);
+    for (const m of d.msgs.filter(m => t.marks.includes(m.i))) {
+      out.push(`${m.user}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`);
+    }
+    out.push("");
+  });
+  return out.join("\n");
+}
+
+async function summarizeDay(r, d) {
+  const raw = await askAI(SYS_DAY, dayPayload(d));
+  const j = parseJSON(raw);
+  const topics = {};
+  for (const t of j.topics || []) {
+    const key = d.topics[(Number(t.n) || 0) - 1]?.id;
+    if (key) topics[key] = { title: t.title || "", summary: t.summary || "", points: t.points || [] };
+  }
+  const rec = { id: `${r.id}|${d.date}`, kind: "day", day: j.day || "", topics, at: Date.now() };
+  await sumPut(rec);
+  S.sums[rec.id] = rec;
+  return rec;
+}
+
+async function summarizeMonth(r, month, days) {
+  const parts = [`[달] ${month}`, ""];
+  for (const d of days) {
+    const s = S.sums[`${r.id}|${d.date}`];
+    if (!s) continue;
+    parts.push(`## ${d.date}`, s.day);
+    for (const t of d.topics) {
+      const ai = s.topics[t.id];
+      if (ai) parts.push(`- ${ai.title}: ${ai.summary}`);
+    }
+    parts.push("");
+  }
+  const raw = await askAI(SYS_MONTH, parts.join("\n"));
+  const j = parseJSON(raw);
+  const rec = { id: `${r.id}|${month}`, kind: "month", month: j.month || "", themes: j.themes || [], at: Date.now() };
+  await sumPut(rec);
+  S.sums[rec.id] = rec;
+  return rec;
+}
+
+const aiDay = (r, date) => S.sums[`${r ? r.id : ""}|${date}`];
+const aiTopic = (r, date, id) => (aiDay(r, date)?.topics || {})[id];
+
+/* ══════════════════════════════════════════════════════════
    4. 상태와 화면 그리기
    ══════════════════════════════════════════════════════════ */
 
@@ -830,6 +1121,9 @@ const S = {
   vaultKind: "all",
   hideChatter: true,
   query: "",
+  sums: {},        // AI 요약 결과. 키는 "방id|날짜"
+  month: null,     // 월간 탭에서 고른 달
+  busy: null,      // 요약 진행 중인 대상
 };
 
 const $ = s => document.querySelector(s);
@@ -865,6 +1159,128 @@ function toast(msg) {
   t.classList.add("on");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("on"), 1900);
+}
+
+/* ── AI 요약 설정 화면 ── */
+function closeModal() { $("#modal").hidden = true; $("#sheet").innerHTML = ""; }
+
+function openAISettings() {
+  const m = $("#modal"), sheet = $("#sheet");
+  m.hidden = false;
+  sheet.innerHTML = `
+    <h2>AI 요약 설정</h2>
+    <p class="lead">여기서만 대화가 바깥으로 나가요. 보내는 건 걸러 남긴 알맹이뿐이고,
+      키는 이 브라우저에만 저장돼요. 코드에도 깃허브에도 들어가지 않아요.</p>
+    <div class="warn-box">키는 비밀번호처럼 다루세요. 남에게 보여주거나 채팅에 붙여넣지 마세요.
+      공용 컴퓨터라면 다 쓰고 나서 아래 '키 지우기'를 눌러주세요.</div>
+    <div class="field">
+      <label for="aiProvider">어디에 맡길까요</label>
+      <select id="aiProvider">
+        <option value="claude">클로드 (Anthropic) — 유료. 보낸 내용을 학습에 쓰지 않음</option>
+        <option value="gemini">제미나이 (Google) — 무료 등급 있음. 무료 등급은 학습에 쓰일 수 있음</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="aiKey">API 키</label>
+      <input id="aiKey" type="password" autocomplete="off" spellcheck="false" placeholder="키를 붙여넣으세요">
+      <div class="help" id="keyHelp"></div>
+    </div>
+    <div class="field">
+      <label for="aiModel">모델</label>
+      <div class="row">
+        <select id="aiModel" style="flex:1"></select>
+        <button class="btn" id="aiLoad">모델 불러오기</button>
+      </div>
+      <div class="help">키를 넣고 '모델 불러오기'를 누르면 지금 쓸 수 있는 모델이 채워져요.
+        요약은 가벼운 작업이라 값싼 모델로도 충분해요.</div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" id="aiClear">키 지우기</button>
+      <button class="btn" id="aiCancel">닫기</button>
+      <button class="btn primary" id="aiSave">저장</button>
+    </div>`;
+
+  const prov = sheet.querySelector("#aiProvider");
+  const keyIn = sheet.querySelector("#aiKey");
+  const modelSel = sheet.querySelector("#aiModel");
+  const help = sheet.querySelector("#keyHelp");
+
+  const fillModels = list => {
+    modelSel.innerHTML = "";
+    const items = list && list.length ? list : [AI.model || AI_DEFAULT_MODEL[prov.value]];
+    for (const id of items) {
+      const o = el("option", null, esc(id));
+      o.value = id;
+      modelSel.appendChild(o);
+    }
+    if (AI.model && items.includes(AI.model)) modelSel.value = AI.model;
+  };
+  const syncHelp = () => {
+    help.innerHTML = prov.value === "gemini"
+      ? `Google AI Studio(aistudio.google.com)의 <b>Get API key</b>에서 발급해요.`
+      : `Anthropic 콘솔(console.anthropic.com)의 <b>Settings → API keys</b>에서 발급해요.
+         용도별로 여러 개 만들어 두면 하나만 따로 폐기할 수 있어요.`;
+  };
+
+  prov.value = AI.provider;
+  keyIn.value = AI.key;
+  syncHelp();
+  fillModels(null);
+
+  prov.onchange = () => {
+    AI.model = AI_DEFAULT_MODEL[prov.value];
+    syncHelp();
+    fillModels(null);
+  };
+  sheet.querySelector("#aiLoad").onclick = async e => {
+    const b = e.currentTarget;
+    AI.provider = prov.value;
+    AI.key = keyIn.value;
+    b.disabled = true;
+    b.textContent = "불러오는 중…";
+    try {
+      fillModels(await listModels());
+      toast("쓸 수 있는 모델을 채웠어요");
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      b.disabled = false;
+      b.textContent = "모델 불러오기";
+    }
+  };
+  sheet.querySelector("#aiClear").onclick = () => {
+    AI.key = "";
+    saveAI();
+    keyIn.value = "";
+    toast("키를 지웠어요");
+  };
+  sheet.querySelector("#aiCancel").onclick = closeModal;
+  sheet.querySelector("#aiSave").onclick = () => {
+    AI.provider = prov.value;
+    AI.key = keyIn.value.trim();
+    AI.model = modelSel.value || AI_DEFAULT_MODEL[prov.value];
+    saveAI();
+    closeModal();
+    render();
+    toast(aiReady() ? "저장했어요. 날짜를 고르고 'AI로 정리'를 눌러보세요." : "키 없이 저장했어요");
+  };
+}
+
+// 요약을 돌리는 동안 버튼을 잠그고, 끝나면 화면을 다시 그린다.
+async function runSummary(label, fn) {
+  if (!aiReady()) { openAISettings(); return; }
+  if (S.busy) return;
+  S.busy = label;
+  render();
+  try {
+    await fn();
+    toast("정리했어요");
+  } catch (err) {
+    toast(err.message || "요약에 실패했어요");
+  } finally {
+    S.busy = null;
+    render();
+  }
 }
 
 /* ── 방 탭 ── */
@@ -921,9 +1337,10 @@ function renderSummary(main) {
       tp.appendChild(el("div", "topic-meta", "이 날은 건질 만한 내용 없이 사담 위주예요."));
     }
     for (const t of d.topics) {
-      const b = el("button", "topic" + (t.id === S.topicId ? " on" : ""));
+      const ai = aiTopic(r, d.date, t.id);
+      const b = el("button", "topic" + (t.id === S.topicId ? " on" : "") + (ai ? " ai" : ""));
       b.dataset.topic = t.id;
-      b.innerHTML = `<div class="topic-title">${esc(t.title)}</div>
+      b.innerHTML = `<div class="topic-title">${esc(ai && ai.title ? ai.title : t.title)}</div>
         <div class="topic-body"><ul>${t.bullets.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
         <div class="topic-meta">
           ${t.labels.map(l => `<span class="tag cat">${esc(l)}</span>`).join("")}
@@ -951,6 +1368,14 @@ function renderSummary(main) {
     ? `<span>${fmtDateFull(d.date)}</span><span style="font-weight:500;color:var(--text-3)">전체 ${d.total.toLocaleString()}건</span><span class="spacer"></span>`
     : `<span>대화 원문</span><span class="spacer"></span>`;
   if (d) {
+    const busy = S.busy === d.date;
+    const has = !!aiDay(r, d.date);
+    const ai = el("button", "btn sm primary",
+      busy ? '<span class="spin">◌</span> 정리 중…' : (has ? "AI로 다시 정리" : "AI로 정리"));
+    ai.disabled = busy;
+    ai.onclick = () => runSummary(d.date, () => summarizeDay(r, d));
+    rh.appendChild(ai);
+
     const t = el("button", "btn sm", S.hideChatter ? "사담 접어둠" : "전부 보는 중");
     t.onclick = () => { S.hideChatter = !S.hideChatter; render(); };
     rh.appendChild(t);
@@ -992,11 +1417,24 @@ function renderDigest(d) {
     return b;
   };
 
+  const r = room();
+  const aiBlock = (tag, body, points) => {
+    const b = el("div", "ai-block");
+    b.innerHTML = `<div class="ai-tag">${tag}</div>` +
+      body.split(/\n+/).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join("") +
+      (points && points.length ? `<ul>${points.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
+    return b;
+  };
+
   if (topic) {
-    box.appendChild(el("h3", null, esc(topic.title)));
+    const ai = aiTopic(r, d.date, topic.id);
+    box.appendChild(el("h3", null, esc(ai && ai.title ? ai.title : topic.title)));
     box.appendChild(el("div", "sub",
       `${topic.time} · ${topic.users}명이 주고받음 · 원본 ${topic.raw}건` +
       (topic.labels.length ? ` · ${topic.labels.map(esc).join(", ")}` : "")));
+    if (ai && (ai.summary || (ai.points || []).length)) {
+      box.appendChild(aiBlock("AI 정리", ai.summary || "", ai.points));
+    }
 
     const items = d.msgs.filter(m => topic.marks.includes(m.i));
     const core = [...items].sort((a, b) => b.score - a.score).slice(0, 8).sort((a, b) => a.i - b.i);
@@ -1025,6 +1463,9 @@ function renderDigest(d) {
   box.appendChild(el("h3", null, fmtDateFull(d.date)));
   box.appendChild(el("div", "sub",
     `전체 ${d.total.toLocaleString()}건 가운데 ${kept}건만 알맹이로 남았어요`));
+
+  const dayAI = aiDay(r, d.date);
+  if (dayAI && dayAI.day) box.appendChild(aiBlock("이 날 AI 정리", dayAI.day));
 
   if (d.topics.length) {
     box.appendChild(el("div", "sec", `이 날 오간 이야기 ${d.topics.length}가지`));
@@ -1270,6 +1711,125 @@ function vaultCard(it, d) {
   return card;
 }
 
+/* ── 월간 뷰 ── */
+function monthsOf(r) {
+  const map = new Map();
+  for (const d of r.days) {
+    const m = d.date.slice(0, 7);
+    if (!map.has(m)) map.set(m, []);
+    map.get(m).push(d);
+  }
+  return [...map.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+}
+const fmtMonth = m => `${m.slice(0, 4)}년 ${Number(m.slice(5))}월`;
+
+function renderMonth(main) {
+  const r = room();
+  const months = monthsOf(r);
+  if (S.month && !months.some(([m]) => m === S.month)) S.month = null;
+  if (!S.month && months.length) S.month = months[0][0];
+
+  const left = el("div", "pane-left");
+  left.appendChild(el("div", "pane-head", `<span>달별로 묶어 보기</span>`));
+  const list = el("div", "scroll");
+  list.id = "leftScroll";
+  for (const [m, days] of months) {
+    const done = days.filter(d => aiDay(r, d.date)).length;
+    const box = el("div", "day" + (m === S.month ? " on" : ""));
+    const head = el("button", "day-head");
+    head.innerHTML = `<span class="day-date">${fmtMonth(m)}</span>
+      <span class="day-meta">${days.length}일 · AI 정리 ${done}/${days.length}일</span>`;
+    head.onclick = () => { S.month = m; render(); };
+    box.appendChild(head);
+    list.appendChild(box);
+  }
+  left.appendChild(list);
+
+  const right = el("div", "pane-right");
+  const days = (months.find(([m]) => m === S.month) || [null, []])[1];
+  const done = days.filter(d => aiDay(r, d.date));
+  const rec = S.month ? S.sums[`${r.id}|${S.month}`] : null;
+
+  const rh = el("div", "pane-head");
+  rh.appendChild(el("span", null, S.month ? fmtMonth(S.month) : "달을 고르세요"));
+  rh.appendChild(el("span", "spacer"));
+  if (S.month) {
+    const busy = S.busy === S.month;
+    const b = el("button", "btn sm primary",
+      busy ? '<span class="spin">◌</span> 정리 중…' : (rec ? "달 요약 다시 만들기" : "달 요약 만들기"));
+    b.disabled = busy || !done.length;
+    b.onclick = () => runSummary(S.month, () => summarizeMonth(r, S.month, days));
+    rh.appendChild(b);
+  }
+  right.appendChild(rh);
+
+  const sc = el("div", "scroll");
+  const cards = el("div", "cards");
+
+  if (!done.length) {
+    // 달 요약은 날짜별 AI 정리를 재료로 쓴다. 재료가 없으면 만들 수가 없다.
+    cards.appendChild(el("div", "note", `<b>먼저 날짜별 AI 정리가 필요해요.</b>
+      달 요약은 그 달의 날짜별 정리를 묶어서 만들어요.
+      <b>요약</b> 탭에서 날짜를 고르고 <b>AI로 정리</b>를 눌러 며칠치를 만든 뒤 다시 오세요.
+      ${aiReady() ? "" : "<br>아직 API 키를 넣지 않았다면 오른쪽 위 <b>AI 요약 설정</b>부터 열어주세요."}`));
+  } else {
+    if (rec) {
+      const head = el("div", "card");
+      const body = el("div", "card-body");
+      body.appendChild(aiMonthBlock(rec));
+      head.appendChild(el("div", "card-head", `<span class="badge p">이 달 정리</span>
+        <span>${esc(fmtMonth(S.month))} · 날짜 ${done.length}일치를 묶음</span>`));
+      head.appendChild(body);
+      cards.appendChild(head);
+    }
+    cards.appendChild(el("div", "topic-meta",
+      `<b style="color:var(--text-2)">날짜별 정리 ${done.length}일치</b>`));
+    for (const d of done) {
+      const s = aiDay(r, d.date);
+      const card = el("div", "card");
+      const h = el("div", "card-head");
+      h.innerHTML = `<span class="who">${esc(fmtDate(d.date))}</span>
+        <span>전체 ${d.total.toLocaleString()}건</span><span class="spacer"></span>`;
+      const go = el("button", "btn sm", "그 날 보기");
+      go.onclick = () => { S.view = "summary"; S.date = d.date; S.topicId = null; render(); };
+      h.appendChild(go);
+      card.appendChild(h);
+      const body = el("div", "card-body");
+      body.innerHTML = `<div style="font-size:12.5px;line-height:1.65">${esc(s.day)}</div>`;
+      const titles = d.topics.map(t => (s.topics[t.id] || {}).title).filter(Boolean);
+      if (titles.length) {
+        body.innerHTML += `<div class="topic-meta" style="margin-top:8px">${
+          titles.map(x => `<span class="tag cat">${esc(x)}</span>`).join("")}</div>`;
+      }
+      card.appendChild(body);
+      cards.appendChild(card);
+    }
+  }
+  sc.appendChild(cards);
+  right.appendChild(sc);
+
+  main.appendChild(left);
+  main.appendChild(right);
+}
+
+function aiMonthBlock(rec) {
+  const wrap = el("div");
+  if (rec.month) {
+    const p = el("div", "ai-block");
+    p.innerHTML = `<div class="ai-tag">한 달 흐름</div>` +
+      rec.month.split(/\n+/).filter(Boolean).map(x => `<p>${esc(x)}</p>`).join("");
+    wrap.appendChild(p);
+  }
+  for (const t of rec.themes || []) {
+    const b = el("div", "ai-block");
+    b.innerHTML = `<div class="ai-tag">${esc(t.title || "주제")}</div><p>${esc(t.summary || "")}</p>` +
+      ((t.days || []).length ? `<div class="topic-meta">${
+        t.days.map(x => `<span class="tag cat">${esc(x)}</span>`).join("")}</div>` : "");
+    wrap.appendChild(b);
+  }
+  return wrap;
+}
+
 /* ── 검색 뷰 ── */
 function renderSearch(main) {
   const r = room();
@@ -1351,11 +1911,13 @@ function renderEmpty(main) {
       </ol>
     </div>
     <div class="note">
-      <b>API 키가 필요하냐고요? 필요 없습니다.</b>
+      <b>불러오는 데는 API 키가 필요 없습니다.</b>
       <ul>
         <li>카카오는 오픈채팅 대화를 읽어오는 공개 API 자체를 제공하지 않아요. 그래서 어떤 서비스든 방법은 결국 <b>내보내기 파일</b>이에요.</li>
         <li>날짜 구분은 내보낸 파일에 이미 들어 있어서, 읽어서 나누기만 하면 돼요.</li>
-        <li>요약은 이 페이지 안에서 규칙 기반으로 처리해요. 대화는 <b>브라우저 밖으로 나가지 않습니다.</b></li>
+        <li>사담 걸러내기·자료 모으기·검색은 전부 이 페이지 안에서 처리해요. 대화는 <b>브라우저 밖으로 나가지 않습니다.</b></li>
+        <li><b>AI 요약만 선택 사항</b>이에요. 문장으로 압축한 요약을 원할 때만 오른쪽 위
+          <b>AI 요약 설정</b>에서 본인 API 키를 넣으면 되고, 그때는 걸러 남긴 대화만 그쪽으로 보내요.</li>
       </ul>
     </div>
     <button class="btn" id="sample">샘플로 먼저 둘러보기</button>`;
@@ -1396,6 +1958,7 @@ function render() {
   if (!r) { S.roomId = S.rooms[0].id; return render(); }
   if (S.view === "summary") renderSummary(main);
   else if (S.view === "vault") renderVault(main);
+  else if (S.view === "month") renderMonth(main);
   else renderSearch(main);
 
   const key = `${S.roomId}|${S.view}`;
@@ -1509,6 +2072,9 @@ function addRoom(name, messages, raw) {
    ══════════════════════════════════════════════════════════ */
 
 $("#addBtn").onclick = () => $("#fileInput").click();
+$("#aiBtn").onclick = openAISettings;
+$("#modal").onclick = e => { if (e.target.id === "modal") closeModal(); };
+window.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 $("#fileInput").onchange = e => { handleFiles(e.target.files); e.target.value = ""; };
 $("#views").onclick = e => {
   const b = e.target.closest(".view-tab");
@@ -1607,6 +2173,8 @@ const SAMPLE = `AI 자동화 연구소 님과 카카오톡 대화
 `;
 
 (async function boot() {
+  loadAI();
+  for (const rec of await sumGetAll()) S.sums[rec.id] = rec;
   const saved = await dbAll();
   for (const rec of saved) {
     let messages = rec.messages;
