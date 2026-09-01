@@ -107,7 +107,7 @@ header.top { flex: none; background: var(--panel); border-bottom: 1px solid var(
 
 main { flex: 1 1 auto; min-height: 0; display: flex; }
 .pane-left {
-  flex: none; width: 340px; border-right: 1px solid var(--line);
+  flex: none; width: 400px; border-right: 1px solid var(--line);
   background: var(--panel); display: flex; flex-direction: column; min-height: 0;
 }
 .pane-right { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
@@ -152,6 +152,38 @@ main { flex: 1 1 auto; min-height: 0; display: flex; }
   font-weight: 700; padding: 0 5px; border-radius: 4px;
   background: var(--accent-soft); color: var(--accent);
 }
+.topic-meta .tag.cat { background: var(--line-soft); color: var(--text-2); }
+
+/* 오른쪽 정리 패널 */
+.right-body { flex: 1 1 auto; min-height: 0; display: flex; }
+.digest {
+  flex: none; width: 380px; border-left: 1px solid var(--line);
+  background: var(--panel); overflow-y: auto; padding: 16px 16px 40vh;
+}
+.digest h3 {
+  margin: 0 0 4px; font-size: 15px; letter-spacing: -.02em; line-height: 1.45;
+}
+.digest .sub { font-size: 11.5px; color: var(--text-3); margin-bottom: 14px; }
+.digest .sec {
+  font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: .02em;
+  margin: 16px 0 7px; padding-bottom: 5px; border-bottom: 1px solid var(--line-soft);
+}
+.quote {
+  width: 100%; text-align: left; border: 0; background: transparent;
+  border-left: 2px solid var(--line); padding: 2px 0 2px 10px; margin-bottom: 10px; display: block;
+}
+.quote:hover { border-left-color: var(--accent); }
+.quote .q-who { font-size: 11px; font-weight: 700; color: var(--text-3); margin-bottom: 2px; }
+.quote .q-text { font-size: 12.5px; color: var(--text-2); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.digest .stat { display: flex; justify-content: space-between; font-size: 12.5px; padding: 3px 0; }
+.digest .stat b { font-weight: 700; }
+.digest .mini {
+  width: 100%; text-align: left; border: 0; background: transparent; display: block;
+  font-size: 12.5px; color: var(--text-2); padding: 4px 0; line-height: 1.45;
+}
+.digest .mini:hover { color: var(--accent); }
+.digest .mini .t { font-size: 10.5px; color: var(--text-3); margin-right: 6px; }
+@media (max-width: 1240px) { .digest { display: none; } }
 
 /* 대화 */
 .chat { padding: 14px 18px 60vh; max-width: 880px; }
@@ -169,6 +201,12 @@ main { flex: 1 1 auto; min-height: 0; display: flex; }
 .msg.sys { justify-content: center; }
 .msg.sys .msg-main { text-align: center; font-size: 11px; color: var(--text-3); }
 .msg.sys .msg-side { display: none; }
+.fold {
+  display: block; width: 100%; text-align: left; border: 0; background: transparent;
+  color: var(--text-3); font-size: 11.5px; padding: 5px 8px; margin: 3px 0; border-radius: 8px;
+}
+.fold:hover { background: var(--panel); color: var(--text-2); }
+.fold .bar { display: inline-block; width: 24px; height: 1px; background: var(--line); vertical-align: middle; margin-right: 9px; }
 .msg-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
 .badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--line-soft); color: var(--text-2); }
 .badge.p { background: var(--accent-soft); color: var(--accent); }
@@ -292,6 +330,9 @@ const RE_AOS = /^(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(오전|오후)\s*(\
 const RE_IOS = /^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(오전|오후)\s*(\d{1,2}):(\d{2}),\s*(.*)$/;
 // 시스템 메시지(입장·퇴장·강퇴 등)
 const RE_SYSTEM = /(님이 (들어왔습니다|나갔습니다|입장하였습니다|퇴장하였습니다)|님을 내보냈습니다|방장이 되었습니다|채팅방 이름이|운영정책을 위반)/;
+// 그 중에서도 줄 하나가 통째로 입·퇴장인 경우. 오픈채팅방은 이게 하루에도 수백 줄씩
+// 쌓이는데, 앞 메시지에 이어붙이면 봇 공지가 통째로 부풀어 요약을 망친다.
+const RE_JOINLEAVE = /^.{0,60}(님이 (들어왔습니다|나갔습니다|입장하였습니다|퇴장하였습니다)|님을 내보냈습니다|님이 방장이 되었습니다)\.?$/;
 
 function pad2(n) { return String(n).padStart(2, "0"); }
 
@@ -378,10 +419,22 @@ function parseKakao(raw, fallbackName) {
     // 저장 안내 줄은 건너뛴다
     if (/^(저장한 날짜|Date Saved|Saved on)\s*[:：]/.test(line)) { last = null; continue; }
 
+    // 입·퇴장 줄은 앞 메시지에 붙이지 않고 따로 떼어낸다. 다만 그 뒤에 이어지는
+    // 줄은 여전히 원래 메시지의 연속이므로 last를 되돌려 놓는다.
+    const bare = line.trim();
+    if (RE_JOINLEAVE.test(bare)) {
+      const prev = last;
+      const h = prev ? Number(prev.time.slice(0, 2)) : 0;
+      const mi = prev ? Number(prev.time.slice(3)) : 0;
+      push("", h, mi, bare, true);
+      last = prev;
+      continue;
+    }
+
     // 어느 패턴에도 안 맞는 줄: 시스템 메시지이거나 직전 메시지의 이어지는 줄
-    if (RE_SYSTEM.test(line) && !last) { push("", 0, 0, line.trim(), true); continue; }
+    if (RE_SYSTEM.test(line) && !last) { push("", 0, 0, bare, true); continue; }
     if (last) last.text += (last.text ? "\n" : "") + line;
-    else if (RE_SYSTEM.test(line)) push("", 0, 0, line.trim(), true);
+    else if (RE_SYSTEM.test(line)) push("", 0, 0, bare, true);
   }
 
   for (const msg of messages) {
@@ -408,8 +461,20 @@ const TOPICS = [
   ["노코드·툴", /\b(notion|airtable|supabase|figma|canva|gamma|obsidian)\b|노션|에어테이블|피그마|캔바|감마|옵시디언/i],
   ["콘텐츠·수익화", /수익화|부업|외주|크몽|숨고|강의|전자책|블로그|애드센스|스마트스토어|리드\s?생성/i],
   ["유튜브·숏폼", /유튜브|youtube|쇼츠|shorts|릴스|reels|틱톡|tiktok|썸네일|조회수/i],
-  ["모임·세미나", /세미나|웨비나|모임|오프라인|밋업|스터디|공지|모집|신청서|줌\s?링크/i],
 ];
+
+// 오픈채팅방 자동 안내를 보내는 계정. 사람 말이 아니므로 요약에서 뺀다.
+const RE_BOT_USER = /(오픈채팅봇|채팅봇|카카오봇|^봇$|bot$)/i;
+
+// 기수 모집·세미나 신청 같은 광고성 공지. 질의응답이 진짜 알맹이라 이런 건 내린다.
+// 단어 하나로 자르면 "세미나 자료 어디 있나요?" 같은 진짜 질문까지 날아가므로
+// 신호가 둘 이상이거나, 하나라도 있으면서 신청 링크가 붙어 있을 때만 광고로 본다.
+const PROMO_CUES = [
+  /모집/, /마감/, /선착순/, /얼리버드/, /정원\s*\d/, /참가비|수강료|입금|계좌/,
+  /신청/, /무료\s*(전자책|특강|웨비나|강의|나눔|배포)/, /이벤트/, /\d\s*기\b|기수/,
+  /세미나|웨비나|특강|밋업/, /공지사항/, /링크\s*(타고|에서|걸어)/,
+];
+function promoCues(t) { return PROMO_CUES.reduce((n, r) => n + (r.test(t) ? 1 : 0), 0); }
 
 // 사담·리액션으로 처리해 요약에서 뺄 짧은 말들
 const RE_CHATTER = new RegExp(
@@ -474,15 +539,32 @@ function topicsOf(t) {
 }
 
 // 메시지마다 점수와 표식을 붙인다. 점수가 높을수록 '정보', 낮을수록 '사담'.
+// 같은 문구가 하루에도 몇 번씩 올라오면 자동 안내로 본다. 입장 인사 봇이 대표적이다.
+function markRepeats(msgs) {
+  const key = t => t.replace(/\s+/g, "").replace(/[‍️]/g, "").slice(0, 140);
+  const seen = new Map();
+  for (const m of msgs) {
+    if (m.sys || m.text.length < 25) continue;
+    const k = key(m.text);
+    seen.set(k, (seen.get(k) || 0) + 1);
+  }
+  for (const m of msgs) m.repeat = !m.sys && m.text.length >= 25 && (seen.get(key(m.text)) || 0) >= 3;
+}
+
 function scoreMessages(msgs) {
+  markRepeats(msgs);
   for (const m of msgs) {
     m.links = m.text.match(RE_URL) || [];
     m.file = attachmentOf(m.text);
     m.prompt = isPromptLike(m.text);
     m.topics = topicsOf(m.text);
     m.chatter = false;
+    m.bot = RE_BOT_USER.test(m.user || "");
+    const cues = promoCues(m.text);
+    m.promo = cues >= 2 || (cues >= 1 && m.links.length > 0);
 
-    if (m.sys) { m.score = -99; continue; }
+    // 봇 안내와 모집·신청 공지는 요약에서 아예 뺀다. 대화 원문과 자료함에는 그대로 남는다.
+    if (m.sys || m.bot || m.promo) { m.score = -99; continue; }
 
     let s = Math.min(m.text.length / 120, 2.2);
     if (m.links.length) s += 3;
@@ -492,6 +574,7 @@ function scoreMessages(msgs) {
     if (/[?？]\s*$/.test(m.text) && m.text.length > 15) s += 0.8;
     if (isChatter(m.text)) { s -= 6; m.chatter = true; }
     if (m.text.length < 14 && !m.links.length && !m.file) s -= 2;
+    if (m.repeat) s -= 12;   // 반복 안내
     m.score = s;
   }
 
@@ -522,7 +605,7 @@ function expandKeep(msgs) {
     for (let j = i + 1; j < msgs.length; j++) {
       const n = msgs[j];
       if (n.ts - msgs[i].ts > 10 * 60 * 1000) break;
-      if (n.sys || n.keep || n.chatter) continue;
+      if (n.sys || n.keep || n.chatter || n.bot || n.repeat || n.promo) continue;
       if (n.text.trim().length >= 35) { n.keep = true; n.score += 1.6; }
     }
   }
@@ -534,6 +617,31 @@ function snippet(t, n) {
     catch (_) { return "(링크)"; }
   }).replace(/\s+/g, " ").trim();
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+// 카테고리 이름('자동화 · 유튜브')만으로는 무슨 얘기였는지 알 수 없다.
+// 덩어리를 대표하는 한 문장을 실제 대화에서 뽑아 제목으로 쓴다. 질문이 있으면
+// 질문이 곧 주제이므로 그것을 먼저 고른다.
+function sentences(t) {
+  return t.replace(RE_URL, " ").split(/(?<=[.!?？。])\s+|\n+/)
+    .map(s => s.replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
+function headline(items) {
+  // '파일: xxx.pdf' 한 줄짜리는 제목감이 못 된다. 설명한 쪽을 고른다.
+  const pool = items.filter(m => !(m.file && m.text.trim().length < 40));
+  const from = pool.length ? pool : items;
+  const asked = from.filter(m => /[?？]/.test(m.text) && m.text.trim().length > 15);
+  const seed = [...(asked.length ? asked : from)].sort((a, b) => b.score - a.score)[0];
+
+  const ss = sentences(seed.text);
+  let t = ss.find(s => /[?？]/.test(s) && s.length >= 12)   // 질문이 곧 주제다
+       || ss.find(s => s.length >= 12)
+       || ss[0] || seed.text;
+  t = t.replace(/^[^가-힣A-Za-z0-9"'(]+/, "")              // 앞머리 이모지·기호·글머리표
+       .replace(/[ㅋㅎㅠㅜ~^;,.\s]+$/, "").trim();
+  if (t.length < 6) t = seed.text.replace(/\s+/g, " ").trim();
+  return t.length > 36 ? t.slice(0, 35) + "…" : (t || "대화");
 }
 
 // 하루치를 '주제 덩어리'로 나눈다. 시간이 벌어지거나 덩어리가 커지면 끊는다.
@@ -556,8 +664,7 @@ function buildTopics(dayMsgs, all) {
     for (const m of items) for (const t of m.topics) counts.set(t, (counts.get(t) || 0) + 1);
     const labels = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2).map(e => e[0]);
 
-    const best = [...items].sort((a, b) => b.score - a.score)[0];
-    const title = labels.length ? labels.join(" · ") : snippet(best.text, 26);
+    const title = headline(items);
 
     const bullets = [...items].sort((a, b) => b.score - a.score).slice(0, 3)
       .sort((a, b) => a.i - b.i).map(m => snippet(m.text, 74));
@@ -569,7 +676,7 @@ function buildTopics(dayMsgs, all) {
 
     return {
       id: `${items[0].date}#${gi}`,
-      title, bullets,
+      title, bullets, labels,
       time: `${items[0].time}~${items[items.length - 1].time}`,
       users: users.size, raw,
       marks: items.map(m => m.i),
@@ -729,8 +836,10 @@ function renderSummary(main) {
   left.appendChild(lh);
 
   const list = el("div", "scroll");
+  list.id = "leftScroll";
   for (const d of r.days) {
     const box = el("div", "day" + (d.date === S.date ? " on open" : ""));
+    box.dataset.day = d.date;
     const head = el("button", "day-head");
     const marks = [d.topics.some(t => t.hasPrompt) ? "프롬프트" : null,
                    d.files.length ? "파일" : null,
@@ -740,7 +849,7 @@ function renderSummary(main) {
     head.onclick = () => {
       S.date = (S.date === d.date && box.classList.contains("open")) ? null : d.date;
       S.topicId = null;
-      render();
+      renderKeeping(`[data-day="${d.date}"]`);
     };
     box.appendChild(head);
 
@@ -750,17 +859,19 @@ function renderSummary(main) {
     }
     for (const t of d.topics) {
       const b = el("button", "topic" + (t.id === S.topicId ? " on" : ""));
+      b.dataset.topic = t.id;
       b.innerHTML = `<div class="topic-title">${esc(t.title)}</div>
         <div class="topic-body"><ul>${t.bullets.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
         <div class="topic-meta">
-          <span>${t.time}</span><span>·</span><span>${t.users}명 · 원본 ${t.raw}건</span>
+          ${t.labels.map(l => `<span class="tag cat">${esc(l)}</span>`).join("")}
+          <span>${t.time} · ${t.users}명 · 원본 ${t.raw}건</span>
           ${t.hasPrompt ? '<span class="tag">프롬프트</span>' : ""}
           ${t.hasFile ? '<span class="tag">파일</span>' : ""}
           ${t.hasLink ? '<span class="tag">링크</span>' : ""}
         </div>`;
       b.onclick = () => {
         S.date = d.date; S.topicId = t.id;
-        render();
+        renderKeeping(`[data-topic="${CSS.escape(t.id)}"]`);
         jumpTo(t.anchor, t.marks);
       };
       tp.appendChild(b);
@@ -790,55 +901,178 @@ function renderSummary(main) {
     right.appendChild(el("div", "empty", `<h2>왼쪽에서 날짜나 요약을 눌러보세요</h2>
       <p>요약을 누르면 바로 그 시점의 실제 대화가 여기에 펼쳐지고, 해당 메시지가 노랗게 표시돼요.</p>`));
   } else {
+    const body = el("div", "right-body");
     const sc = el("div", "scroll");
     sc.id = "chatScroll";
     sc.appendChild(renderChat(d));
-    right.appendChild(sc);
+    body.appendChild(sc);
+    body.appendChild(renderDigest(d));
+    right.appendChild(body);
   }
 
   main.appendChild(left);
   main.appendChild(right);
 }
 
+// 오른쪽 남는 폭에 '지금 보고 있는 것'의 정리를 채운다.
+// 요약 카드를 고르면 그 덩어리의 알맹이 발언을, 날짜만 고르면 그 날 개요를 보여준다.
+function renderDigest(d) {
+  const box = el("aside", "digest");
+  const topic = d.topics.find(t => t.id === S.topicId);
+
+  const quote = (m, cap) => {
+    const b = el("button", "quote");
+    const t = m.text.replace(/\s+\n/g, "\n").trim();
+    b.innerHTML = `<div class="q-who">${esc(m.user)} · ${m.time}</div>
+      <div class="q-text">${esc(t.length > cap ? t.slice(0, cap) + "…" : t)}</div>`;
+    b.onclick = () => jumpTo(m.i, [m.i]);
+    return b;
+  };
+
+  if (topic) {
+    box.appendChild(el("h3", null, esc(topic.title)));
+    box.appendChild(el("div", "sub",
+      `${topic.time} · ${topic.users}명이 주고받음 · 원본 ${topic.raw}건` +
+      (topic.labels.length ? ` · ${topic.labels.map(esc).join(", ")}` : "")));
+
+    const items = d.msgs.filter(m => topic.marks.includes(m.i));
+    const core = [...items].sort((a, b) => b.score - a.score).slice(0, 5).sort((a, b) => a.i - b.i);
+    box.appendChild(el("div", "sec", "무슨 얘기였나"));
+    for (const m of core) box.appendChild(quote(m, 300));
+
+    const links = items.flatMap(m => m.links);
+    if (links.length) {
+      box.appendChild(el("div", "sec", "여기서 나온 링크"));
+      for (const u of links) {
+        const a = el("div", "link-row");
+        a.innerHTML = `<span class="dom">${esc(domainOf(u))}</span>
+          <a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(snippet(u, 46))}</a>`;
+        box.appendChild(a);
+      }
+    }
+    const files = items.filter(m => m.file);
+    if (files.length) {
+      box.appendChild(el("div", "sec", "여기서 오간 파일"));
+      for (const m of files) box.appendChild(el("div", "stat", `<span>${esc(m.file)}</span><b>${esc(m.user)}</b>`));
+    }
+    return box;
+  }
+
+  const kept = d.msgs.filter(m => m.keep).length;
+  box.appendChild(el("h3", null, fmtDateFull(d.date)));
+  box.appendChild(el("div", "sub",
+    `전체 ${d.total.toLocaleString()}건 가운데 ${kept}건만 알맹이로 남았어요`));
+
+  if (d.topics.length) {
+    box.appendChild(el("div", "sec", `이 날 오간 이야기 ${d.topics.length}가지`));
+    for (const t of d.topics) {
+      const b = el("button", "mini");
+      b.innerHTML = `<span class="t">${t.time.slice(0, 5)}</span>${esc(t.title)}`;
+      b.onclick = () => { S.topicId = t.id; render(); jumpTo(t.anchor, t.marks); };
+      box.appendChild(b);
+    }
+  }
+
+  const talkers = new Map();
+  for (const m of d.msgs) if (!m.sys && !m.bot && m.user) talkers.set(m.user, (talkers.get(m.user) || 0) + 1);
+  const top = [...talkers.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (top.length) {
+    box.appendChild(el("div", "sec", "많이 말한 사람"));
+    for (const [u, n] of top) box.appendChild(el("div", "stat", `<span>${esc(u)}</span><b>${n}건</b>`));
+  }
+
+  box.appendChild(el("div", "sec", "이 날 모인 자료"));
+  box.appendChild(el("div", "stat", `<span>프롬프트</span><b>${d.prompts.length}개</b>`));
+  box.appendChild(el("div", "stat", `<span>파일</span><b>${d.files.length}개</b>`));
+  box.appendChild(el("div", "stat", `<span>링크</span><b>${d.links.reduce((n, m) => n + m.links.length, 0)}개</b>`));
+  return box;
+}
+
+function msgNode(m, prevUser, dim) {
+  if (m.sys) {
+    const s = el("div", "msg sys");
+    s.id = "m" + m.i;
+    s.innerHTML = `<div class="msg-main">${esc(m.text)}</div>`;
+    return s;
+  }
+  const e = el("div", "msg" + (m.user === prevUser ? " same" : "") + (dim ? " dim" : ""));
+  e.id = "m" + m.i;
+  const badges = [];
+  if (m.prompt) badges.push('<span class="badge p">프롬프트</span>');
+  if (m.file) badges.push(`<span class="badge f">${esc(m.file)}</span>`);
+  for (const l of m.links.slice(0, 3)) badges.push(`<span class="badge l">${esc(domainOf(l))}</span>`);
+  e.innerHTML = `<div class="msg-side">${m.time}</div>
+    <div class="msg-main">
+      <div class="msg-who">${esc(m.user)}</div>
+      <div class="msg-text">${linkify(m.text)}</div>
+      ${badges.length ? `<div class="msg-badges">${badges.join("")}</div>` : ""}
+    </div>`;
+  return e;
+}
+
 function renderChat(d) {
   const wrap = el("div", "chat");
   let prevUser = null;
-  for (const m of d.msgs) {
-    if (m.sys) {
-      const s = el("div", "msg sys");
-      s.innerHTML = `<div class="msg-main">${esc(m.text)}</div>`;
-      wrap.appendChild(s);
-      prevUser = null;
-      continue;
+  let run = [];
+
+  // 오픈채팅방은 봇 안내와 입·퇴장이 하루에 수백 줄씩 쌓인다. 흐리게만 두면
+  // 여전히 화면을 다 잡아먹으므로, 연달아 나오면 한 줄로 접어둔다.
+  const flush = () => {
+    if (!run.length) return;
+    if (run.length >= 3) {
+      const items = run;
+      const b = el("button", "fold");
+      b.dataset.holds = items.map(m => m.i).join(",");
+      const joins = items.filter(m => m.sys).length;
+      const parts = [];
+      if (items.length - joins) parts.push(`잡담 ${items.length - joins}줄`);
+      if (joins) parts.push(`입·퇴장 ${joins}줄`);
+      b.innerHTML = `<span class="bar"></span>${parts.join(" · ")} 접힘 — 눌러서 펼치기`;
+      b.onclick = () => {
+        let p = null;
+        for (const m of items) { b.before(msgNode(m, p, true)); p = m.sys ? null : m.user; }
+        b.remove();
+      };
+      wrap.appendChild(b);
+    } else {
+      let p = prevUser;
+      for (const m of run) { wrap.appendChild(msgNode(m, p, true)); p = m.sys ? null : m.user; }
     }
-    const dim = S.hideChatter && !m.keep;
-    const e = el("div", "msg" + (m.user === prevUser ? " same" : "") + (dim ? " dim" : ""));
-    e.id = "m" + m.i;
-    const badges = [];
-    if (m.prompt) badges.push('<span class="badge p">프롬프트</span>');
-    if (m.file) badges.push(`<span class="badge f">${esc(m.file)}</span>`);
-    for (const l of m.links.slice(0, 3)) badges.push(`<span class="badge l">${esc(domainOf(l))}</span>`);
-    e.innerHTML = `<div class="msg-side">${m.time}</div>
-      <div class="msg-main">
-        <div class="msg-who">${esc(m.user)}</div>
-        <div class="msg-text">${linkify(m.text)}</div>
-        ${badges.length ? `<div class="msg-badges">${badges.join("")}</div>` : ""}
-      </div>`;
-    wrap.appendChild(e);
-    prevUser = m.user;
+    prevUser = null;
+    run = [];
+  };
+
+  for (const m of d.msgs) {
+    const folded = S.hideChatter && (m.sys || !m.keep);
+    if (folded) { run.push(m); continue; }
+    flush();
+    wrap.appendChild(msgNode(m, prevUser, false));
+    prevUser = m.sys ? null : m.user;
   }
+  flush();
   return wrap;
 }
 
+// 접혀 있는 줄로 이동해야 하면 그 묶음만 펼치고 간다
+function expandFoldFor(i) {
+  for (const b of document.querySelectorAll(".fold")) {
+    if ((b.dataset.holds || "").split(",").includes(String(i))) { b.click(); return true; }
+  }
+  return false;
+}
+
+// render()가 동기이므로 DOM은 이미 준비돼 있다. 화면이 안 그려지는 상황에서는
+// requestAnimationFrame이 아예 돌지 않으므로 여기에 기대지 않는다.
 function jumpTo(anchor, marks) {
-  requestAnimationFrame(() => {
-    for (const i of marks || []) {
-      const n = document.getElementById("m" + i);
-      if (n) { n.classList.add("hl"); n.classList.remove("dim"); }
-    }
-    const a = document.getElementById("m" + anchor);
-    if (a) a.scrollIntoView({ block: "start", behavior: "smooth" });
-  });
+  for (const i of [...(marks || []), anchor]) {
+    if (!document.getElementById("m" + i)) expandFoldFor(i);
+  }
+  for (const i of marks || []) {
+    const n = document.getElementById("m" + i);
+    if (n) { n.classList.add("hl"); n.classList.remove("dim"); }
+  }
+  const a = document.getElementById("m" + anchor);
+  if (a) a.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 /* ── 자료함 뷰 ── */
@@ -855,6 +1089,7 @@ function renderVault(main) {
   const left = el("div", "pane-left");
   left.appendChild(el("div", "pane-head", "<span>자료가 올라온 날</span>"));
   const list = el("div", "scroll");
+  list.id = "leftScroll";
 
   const total = { p: 0, f: 0, l: 0 };
   for (const d of r.days) { total.p += d.prompts.length; total.f += d.files.length; total.l += d.links.length; }
@@ -978,6 +1213,7 @@ function renderSearch(main) {
   left.appendChild(wrap);
 
   const list = el("div", "scroll");
+  list.id = "leftScroll";
   left.appendChild(list);
 
   const right = el("div", "pane-right");
@@ -1023,7 +1259,7 @@ function renderSearch(main) {
 
   main.appendChild(left);
   main.appendChild(right);
-  requestAnimationFrame(() => input.focus());
+  setTimeout(() => input.focus(), 0);
 }
 
 /* ── 첫 화면 ── */
@@ -1067,7 +1303,17 @@ function renderEmpty(main) {
   });
 }
 
+// 날짜나 요약을 누를 때마다 화면을 다시 그리는데, 그때 왼쪽 목록이 맨 위로
+// 튀면 아래쪽 날짜를 볼 때마다 다시 스크롤해야 한다. 위치를 기억했다가 되돌린다.
+let lastDrawn = null, lastChatKey = null;
+const scrollMem = {};
+
 function render() {
+  const prev = document.getElementById("leftScroll");
+  if (prev && lastDrawn) scrollMem[lastDrawn] = prev.scrollTop;
+  const prevChat = document.getElementById("chatScroll");
+  if (prevChat && lastChatKey) scrollMem[lastChatKey] = prevChat.scrollTop;
+
   renderRooms();
   const main = $("#main");
   main.innerHTML = "";
@@ -1075,12 +1321,41 @@ function render() {
   for (const b of document.querySelectorAll(".view-tab"))
     b.classList.toggle("on", b.dataset.view === S.view);
 
-  if (!S.rooms.length) { renderEmpty(main); return; }
+  if (!S.rooms.length) { lastDrawn = lastChatKey = null; renderEmpty(main); return; }
   const r = room();
   if (!r) { S.roomId = S.rooms[0].id; return render(); }
   if (S.view === "summary") renderSummary(main);
   else if (S.view === "vault") renderVault(main);
   else renderSearch(main);
+
+  const key = `${S.roomId}|${S.view}`;
+  const now = document.getElementById("leftScroll");
+  if (now && scrollMem[key]) {
+    now.scrollTop = scrollMem[key];
+    setTimeout(() => { now.scrollTop = scrollMem[key]; }, 0);
+  }
+  // 사담 접기를 켜고 끌 때 대화가 맨 위로 튀지 않게, 같은 날짜를 다시 그릴 때만 되돌린다
+  const chatKey = `${key}|${S.date}`;
+  const chat = document.getElementById("chatScroll");
+  if (chat && lastChatKey === chatKey && scrollMem[chatKey]) {
+    const y = scrollMem[chatKey];
+    chat.scrollTop = y;
+    setTimeout(() => { chat.scrollTop = y; }, 0);
+  }
+  lastDrawn = key;
+  lastChatKey = chat ? chatKey : null;
+}
+
+// 누른 항목이 화면에서 있던 자리를 그대로 두고 다시 그린다.
+// 위쪽 날짜가 접히거나 펼쳐져도 방금 누른 줄이 눈앞에 그대로 남는다.
+function renderKeeping(sel) {
+  const before = document.querySelector(sel);
+  const top = before ? before.getBoundingClientRect().top : null;
+  render();
+  if (top == null) return;
+  const after = document.querySelector(sel);
+  const list = document.getElementById("leftScroll");
+  if (after && list) list.scrollTop += after.getBoundingClientRect().top - top;
 }
 
 /* ── 요약 복사 (마크다운) ── */
@@ -1229,7 +1504,20 @@ const SAMPLE = `AI 자동화 연구소 님과 카카오톡 대화
 [김성호] [오후 3:56] 오오
 [김성호] [오후 3:56] ㄷㄷ
 --------------- 2026년 9월 1일 월요일 ---------------
-[이도현] [오전 8:30] 이번 주 목요일 저녁 8시에 온라인 세미나 합니다. 주제는 n8n + 클로드 API로 리드 수집 자동화예요. 신청은 아래 링크에서 https://forms.gle/example123
+[오픈채팅봇] [오전 6:37] ✅ AI 자동화 연구소 채팅방 입니다
+
+✅ 필요한 자료는 공지사항을 봐주세요
+손 흔드는 팬더주니어님이 나갔습니다.
+멍한 프렌즈님이 나갔습니다.
+[오픈채팅봇] [오전 7:53] ✅ AI 자동화 연구소 채팅방 입니다
+
+✅ 필요한 자료는 공지사항을 봐주세요
+티비 보는 라이언님이 들어왔습니다.
+[오픈채팅봇] [오전 8:11] ✅ AI 자동화 연구소 채팅방 입니다
+
+✅ 필요한 자료는 공지사항을 봐주세요
+뽀뽀하는 어피치님이 들어왔습니다.
+[이도현] [오전 8:30] 이번 주 목요일 저녁 8시에 온라인 세미나 합니다. 주제는 n8n + 클로드 API로 리드 수집 자동화예요. 3기 모집 선착순이니 신청은 아래 링크에서 https://forms.gle/example123
 [김성호] [오전 8:31] 참석하겠습니다
 [박연우] [오전 8:32] 저도요~
 [정하람] [오전 8:33] 화이팅
