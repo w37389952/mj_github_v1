@@ -2006,11 +2006,30 @@ function renderMonth(main) {
       }
       const b = el("button", "btn sm" + (left2.length ? "" : " primary"),
         rec ? "달 요약 다시 만들기" : "달 요약 만들기");
-      b.disabled = !done.length;
-      b.title = done.length
-        ? `날짜별 정리 ${done.length}일치를 재료로 씁니다. 원본 대화를 다시 보내지 않아 값이 적게 나가요.`
-        : "먼저 날짜별 정리가 필요해요.";
-      b.onclick = () => runSummary(S.month, () => summarizeMonth(r, S.month, days));
+      b.disabled = !days.length;
+      b.title = left2.length
+        ? `아직 안 된 ${left2.length}일을 먼저 돌리고 이어서 달 요약까지 만들어요.`
+        : `날짜별 정리 ${done.length}일치를 재료로 씁니다. 원본 대화를 다시 보내지 않아 값이 적게 나가요.`;
+      b.onclick = () => {
+        // 달 요약은 날짜별 정리를 재료로 쓴다. 재료가 빠졌으면 그것부터 채우고 이어서 간다.
+        if (left2.length) {
+          const chars = left2.reduce((n, d) => n + dayPayload(d).length, 0);
+          if (!confirm(`아직 정리하지 않은 ${left2.length}일이 있어요.\n` +
+                       `그 ${left2.length}일(약 ${chars.toLocaleString()}자)을 먼저 돌리고, 이어서 달 요약까지 만들까요?\n` +
+                       `도중에 '멈춤'을 누르면 거기서 세울 수 있어요.`)) return;
+          runSummary(S.month, async () => {
+            const res = await summarizeDays(r, days, busyNote);
+            if (S.stop) {
+              toast(`${res.done}일 정리하고 멈췄어요. 달 요약은 아직 만들지 않았어요.`);
+              return;
+            }
+            busyNote("이제 달 요약을 만드는 중…");
+            await summarizeMonth(r, S.month, days);
+          });
+          return;
+        }
+        runSummary(S.month, () => summarizeMonth(r, S.month, days));
+      };
       rh.appendChild(b);
     }
   }
@@ -2021,12 +2040,16 @@ function renderMonth(main) {
 
   if (!done.length) {
     // 달 요약은 날짜별 AI 정리를 재료로 쓴다. 재료가 없으면 만들 수가 없다.
-    cards.appendChild(el("div", "note", `<b>먼저 날짜별 AI 정리가 필요해요.</b>
+    cards.appendChild(el("div", "note", `<b>이 달은 아직 정리한 날짜가 없어요.</b>
       달 요약은 원본 대화가 아니라 <b>그 달의 날짜별 정리</b>를 재료로 만들어요.
       그래서 달 요약 자체는 값이 얼마 안 나가고, 날짜별 정리를 채우는 쪽이 실제 비용이에요.
-      <br><br>위의 <b>안 된 ○일 한꺼번에</b> 버튼을 누르면 아직 안 된 날만 골라 이어서 돌려요.
-      누르기 전에 보낼 분량이 몇 자인지 알려주고, 도중에 <b>멈춤</b>으로 세울 수 있어요.
-      끝난 날은 저장되니 나중에 다시 눌러도 그 날은 건너뛰어요.
+      <br><br>위 버튼 두 개는 이렇게 나뉘어요.
+      <ul>
+        <li><b>안 된 ○일 한꺼번에</b> — 날짜별 정리만 채워요. 달 요약은 안 만들어요.</li>
+        <li><b>달 요약 만들기</b> — 안 된 날이 있으면 <b>그걸 먼저 채우고 이어서</b> 달 요약까지 만들어요.</li>
+      </ul>
+      어느 쪽이든 누르기 전에 보낼 분량이 몇 자인지 알려주고, 도중에 <b>멈춤</b>으로 세울 수 있어요.
+      끝난 날은 그때그때 저장되니 다시 눌러도 그 날은 건너뛰어요.
       ${aiReady() ? "" : "<br><br>아직 API 키를 넣지 않았다면 오른쪽 위 <b>AI 요약 설정</b>부터 열어주세요."}`));
   } else {
     if (rec) {
