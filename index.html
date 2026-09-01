@@ -405,12 +405,17 @@ function naverMapUrl(place) {
  * 복사해 쓰도록 한다. 아이디에는 밑줄과 점을 넣지 않는다.
  */
 
-// 상호에 붙는 업종어. 계정명에는 잘 안 들어가므로 뺀다.
+/* 업종어는 지우지 않는다. '하트베이커리'는 heartbakery로 쓰는 집이 많아서다.
+ * 다만 뺀 형태도 함께 후보로 내기 위해 목록만 들고 있는다. */
 const BIZ_WORDS = [
   "커피숍", "커피", "로스터스", "로스터리", "로스터", "카페", "까페",
-  "베이커리", "브레드", "제과점", "제과", "디저트", "티하우스", "찻집",
-  "스튜디오", "공방", "키친", "팩토리", "coffee", "cafe", "roasters",
+  "베이커리", "제과점", "제과", "디저트", "티하우스", "찻집",
+  "스튜디오", "공방", "키친", "팩토리",
 ];
+
+// 법인 표기는 상호가 아니다. 계정명에 들어갈 일이 없으므로 떼어낸다.
+const CORP_PREFIX = /^\s*(주식회사|유한회사|합자회사|사단법인|재단법인|㈜|\(주\)|\(유\))\s*/;
+const CORP_SUFFIX = /\s*(주식회사|유한회사|㈜|\(주\)|\(유\))\s*$/;
 
 /* 자주 쓰이는 외래어. 상호를 영어로 짓는 경우가 많은데 소리대로 옮기면
  * 철자가 어긋나므로(케미스트리 → kemiseuteuri) 여기서 먼저 바로잡는다.
@@ -473,36 +478,72 @@ const LOANWORDS = {
   // 동물·사물
   "하트": "heart", "허브": "hub", "퍼그": "pug", "베어": "bear",
   "래빗": "rabbit", "버니": "bunny", "폭스": "fox", "울프": "wolf",
-  "캣": "cat", "버드": "bird", "펭귄": "penguin",
+  "캣": "cat", "버드": "bird", "펭귄": "penguin", "이얼즈": "ears",
+  // 업종어도 상호의 일부다. 하트베이커리 → heartbakery
+  "베이커리": "bakery", "로스터스": "roasters", "로스터리": "roastery",
+  "로스터": "roaster", "디저트": "dessert", "티하우스": "teahouse",
+  "제과": "confectionery",
+  // 소리대로 옮기면 어긋나기 쉬운 것들
+  "이스터": "easter", "플라토": "plato", "카츠": "katsu", "바이트": "bite",
+  "돈카츠": "tonkatsu", "돈까스": "tonkatsu", "스시": "sushi", "우동": "udon",
+  "소바": "soba", "이자카야": "izakaya", "오마카세": "omakase",
+  "리조또": "risotto", "리조토": "risotto", "뇨끼": "gnocchi",
+  "포카치아": "focaccia", "치아바타": "ciabatta", "마카롱": "macaron",
+  "휘낭시에": "financier", "마들렌": "madeleine", "슈크림": "chouxcream",
+  "에클레어": "eclair", "밀푀유": "millefeuille", "몽블랑": "montblanc",
   "타이거": "tiger", "웨일": "whale", "스푼": "spoon", "포크": "fork",
   "포트": "pot", "박스": "box", "도어": "door",
 };
 
-// 한 글자짜리는 '문래'의 '문'처럼 한국어 낱말을 잘못 쪼갤 수 있어 쓰지 않는다.
-Object.keys(LOANWORDS).forEach(k => { if (k.length < 2) delete LOANWORDS[k]; });
+// 고유명사는 표기가 정해져 있다.
+Object.assign(LOANWORDS, {
+  "서울": "seoul", "제주": "jeju", "부산": "busan", "코리아": "korea",
+});
 
-// 음절을 이루는 자모의 로마자 표기. 첫 값이 국어의 로마자 표기법 기준이고
-// 나머지는 사람들이 아이디에 실제로 자주 쓰는 변형이다.
+/* 한 글자짜리는 '문래'의 '문'처럼 한국어 낱말을 잘못 쪼갤 수 있다.
+ * 그래서 평소에는 쓰지 않고, 이름 전체가 외래어로 딱 떨어질 때만 쓴다.
+ * 투이얼즈 → 투(two) + 이얼즈(ears)는 되지만, 문래는 '래'가 남으므로 안 된다. */
+const SHORT_LOANWORDS = { "투": "two", "원": "one", "쓰리": "three", "빈": "bean" };
+Object.keys(LOANWORDS).forEach(k => {
+  if (k.length < 2) { SHORT_LOANWORDS[k] = LOANWORDS[k]; delete LOANWORDS[k]; }
+});
+const LOANWORDS_ALL = { ...LOANWORDS, ...SHORT_LOANWORDS };
+
+/* 음절을 이루는 자모의 표기. 첫 값이 국어의 로마자 표기법 기준이다.
+ *
+ * 뒤 값들은 영어를 한글로 옮겨 지은 상호를 되돌리기 위한 것이다. 한국어는
+ * 영어의 자음군을 '으'를 끼워 적고(plato → 플라토), 영어 -er을 '어'로,
+ * 일본어 tsu를 '츠'로 적는다. 그 되돌림을 갈래로 넣어 둔다. */
 const LEAD_ALT = [
-  ["g","k"], ["kk","gg"], ["n"], ["d","t"], ["tt","dd"], ["r","l"], ["m"],
-  ["b","p"], ["pp","bb"], ["s"], ["ss"], [""], ["j","z"], ["jj"], ["ch","c"],
-  ["k"], ["t"], ["p","f"], ["h"],
+  ["g","k","c"], ["kk","gg"], ["n"], ["d","t"], ["tt","dd"], ["r","l"], ["m"],
+  ["b","p","v"], ["pp","bb"], ["s","sh","c"], ["ss","s"], [""],
+  ["j","z"], ["jj"], ["ch","ts","c"], ["k","c"], ["t"], ["p","f"], ["h"],
 ];
 const VOWEL_ALT = [
-  ["a"], ["ae","ai"], ["ya"], ["yae"], ["eo","u","o"], ["e"], ["yeo","yo"],
-  ["ye"], ["o","oh"], ["wa"], ["wae"], ["oe","we"], ["yo"], ["u","oo"],
-  ["wo","weo"], ["we"], ["wi","ui"], ["yu"], ["eu","u",""], ["ui","i"],
-  ["i","ee"],
+  ["a","ar"], ["ae","ai","a"], ["ya"], ["yae"], ["eo","er","u","o"],
+  ["e","ea"], ["yeo","yo"], ["ye"], ["o","oh","ou"], ["wa"], ["wae"],
+  ["oe","we"], ["yo"], ["u","oo","ou"], ["wo","weo"], ["we"],
+  ["wi","ui"], ["yu"], ["","eu","u"], ["ui","i"], ["i","ee","ea","y"],
 ];
 const TAIL_ALT = [
-  [""], ["k","g"], ["k"], ["k"], ["n"], ["n"], ["n"], ["t","s"], ["l","r"],
-  ["k"], ["m"], ["l"], ["l"], ["l"], ["p"], ["l"], ["m"], ["p","b"], ["p"],
-  ["t","s"], ["t"], ["ng"], ["t"], ["t"], ["k"], ["t"], ["p"], ["t"],
+  [""], ["k","g","c"], ["k"], ["k"], ["n"], ["n"], ["n"], ["t","s"],
+  ["l","r"], ["k"], ["m"], ["l"], ["l"], ["l"], ["p"], ["l"], ["m"],
+  ["p","b"], ["p"], ["t","s"], ["t"], ["ng"], ["t"], ["t"], ["k"],
+  ["t"], ["p"], ["t"],
 ];
 
 const MAX_BASES = 6;
 
-/** 한 음절이 어떻게 적힐 수 있는지 후보를 낸다. */
+/* 음절을 이어 붙이면 한국어 표기 특유의 자국이 남는다.
+ * 플라토는 '플'의 ㄹ과 '라'의 ㄹ이 겹쳐 pl+ra가 되므로 하나로 합쳐야 plato가 된다. */
+function tidySpelling(s) {
+  return s
+    .replace(/(?:ll|lr|rl|rr)/g, "l")
+    .replace(/([bcdfgjkmnpstvz])\1+/g, "$1$1")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** 한 음절의 표기 후보. 앞쪽일수록 표준에 가깝고, 그 순서가 곧 비용이 된다. */
 function syllableSpellings(ch) {
   const code = ch.charCodeAt(0) - 0xac00;
   if (code < 0 || code > 11171) {
@@ -513,29 +554,46 @@ function syllableSpellings(ch) {
   const vowel = VOWEL_ALT[Math.floor((code % 588) / 28)];
   const tail = TAIL_ALT[code % 28];
   const out = [];
-  lead.forEach(l => vowel.forEach(v => tail.forEach(t => {
-    const s = l + v + t;
-    if (s && !out.includes(s)) out.push(s);
+  // 비용이 낮은(=표준에 가까운) 조합부터 나오도록 자리별 순서를 더해 정렬한다.
+  const rows = [];
+  lead.forEach((l, li) => vowel.forEach((v, vi) => tail.forEach((t, ti) => {
+    if (l + v + t) rows.push({ s: l + v + t, cost: li + vi + ti });
   })));
-  return out;
+  rows.sort((a, b) => a.cost - b.cost);
+  rows.forEach(r => { if (!out.some(o => o.s === r.s)) out.push(r); });
+  return out.slice(0, 6);
 }
 
-/** 문자열을 여러 철자로 옮긴다. 표준 표기가 항상 첫 번째에 온다. */
+/** 문자열을 여러 철자로 옮긴다.
+ *
+ * 음절마다 앞에서부터 잘라내면 마지막 음절만 다른 후보들만 남는다.
+ * 표준에서 얼마나 벗어났는지를 비용으로 세어 두고 마지막에 낮은 것부터 고른다. */
 function spellVariants(text) {
-  let combos = [""];
+  let combos = [{ s: "", cost: 0 }];
   for (const ch of text) {
     const options = syllableSpellings(ch);
     if (!options.length) continue;
-    combos = combos.flatMap(prefix => options.map(o => prefix + o));
-    // 음절마다 갈래가 늘어나므로 그때그때 잘라낸다. 앞쪽이 표준 표기다.
-    if (combos.length > MAX_BASES * 4) combos = combos.slice(0, MAX_BASES * 4);
+    const next = [];
+    combos.forEach(p => options.forEach(o => {
+      const item = typeof o === "string" ? { s: o, cost: 0 } : o;
+      next.push({ s: p.s + item.s, cost: p.cost + item.cost });
+    }));
+    next.sort((a, b) => a.cost - b.cost);
+    combos = next.slice(0, 120);
   }
-  return [...new Set(combos)].filter(Boolean);
+  const seen = new Set();
+  const out = [];
+  combos.forEach(c => {
+    const s = tidySpelling(c.s);
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    out.push({ s, cost: c.cost });
+  });
+  return out;
 }
 
-/** 상호를 외래어 조각과 한글 조각으로 나눈다. */
-function segment(core) {
-  const keys = Object.keys(LOANWORDS).sort((a, b) => b.length - a.length);
+function segmentWith(core, table) {
+  const keys = Object.keys(table).sort((a, b) => b.length - a.length);
   const segs = [];
   let buffer = "";
   let i = 0;
@@ -543,7 +601,7 @@ function segment(core) {
     const hit = keys.find(k => core.startsWith(k, i));
     if (hit) {
       if (buffer.trim()) segs.push({ ko: buffer.trim() });
-      segs.push({ ko: hit, en: LOANWORDS[hit] });
+      segs.push({ ko: hit, en: table[hit] });
       buffer = "";
       i += hit.length;
     } else {
@@ -555,24 +613,46 @@ function segment(core) {
   return segs;
 }
 
-function baseSpellings(core, english) {
-  const perSegment = segment(core).map(seg => {
-    const out = [];
-    if (seg.en) out.push(seg.en);
-    spellVariants(seg.ko).forEach(v => out.includes(v) || out.push(v));
-    return out.slice(0, 4);
-  }).filter(s => s.length);
+/** 상호를 외래어 조각과 한글 조각으로 나눈다.
+ *
+ * 한 글자 외래어까지 넣어 이름 전체가 외래어로 딱 떨어지면 그 결과를 쓴다.
+ * 한 조각이라도 한글로 남으면 잘못 쪼갠 것으로 보고 안전한 표로 다시 나눈다. */
+function segment(core) {
+  const bold = segmentWith(core.replace(/\s+/g, ""), LOANWORDS_ALL);
+  if (bold.length && bold.every(s => s.en)) return bold;
+  return segmentWith(core, LOANWORDS);
+}
 
-  let combos = perSegment.reduce(
-    (acc, choices) => acc.flatMap(p => choices.map(c => p + c)).slice(0, MAX_BASES * 4),
-    [""]
-  );
-  combos = combos.filter(Boolean);
+function baseSpellings(core, english) {
+  // 외래어인 줄 아는 조각은 영어 철자 하나만 쓴다. 소리대로 옮긴 것을 함께
+  // 만들면 brewery를 알면서도 beurueori 같은 갈래가 목록을 채운다.
+  const perSegment = segment(core).map(seg =>
+    seg.en ? [{ s: seg.en, cost: 0 }] : spellVariants(seg.ko).slice(0, 5)
+  ).filter(s => s.length);
+
+  let combos = [{ s: "", cost: 0 }];
+  perSegment.forEach(choices => {
+    const next = [];
+    combos.forEach(p => choices.forEach(c =>
+      next.push({ s: p.s + c.s, cost: p.cost + c.cost })));
+    next.sort((a, b) => a.cost - b.cost);
+    combos = next.slice(0, 60);
+  });
+
+  const seen = new Set();
+  const out = [];
   if (english) {
     const e = english.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (e) combos = [e, ...combos.filter(c => c !== e)];
+    if (e) { seen.add(e); out.push(e); }
   }
-  return [...new Set(combos)].slice(0, MAX_BASES);
+  combos.forEach(c => {
+    const s = tidySpelling(c.s);
+    if (s && !seen.has(s)) { seen.add(s); out.push(s); }
+    // 영어 장모음 i는 한글로 '아이'가 된다. bite → 바이트
+    const alt = tidySpelling(c.s.replace(/ai/g, "i"));
+    if (alt && !seen.has(alt)) { seen.add(alt); out.push(alt); }
+  });
+  return out.slice(0, MAX_BASES);
 }
 
 /* 계정 아이디 뒤에 동네 이름이 붙는 것은 그 동네가 이름값을 할 때다.
@@ -637,12 +717,20 @@ function instagramHandles(place) {
   const english = paren && /[A-Za-z]/.test(paren[1]) ? paren[1].trim() : "";
 
   let core = raw.replace(/[（(][^）)]*[）)]/g, " ");
-  core = core.replace(/\s*[^\s]{0,10}(본점|직영점|\d+호점|점)\s*$/, " ");
-  core = stripBizWords(core);
-  if (!core) core = stripBizWords(raw) || raw;
+  core = core.replace(CORP_PREFIX, "").replace(CORP_SUFFIX, "");
+  core = core.replace(/\s*[^\s]{0,10}(본점|직영점|\d+호점|점)\s*$/, " ").trim();
+  if (!core) core = raw;
 
   const segs = segment(core);
+  // 업종어를 넣은 형태와 뺀 형태를 모두 낸다. 하트베이커리는 heartbakery로도,
+  // heart로도 쓰이기 때문이다.
+  const stripped = stripBizWords(core);
   const bases = baseSpellings(core, english);
+  if (stripped && stripped !== core) {
+    baseSpellings(stripped, "").slice(0, 2).forEach(b => {
+      if (!bases.includes(b)) bases.push(b);
+    });
+  }
   const hoods = hotspotTokens(place.address);
   const cats = isCafeLike(place) ? ["cafe", "coffee"] : ["room", "eatery"];
 
@@ -659,13 +747,17 @@ function instagramHandles(place) {
     if (out.some(x => x.handle === handle)) return;
     out.push({ handle, note });
   };
+  // '이스터서울'에 seoul을 또 붙이면 easterseoulseoul이 된다.
+  const append = (stem, word, note) => {
+    if (!stem.endsWith(word)) push(stem + word, note);
+  };
 
   bases.forEach(b => push(b, ""));
-  hoods.forEach(h => stems.forEach(b => push(b + h, "지역")));
-  cats.forEach(c => stems.forEach(b => push(b + c, "업종")));
+  hoods.forEach(h => stems.forEach(b => append(b, h, "지역")));
+  cats.forEach(c => stems.forEach(b => append(b, c, "업종")));
   if (stems[0]) {
-    ["seoul", "kr", "official"].forEach(g => push(stems[0] + g, "기타"));
-    if (isCafeLike(place)) push(stems[0] + "kafe", "변형");
+    ["seoul", "kr", "official"].forEach(g => append(stems[0], g, "기타"));
+    if (isCafeLike(place)) append(stems[0], "kafe", "변형");
   }
   return out.slice(0, 20);
 }
