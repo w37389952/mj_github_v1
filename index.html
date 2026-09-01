@@ -696,12 +696,34 @@ function hotspotTokens(address) {
   return [];
 }
 
+/* 카페인지 아닌지는 업태만으로 갈리지 않는다. 실제로 카페 상당수가
+ * '기타'나 '기타 휴게음식점'으로 등록되어 있어 업태만 보면 놓친다.
+ * 그래서 업태와 상호명을 함께 본다. */
+
 // 업태값은 docs/data-source-findings.md의 실측 목록을 따른다.
-const CAFE_LIKE = new Set([
+const CAFE_BIZ = new Set([
   "커피숍", "다방", "전통찻집", "떡카페", "과자점", "아이스크림", "까페", "키즈카페",
 ]);
+// 업태가 '기타'로 뭉뚱그려진 곳들. 상호명으로 갈라야 한다.
+const VAGUE_BIZ = new Set(["기타", "기타 휴게음식점", "일반조리판매"]);
+
+const CAFE_NAME = /카페|까페|커피|coffee|cafe|로스터|roast|베이커리|bakery|브레드|제과|디저트|dessert|케이크|케잌|도넛|마카롱|젤라또|젤라토|와플|크로플|스콘|타르트|빵|브런치|티하우스|찻집|latte|라떼/i;
+const FOOD_NAME = /브루어리|brewery|양조|에일|ale|맥주|beer|라거|lager|탭룸|taproom|와인|wine|하이볼|위스키|칵테일|소주|막걸리|펍|pub|호프|주점|포차|바베큐|식당|국밥|국수|칼국수|냉면|곱창|막창|삼겹|고깃|정육|치킨|통닭|피자|pizza|파스타|초밥|스시|sushi|라멘|우동|분식|김밥|횟집|회집|장어|족발|보쌈|찜|탕|찌개|한식|중식|일식|양식|밥|면/;
+
 function isCafeLike(place) {
-  return CAFE_LIKE.has(place.bizType) || /카페|커피|베이커리|디저트|로스터/.test(place.name);
+  if (CAFE_BIZ.has(place.bizType)) return true;
+  if (CAFE_NAME.test(place.name)) return true;
+  if (FOOD_NAME.test(place.name)) return false;
+  // 어느 쪽 신호도 없고 업태도 뭉뚱그려져 있으면 카페일 수 있다고 본다.
+  return VAGUE_BIZ.has(place.bizType);
+}
+
+/** 카페인지 음식점인지 끝내 가려지지 않는 경우. 양쪽 말을 모두 붙여 본다. */
+function isAmbiguous(place) {
+  return !CAFE_BIZ.has(place.bizType)
+    && !CAFE_NAME.test(place.name)
+    && !FOOD_NAME.test(place.name)
+    && VAGUE_BIZ.has(place.bizType);
 }
 
 function stripBizWords(text) {
@@ -716,7 +738,7 @@ function stripBizWords(text) {
 const SHOP_WORD_LIST =
   "bakery|brewery|kitchen|coffee|cafe|kafe|roaster|roastery|patisserie|" +
   "dessert|teahouse|bread|pizza|pasta|burger|noodle|ramen|sushi|udon|soba|" +
-  "katsu|izakaya|grill|steak|dining|deli|eatery|room|house|market|store";
+  "katsu|izakaya|grill|steak|dining|deli|eatery|room|house|market|store|food";
 const SHOP_WORDS = new RegExp(`^(?:${SHOP_WORD_LIST})|(?:${SHOP_WORD_LIST})$`);
 
 /** 계정 아이디 후보. 앞쪽일수록 그럴듯한 순서다. */
@@ -735,9 +757,10 @@ function instagramHandles(place) {
   const hoods = hotspotTokens(place.address);
   // 이름에 이미 업종이 들어 있으면 또 붙이지 않는다.
   // hwasubrewery에 room을 붙이면 '브루어리 룸'이 되어 말이 안 된다.
-  const cats = SHOP_WORDS.test(bases[0] || "")
-    ? []
-    : (isCafeLike(place) ? ["cafe", "coffee"] : ["room", "eatery"]);
+  const cats = SHOP_WORDS.test(bases[0] || "") ? []
+    : isAmbiguous(place) ? ["cafe", "coffee", "eatery"]
+    : isCafeLike(place) ? ["cafe", "coffee"]
+    : ["room", "eatery"];
 
   /* 철자가 이미 확실한 경우가 있다. 상호에 영문이 붙어 있거나(탁트(TAKT)),
    * 이름이 통째로 외래어일 때다(버블케미스트리 → bubblechemistry).
