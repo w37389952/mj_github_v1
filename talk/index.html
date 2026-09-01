@@ -946,11 +946,31 @@ function saveAI() {
 }
 const aiReady = () => !!(AI.key || "").trim();
 
+// 제미나이 키는 AIza로, 클로드 키는 sk-ant- 로 시작한다.
+// 제공사를 잘못 고른 채 키를 넣는 실수가 잦아서 모양만 봐도 짚어줄 수 있다.
+function keyShapeWarning(provider, key) {
+  const k = (key || "").trim();
+  if (!k) return "";
+  if (provider === "gemini" && !k.startsWith("AIza"))
+    return "제미나이 키는 보통 AIza로 시작해요. 다른 곳에서 받은 키가 아닌지 확인해 주세요.";
+  if (provider === "claude" && !k.startsWith("sk-ant-"))
+    return "클로드 키는 sk-ant- 로 시작해요. 다른 곳에서 받은 키가 아닌지 확인해 주세요.";
+  return "";
+}
+
 function apiError(data, status) {
   const msg = (data && (data.error?.message || data.message)) || "";
-  if (status === 401 || status === 403) return "API 키가 맞지 않아요. 설정에서 다시 확인해 주세요.";
+  const shape = keyShapeWarning(AI.provider, AI.key);
+
+  // 구글은 키가 틀려도 401이 아니라 400으로 답한다. 문구를 같이 봐야 원인이 잡힌다.
+  if (/api[ _]?key not valid|invalid api key|api key expired/i.test(msg) || status === 401 || status === 403) {
+    return (shape ? shape + " " : "") +
+      "키가 거절됐어요. ①제공사 선택이 맞는지 ②키가 지워지거나 만료되지 않았는지 ③앞뒤 공백 없이 통째로 붙여넣었는지 확인해 주세요. " +
+      "옛날에 받아둔 키라면 새로 하나 만드는 게 제일 빨라요.";
+  }
   if (status === 429) return "요청이 잠시 몰렸어요. 조금 뒤에 다시 시도해 주세요.";
   if (status === 400 && /model/i.test(msg)) return "모델 이름이 맞지 않아요. 설정에서 '모델 불러오기'를 눌러 골라 주세요.";
+  if (status === 404) return "그 모델을 찾지 못했어요. 설정에서 '모델 불러오기'를 눌러 목록에서 골라 주세요.";
   return `요약에 실패했어요 (${status}) ${msg}`.trim();
 }
 
@@ -1183,15 +1203,16 @@ function openAISettings() {
     <div class="field">
       <label for="aiKey">API 키</label>
       <input id="aiKey" type="password" autocomplete="off" spellcheck="false" placeholder="키를 붙여넣으세요">
+      <div class="help" id="keyShape"></div>
       <div class="help" id="keyHelp"></div>
     </div>
     <div class="field">
       <label for="aiModel">모델</label>
       <div class="row">
         <select id="aiModel" style="flex:1"></select>
-        <button class="btn" id="aiLoad">모델 불러오기</button>
+        <button class="btn" id="aiLoad">키 확인 · 모델 불러오기</button>
       </div>
-      <div class="help">키를 넣고 '모델 불러오기'를 누르면 지금 쓸 수 있는 모델이 채워져요.
+      <div class="help">키를 넣고 이 버튼을 누르면 키가 살아있는지 바로 확인되고, 쓸 수 있는 모델이 채워져요.
         요약은 가벼운 작업이라 값싼 모델로도 충분해요.</div>
     </div>
     <div class="sheet-foot">
@@ -1204,6 +1225,14 @@ function openAISettings() {
   const keyIn = sheet.querySelector("#aiKey");
   const modelSel = sheet.querySelector("#aiModel");
   const help = sheet.querySelector("#keyHelp");
+  const shape = sheet.querySelector("#keyShape");
+
+  // 붙여넣는 즉시 모양이 맞는지 알려준다. 저장하고 요약을 눌러야 알게 되면 늦다.
+  const syncShape = () => {
+    const w = keyShapeWarning(prov.value, keyIn.value);
+    shape.textContent = w;
+    shape.style.color = w ? "var(--warn)" : "";
+  };
 
   const fillModels = list => {
     modelSel.innerHTML = "";
@@ -1225,27 +1254,32 @@ function openAISettings() {
   prov.value = AI.provider;
   keyIn.value = AI.key;
   syncHelp();
+  syncShape();
   fillModels(null);
 
+  keyIn.oninput = syncShape;
   prov.onchange = () => {
     AI.model = AI_DEFAULT_MODEL[prov.value];
     syncHelp();
+    syncShape();
     fillModels(null);
   };
+  // 이 버튼이 키 확인을 겸한다. 성공하면 키가 살아있다는 뜻이다.
   sheet.querySelector("#aiLoad").onclick = async e => {
     const b = e.currentTarget;
     AI.provider = prov.value;
     AI.key = keyIn.value;
     b.disabled = true;
-    b.textContent = "불러오는 중…";
+    b.textContent = "확인 중…";
     try {
-      fillModels(await listModels());
-      toast("쓸 수 있는 모델을 채웠어요");
+      const list = await listModels();
+      fillModels(list);
+      toast(`키 확인됨 — 쓸 수 있는 모델 ${list.length}개를 불러왔어요`);
     } catch (err) {
       toast(err.message);
     } finally {
       b.disabled = false;
-      b.textContent = "모델 불러오기";
+      b.textContent = "키 확인 · 모델 불러오기";
     }
   };
   sheet.querySelector("#aiClear").onclick = () => {
