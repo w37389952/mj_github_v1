@@ -713,16 +713,51 @@ function partialEnglishness(s, bounds) {
   return best / (n * n);
 }
 
+/* 영어 자음군은 한글로 옮길 때 '으'가 끼어든다.
+ *   br → 브ㄹ (브로이)   st → 스ㅌ (스토리)   tr → 트ㄹ (울트라)
+ * 뒤 음절의 첫소리와 짝이 맞으면 그 '으'는 원래 없던 소리로 보고 먼저 빼 본다.
+ * 사전에 없는 낱말(broi 같은 외국어)도 이 규칙만으로 되살아난다. */
+const CLUSTER_SECOND = { b: "rl", p: "rl", f: "rl", v: "rl", k: "rl", c: "rl",
+  g: "rl", d: "r", t: "rw", th: "r", sh: "r", s: "tpkmnlwh" };
+
+// 받침 ㄹ이 붙은 '으' 음절은 그 자체로 자음군이다. 플 → pl, 블 → bl.
+// ㅇ으로 시작해 '을'이 되는 경우는 뺀다. 을지로가 ljiro가 되면 안 된다.
+const CLUSTER_WITH_L = new Set(["b", "p", "f", "v", "k", "c", "g", "s"]);
+
+function formsCluster(leadLatin, nextLeadLatin) {
+  const seconds = CLUSTER_SECOND[leadLatin];
+  return Boolean(seconds && nextLeadLatin && seconds.includes(nextLeadLatin[0]));
+}
+
 /** 한 음절의 표기 후보. 앞쪽일수록 표준에 가깝고, 그 순서가 곧 비용이 된다. */
-function syllableSpellings(ch) {
+function syllableSpellings(ch, nextCh) {
   const code = ch.charCodeAt(0) - 0xac00;
   if (code < 0 || code > 11171) {
     const plain = ch.toLowerCase().replace(/[^a-z0-9]/g, "");
     return plain ? [plain] : [];
   }
-  const lead = LEAD_ALT[Math.floor(code / 588)];
-  const vowel = VOWEL_ALT[Math.floor((code % 588) / 28)];
-  const tail = TAIL_ALT[code % 28];
+  const leadIdx = Math.floor(code / 588);
+  const vowelIdx = Math.floor((code % 588) / 28);
+  const tailIdx = code % 28;
+  const lead = LEAD_ALT[leadIdx];
+  let vowel = VOWEL_ALT[vowelIdx];
+  const tail = TAIL_ALT[tailIdx];
+
+  if (vowelIdx === 18) {
+    // 받침 ㄹ이 붙은 '으' 음절은 그 자체가 자음군이다. 플라이 → fly
+    if (tailIdx === 8 && CLUSTER_WITH_L.has(lead[0])) {
+      vowel = ["", "eu", "u"];
+    } else if (tailIdx === 0 && nextCh) {
+      const nextCode = nextCh.charCodeAt(0) - 0xac00;
+      if (nextCode >= 0 && nextCode <= 11171) {
+        let nextLead = LEAD_ALT[Math.floor(nextCode / 588)][0];
+        // ㅇ으로 시작하고 반모음으로 이어지면 그 반모음이 자음군의 뒷소리다.
+        // 트웬티 → twenty, 스위치 → switch
+        if (!nextLead) nextLead = VOWEL_ALT[Math.floor((nextCode % 588) / 28)][0][0];
+        if (lead.some(l => formsCluster(l, nextLead))) vowel = ["", "eu", "u"];
+      }
+    }
+  }
   const out = [];
   // 비용이 낮은(=표준에 가까운) 조합부터 나오도록 자리별 순서를 더해 정렬한다.
   const rows = [];
@@ -749,10 +784,13 @@ function prune(list) {
   return [...new Set([...byEnglish.slice(0, 180), ...byCost.slice(0, 70)])];
 }
 
-function spellVariants(text) {
+/* nextChar는 이 토막 다음에 오는 글자다. '더식스' + '프레시'처럼 외래어 조각에서
+ * 잘리면 '스' 뒤의 '프'가 안 보여 sp 자음군을 놓친다. 그래서 넘겨받는다. */
+function spellVariants(text, nextChar) {
   let combos = [{ s: "", cost: 0, bounds: [] }];
-  for (const ch of text) {
-    const options = syllableSpellings(ch);
+  const chars = [...text];
+  for (let i = 0; i < chars.length; i++) {
+    const options = syllableSpellings(chars[i], chars[i + 1] || nextChar);
     if (!options.length) continue;
     const next = [];
     combos.forEach(p => options.forEach(o => {
@@ -814,10 +852,11 @@ function segment(core) {
 function baseSpellings(core, english) {
   // 외래어인 줄 아는 조각은 영어 철자 하나만 쓴다. 소리대로 옮긴 것을 함께
   // 만들면 brewery를 알면서도 beurueori 같은 갈래가 목록을 채운다.
-  const perSegment = segment(core).map(seg =>
+  const segs = segment(core);
+  const perSegment = segs.map((seg, i) =>
     // 외래어인 줄 아는 조각은 그 자체가 하나의 낱말이므로 경계도 통째다.
     seg.en ? [{ s: seg.en, cost: 0, bounds: [seg.en.length] }]
-           : spellVariants(seg.ko).slice(0, 5)
+           : spellVariants(seg.ko, segs[i + 1] && segs[i + 1].ko[0]).slice(0, 5)
   ).filter(s => s.length);
 
   let combos = [{ s: "", cost: 0, bounds: [] }];
