@@ -773,6 +773,15 @@ function headline(items) {
 }
 
 // 하루치를 '주제 덩어리'로 나눈다. 시간이 벌어지거나 덩어리가 커지면 끊는다.
+// 덩어리 번호(첫째, 둘째…)를 이름표로 쓰면, 대화를 다시 불러와 묶임이 조금만 달라져도
+// 번호가 밀려 예전에 만든 AI 정리가 엉뚱한 덩어리에 붙는다. 첫 메시지의 내용으로 이름을 짓는다.
+function shortHash(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+const topicId = m => `${m.date}#${m.time}#${shortHash(m.text.slice(0, 80))}`;
+
 const labelsOf = items => {
   const s = new Set();
   for (const m of items) for (const t of m.topics) s.add(t);
@@ -813,7 +822,7 @@ function buildTopics(dayMsgs, all) {
   }
   groups = merged;
 
-  return groups.map((g, gi) => {
+  return groups.map(g => {
     const items = g.items;
     const counts = new Map();
     for (const m of items) for (const t of m.topics) counts.set(t, (counts.get(t) || 0) + 1);
@@ -831,7 +840,7 @@ function buildTopics(dayMsgs, all) {
     const raw = all.filter(m => m.i >= from && m.i <= to && !m.sys).length;
 
     return {
-      id: `${items[0].date}#${gi}`,
+      id: topicId(items[0]),
       title, bullets, labels,
       time: `${items[0].time}~${items[items.length - 1].time}`,
       users: users.size, raw,
@@ -1210,7 +1219,9 @@ async function summarizeDay(r, d) {
     const key = d.topics[(Number(t.n) || 0) - 1]?.id;
     if (key) topics[key] = { title: t.title || "", summary: t.summary || "", points: t.points || [] };
   }
-  const rec = { id: `${r.id}|${d.date}`, kind: "day", day: j.day || "", topics, at: Date.now() };
+  // 정리했을 때 그 날 대화가 몇 건이었는지 남긴다. 나중에 다시 내보내 넣으면
+  // 그 날이 더 길어졌을 수 있는데, 이 숫자가 있어야 '늘어났다'를 알아챌 수 있다.
+  const rec = { id: `${r.id}|${d.date}`, kind: "day", day: j.day || "", topics, total: d.total, at: Date.now() };
   await sumPut(rec);
   S.sums[rec.id] = rec;
   return rec;
@@ -1238,8 +1249,7 @@ async function summarizeMonth(r, month, days) {
 
 // 하루씩 눌러 40일을 채우는 건 사람이 할 일이 아니다. 안 된 날만 골라 이어서 돌린다.
 // 도중에 멈출 수 있어야 하고, 이미 끝낸 날은 저장돼 있으니 다시 눌러도 낭비가 없다.
-async function summarizeDays(r, days, onNote) {
-  const todo = days.filter(d => !aiDay(r, d.date));
+async function summarizeDays(r, todo, onNote) {
   let done = 0;
   for (const d of todo) {
     if (S.stop) break;
@@ -1251,6 +1261,12 @@ async function summarizeDays(r, days, onNote) {
 }
 
 const aiDay = (r, date) => S.sums[`${r ? r.id : ""}|${date}`];
+
+// 정리한 뒤에 그 날 대화가 더 늘었는지. 마지막 날은 내보낸 시각 이후가 잘려 있어서 흔한 일이다.
+function aiStale(r, d) {
+  const s = aiDay(r, d.date);
+  return !!(s && typeof s.total === "number" && d.total > s.total);
+}
 const aiTopic = (r, date, id) => (aiDay(r, date)?.topics || {})[id];
 
 /* ══════════════════════════════════════════════════════════
@@ -1525,8 +1541,9 @@ function renderSummary(main) {
     const marks = [d.topics.some(t => t.hasPrompt) ? "프롬프트" : null,
                    d.files.length ? "파일" : null,
                    d.links.length ? "링크" : null].filter(Boolean).join(" · ");
+    const stale = aiStale(r, d);
     head.innerHTML = `<span class="day-date">${fmtDate(d.date)}</span>
-      <span class="day-meta">${d.total.toLocaleString()}건 → 핵심 ${d.topics.length}${marks ? " · " + marks : ""}</span>`;
+      <span class="day-meta">${stale ? '<b style="color:var(--warn)">대화 늘어남</b> · ' : ""}${d.total.toLocaleString()}건 → 핵심 ${d.topics.length}${marks ? " · " + marks : ""}</span>`;
     head.onclick = () => {
       S.date = (S.date === d.date && box.classList.contains("open")) ? null : d.date;
       S.topicId = null;
@@ -1572,8 +1589,10 @@ function renderSummary(main) {
   if (d) {
     const busy = S.busy === d.date;
     const has = !!aiDay(r, d.date);
-    const ai = el("button", "btn sm primary",
-      busy ? `<span class="spin">◌</span> ${esc(S.busyNote || "정리 중…")}` : (has ? "AI로 다시 정리" : "AI로 정리"));
+    const stale = aiStale(r, d);
+    const ai = el("button", "btn sm primary", busy
+      ? `<span class="spin">◌</span> ${esc(S.busyNote || "정리 중…")}`
+      : (stale ? "늘어난 대화까지 다시 정리" : has ? "AI로 다시 정리" : "AI로 정리"));
     ai.disabled = busy;
     // 얼마나 나갈지 모르는 채로 누르게 두지 않는다. 보낼 분량을 미리 보여준다.
     ai.title = `이 날 보낼 분량: 약 ${dayPayload(d).length.toLocaleString()}자 ` +
@@ -1979,7 +1998,12 @@ function renderMonth(main) {
   rh.appendChild(el("span", "spacer"));
   if (S.month) {
     const busy = S.busy === S.month;
-    const left2 = days.filter(d => !aiDay(r, d.date));
+    // 아직 안 한 날과, 정리한 뒤로 대화가 늘어난 날을 함께 대상으로 본다
+    const fresh = days.filter(d => !aiDay(r, d.date));
+    const grown = days.filter(d => aiStale(r, d));
+    const left2 = days.filter(d => !aiDay(r, d.date) || aiStale(r, d));
+    const todoLabel = [fresh.length ? `안 된 ${fresh.length}일` : "", grown.length ? `늘어난 ${grown.length}일` : ""]
+      .filter(Boolean).join(" + ");
 
     if (busy) {
       rh.appendChild(el("span", "btn sm", `<span class="spin">◌</span> ${esc(S.busyNote || "정리 중…")}`));
@@ -1991,14 +2015,14 @@ function renderMonth(main) {
       if (left2.length) {
         // 누르기 전에 몇 일치가 얼마나 나가는지 밝힌다
         const chars = left2.reduce((n, d) => n + dayPayload(d).length, 0);
-        const all = el("button", "btn sm primary", `안 된 ${left2.length}일 한꺼번에`);
+        const all = el("button", "btn sm primary", `${todoLabel} 한꺼번에`);
         all.title = `보낼 분량 약 ${chars.toLocaleString()}자 (${left2.length}일치 합계). 도중에 멈출 수 있어요.`;
         all.onclick = () => {
-          if (!confirm(`아직 정리하지 않은 ${left2.length}일을 이어서 돌릴게요.\n` +
-                       `보낼 분량은 모두 합쳐 약 ${chars.toLocaleString()}자예요.\n` +
+          if (!confirm(`${todoLabel}을 이어서 돌릴게요. (모두 ${left2.length}일)\n` +
+                       `보낼 분량은 합쳐서 약 ${chars.toLocaleString()}자예요.\n` +
                        `도중에 멈출 수 있고, 끝난 날은 저장되니 다시 눌러도 낭비되지 않아요.`)) return;
           runSummary(S.month, async () => {
-            const res = await summarizeDays(r, days, busyNote);
+            const res = await summarizeDays(r, left2, busyNote);
             toast(`${res.done}일 정리했어요${res.done < res.total ? " (멈춤)" : ""}`);
           });
         };
@@ -2008,17 +2032,17 @@ function renderMonth(main) {
         rec ? "달 요약 다시 만들기" : "달 요약 만들기");
       b.disabled = !days.length;
       b.title = left2.length
-        ? `아직 안 된 ${left2.length}일을 먼저 돌리고 이어서 달 요약까지 만들어요.`
+        ? `${todoLabel}을 먼저 돌리고 이어서 달 요약까지 만들어요.`
         : `날짜별 정리 ${done.length}일치를 재료로 씁니다. 원본 대화를 다시 보내지 않아 값이 적게 나가요.`;
       b.onclick = () => {
         // 달 요약은 날짜별 정리를 재료로 쓴다. 재료가 빠졌으면 그것부터 채우고 이어서 간다.
         if (left2.length) {
           const chars = left2.reduce((n, d) => n + dayPayload(d).length, 0);
-          if (!confirm(`아직 정리하지 않은 ${left2.length}일이 있어요.\n` +
+          if (!confirm(`${todoLabel}이 남아 있어요. (모두 ${left2.length}일)\n` +
                        `그 ${left2.length}일(약 ${chars.toLocaleString()}자)을 먼저 돌리고, 이어서 달 요약까지 만들까요?\n` +
                        `도중에 '멈춤'을 누르면 거기서 세울 수 있어요.`)) return;
           runSummary(S.month, async () => {
-            const res = await summarizeDays(r, days, busyNote);
+            const res = await summarizeDays(r, left2, busyNote);
             if (S.stop) {
               toast(`${res.done}일 정리하고 멈췄어요. 달 요약은 아직 만들지 않았어요.`);
               return;
