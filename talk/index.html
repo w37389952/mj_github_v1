@@ -2040,6 +2040,16 @@ function renderVault(main) {
   }
   rh.appendChild(el("span", null, S.date ? fmtDateFull(S.date) : "전체 기간"));
   rh.appendChild(el("span", "spacer"));
+  // 사진은 들어왔는데 대화에 하나도 안 붙었으면, 왜 그런지 알아볼 근거를 건네준다
+  if (shots.length && r.mediaDiag && !r.mediaDiag.제자리에붙음) {
+    const b = el("button", "btn sm", "사진이 안 붙는 이유 복사");
+    b.onclick = () => {
+      navigator.clipboard.writeText(JSON.stringify(r.mediaDiag, null, 1)).then(
+        () => toast("복사했어요. 그대로 붙여넣어 물어보면 돼요."),
+        () => toast("복사에 실패했어요"));
+    };
+    rh.appendChild(b);
+  }
   rh.appendChild(chips);
   right.appendChild(rh);
 
@@ -2649,11 +2659,37 @@ async function handleZip(file) {
       if (byName.has(k) && !owner.has(k)) owner.set(k, m);
     }
   }
-  // ② 이름이 안 적힌 나머지는, 남은 '사진' 자리 수와 개수가 맞을 때만 순서대로 짝짓는다.
   const slots = mediaSlots(parsed.messages);
   const rest = media.filter(e => !owner.has(e.name.split("/").pop().toLowerCase()));
-  const byOrder = rest.length > 0 && rest.length === slots.length;
-  const restSlot = new Map(byOrder ? rest.map((e, i) => [e.name, slots[i]]) : []);
+  const restSlot = new Map();
+  let byTime = 0;
+
+  // ② 압축파일은 파일마다 저장 시각을 갖고 있다. 그 시각이 제각각이면 진짜 시각이라는 뜻이니
+  //    가장 가까운 '사진' 자리에 붙인다. 개수가 안 맞아도(못 받은 사진이 있으면 그렇다) 통한다.
+  // 내보낼 때 한꺼번에 만들어진 파일이면 시각이 죄다 같다. 그건 진짜 시각이 아니라 쓸 수 없다.
+  const stamped = rest.filter(e => e.mdate && e.mtime);
+  const spread = new Set(stamped.map(e => e.mdate + e.mtime)).size;
+  if (stamped.length && spread >= Math.min(4, stamped.length)) {
+    const free = slots.map(m => ({ m, used: false }));
+    for (const e of stamped) {
+      const t = Date.parse(`${e.mdate}T${e.mtime}:00`);
+      let best = null, bestGap = Infinity;
+      for (const s of free) {
+        if (s.used) continue;
+        const gap = Math.abs(s.m.ts - t);
+        if (gap < bestGap) { bestGap = gap; best = s; }
+      }
+      if (best && bestGap <= 30 * 60 * 1000) {
+        best.used = true;
+        restSlot.set(e.name, best.m);
+        byTime++;
+      }
+    }
+  }
+
+  // ③ 그래도 안 되면, 남은 개수가 '사진' 자리 수와 정확히 같을 때만 순서대로 짝짓는다.
+  const byOrder = byTime === 0 && rest.length > 0 && rest.length === slots.length;
+  if (byOrder) rest.forEach((e, i) => restSlot.set(e.name, slots[i]));
 
   // 합치면서 메시지 번호가 다시 매겨진다. 짝지을 때 쓴 번호는 합치기 전 것이라
   // 그대로 쓰면 엉뚱한 자리에 붙는다. 내용으로 방 안의 실제 번호를 다시 찾는다.
@@ -2683,10 +2719,20 @@ async function handleZip(file) {
     } catch (_) { skipped++; }
   }
   r.media = await mediaOf(r.id);
+  // 짝이 안 맞았을 때 무엇을 봐야 할지 알 수 있게 근거를 남긴다
+  r.mediaDiag = {
+    파일: media.length, 사진자리: slots.length,
+    이름으로: owner.size, 시각으로: byTime, 순서로: byOrder ? rest.length : 0,
+    제자리에붙음: attached,
+    시각있는파일: media.filter(e => e.mdate).length,
+    서로다른시각: new Set(media.map(e => e.mdate + e.mtime)).size,
+    파일이름예시: media.slice(0, 3).map(e => e.name.split("/").pop()),
+    사진자리예시: slots.slice(0, 3).map(m => `${m.date} ${m.time} ${m.user}: ${m.text.slice(0, 20)}`),
+  };
   return {
     name: parsed.name, msgs: parsed.messages.length,
     saved, skipped, attached, total: media.length,
-    slots: slots.length, named: owner.size, byOrder,
+    slots: slots.length, named: owner.size, byTime, byOrder,
   };
 }
 
@@ -2704,9 +2750,11 @@ async function handleFiles(fileList) {
           `사진·동영상 ${res.saved.toLocaleString()}개를 넣었어요.` +
           (res.skipped ? ` ${res.skipped}개는 너무 크거나 지원하지 않아 건너뛰었어요.` : "") +
           (res.attached
-            ? `\n그중 ${res.attached}개는 대화 원문의 제자리에 붙였어요.` +
+            ? `\n그중 ${res.attached}개는 대화 원문의 제자리에 붙였어요` +
+              `(${res.named ? "파일 이름" : res.byTime ? "저장 시각" : "순서"}으로 맞춤).` +
               (res.attached < res.saved ? ` 나머지 ${res.saved - res.attached}개는 자료함에만 모였어요.` : "")
-            : `\n어느 메시지의 사진인지는 알 수 없어 자료함에만 모았어요. (사진 자리 ${res.slots}개 / 파일 ${res.total}개)`));
+            : `\n어느 메시지의 사진인지는 알 수 없어 자료함에만 모았어요. (사진 자리 ${res.slots}개 / 파일 ${res.total}개)` +
+              `\n자료함 > 사진 탭의 '사진이 안 붙는 이유 복사'를 눌러 보내주세요.`));
       } catch (err) {
         toast(err.message || "압축파일을 읽지 못했어요");
       } finally {
