@@ -241,6 +241,29 @@ main { flex: 1 1 auto; min-height: 0; display: flex; overflow: hidden; }
 .link-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 13px; }
 .link-row .dom { font-size: 11px; font-weight: 700; color: var(--text-3); flex: none; min-width: 96px; }
 
+/* 사진·동영상 격자 */
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.shot {
+  border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel-2);
+  aspect-ratio: 1; position: relative; padding: 0; display: block; cursor: zoom-in;
+}
+.shot img, .shot video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shot .tag {
+  position: absolute; left: 5px; bottom: 5px; font-size: 10px; font-weight: 700;
+  background: rgba(0,0,0,.6); color: #fff; padding: 1px 5px; border-radius: 4px;
+}
+.shot:hover { border-color: var(--accent); }
+#viewer {
+  position: fixed; inset: 0; background: rgba(8,10,16,.9); z-index: 80;
+  display: flex; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out;
+}
+#viewer[hidden] { display: none; }
+#viewer img, #viewer video { max-width: 100%; max-height: 100%; border-radius: 8px; }
+#viewer .cap {
+  position: fixed; left: 0; right: 0; bottom: 14px; text-align: center;
+  color: #fff; font-size: 12px; opacity: .8;
+}
+
 /* 필터 칩 */
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
@@ -369,9 +392,10 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
   </header>
   <main id="main"></main>
 </div>
-<input type="file" id="fileInput" accept=".txt,.csv" multiple hidden>
+<input type="file" id="fileInput" accept=".txt,.csv,.zip" multiple hidden>
 <div id="toast"></div>
 <div id="modal" hidden><div class="sheet" id="sheet"></div></div>
+<div id="viewer" hidden></div>
 
 <script>
 "use strict";
@@ -895,16 +919,19 @@ function analyze(room) {
    3. 저장 (IndexedDB — 대화 파일이 커도 견딘다)
    ══════════════════════════════════════════════════════════ */
 
-const DB_NAME = "dantok-organizer", STORE = "rooms", SUMS = "summaries";
+const DB_NAME = "dantok-organizer", STORE = "rooms", SUMS = "summaries", MEDIA = "media";
 let dbp = null;
 function db() {
   if (dbp) return dbp;
   dbp = new Promise((res, rej) => {
-    const r = indexedDB.open(DB_NAME, 2);
+    const r = indexedDB.open(DB_NAME, 3);
     r.onupgradeneeded = () => {
       const d = r.result;
       if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE, { keyPath: "id" });
       if (!d.objectStoreNames.contains(SUMS)) d.createObjectStore(SUMS, { keyPath: "id" });
+      if (!d.objectStoreNames.contains(MEDIA)) {
+        d.createObjectStore(MEDIA, { keyPath: "id" }).createIndex("room", "roomId");
+      }
     };
     r.onsuccess = () => res(r.result);
     r.onerror = () => rej(r.error);
@@ -951,6 +978,44 @@ async function dbPut(room) {
     d.transaction(STORE, "readwrite").objectStore(STORE).put(rec);
   } catch (_) { toast("저장에 실패했어요. 브라우저 저장 공간을 확인해 주세요."); }
 }
+// 사진·동영상. 용량이 커서 대화와 따로 둔다.
+async function mediaPut(rec) {
+  try {
+    const d = await db();
+    await new Promise((res, rej) => {
+      const t = d.transaction(MEDIA, "readwrite");
+      t.objectStore(MEDIA).put(rec);
+      t.oncomplete = res;
+      t.onerror = () => rej(t.error);
+    });
+    return true;
+  } catch (_) { return false; }
+}
+async function mediaOf(roomId) {
+  try {
+    const d = await db();
+    return await new Promise((res, rej) => {
+      const q = d.transaction(MEDIA).objectStore(MEDIA).index("room").getAll(roomId);
+      q.onsuccess = () => res(q.result || []);
+      q.onerror = () => rej(q.error);
+    });
+  } catch (_) { return []; }
+}
+async function mediaDel(roomId) {
+  try {
+    const d = await db();
+    const t = d.transaction(MEDIA, "readwrite");
+    const idx = t.objectStore(MEDIA).index("room");
+    const q = idx.openKeyCursor(IDBKeyRange.only(roomId));
+    q.onsuccess = () => {
+      const c = q.result;
+      if (!c) return;
+      t.objectStore(MEDIA).delete(c.primaryKey);
+      c.continue();
+    };
+  } catch (_) {}
+}
+
 async function dbDel(id) {
   try { (await db()).transaction(STORE, "readwrite").objectStore(STORE).delete(id); } catch (_) {}
 }
@@ -1522,6 +1587,7 @@ function renderRooms() {
       if (e.target.classList.contains("x")) {
         if (!confirm(`'${r.name}' 을(를) 목록에서 지울까요? (원본 파일은 그대로예요)`)) return;
         dbDel(r.id);
+        mediaDel(r.id);
         S.rooms = S.rooms.filter(x => x.id !== r.id);
         if (S.roomId === r.id) { S.roomId = S.rooms[0] ? S.rooms[0].id : null; S.date = null; }
         render();
@@ -1861,8 +1927,44 @@ function vaultItems(d, kind) {
   return out.sort((a, b) => a.m.i - b.m.i);
 }
 
+// 미리보기용 주소는 쓰고 나면 반드시 놓아준다. 안 그러면 사진 수백 장이 메모리에 쌓인다.
+let shotUrls = [];
+function freeShots() {
+  for (const u of shotUrls) URL.revokeObjectURL(u);
+  shotUrls = [];
+}
+const shotUrl = blob => {
+  const u = URL.createObjectURL(blob);
+  shotUrls.push(u);
+  return u;
+};
+
+function openViewer(item) {
+  const v = $("#viewer");
+  const url = URL.createObjectURL(item.blob);
+  v.innerHTML = item.kind === "video"
+    ? `<video src="${url}" controls autoplay></video><div class="cap">${esc(item.name)}</div>`
+    : `<img src="${url}" alt="${esc(item.name)}"><div class="cap">${esc(item.name)}</div>`;
+  v.hidden = false;
+  v.onclick = () => { v.hidden = true; v.innerHTML = ""; URL.revokeObjectURL(url); };
+}
+
+function renderShots(items) {
+  const grid = el("div", "shots");
+  for (const it of items) {
+    const b = el("button", "shot");
+    b.innerHTML = it.kind === "video"
+      ? `<video src="${shotUrl(it.blob)}" muted preload="metadata"></video><span class="tag">동영상</span>`
+      : `<img src="${shotUrl(it.blob)}" alt="${esc(it.name)}" loading="lazy">`;
+    b.onclick = () => openViewer(it);
+    grid.appendChild(b);
+  }
+  return grid;
+}
+
 function renderVault(main) {
   const r = room();
+  freeShots();
   const left = el("div", "pane-left");
   left.appendChild(el("div", "pane-head", "<span>자료가 올라온 날</span>"));
   const list = el("div", "scroll");
@@ -1898,7 +2000,11 @@ function renderVault(main) {
   const right = el("div", "pane-right");
   const rh = el("div", "pane-head");
   const chips = el("div", "chips");
-  for (const [k, label] of [["all", "전체"], ["prompt", "프롬프트"], ["file", "파일"], ["link", "링크"]]) {
+  const shots = r.media || [];
+  const kinds = [["all", "전체"], ["prompt", "프롬프트"], ["file", "파일"], ["link", "링크"]];
+  // 압축파일로 넣은 방에서만 사진 칩이 뜬다
+  if (shots.length) kinds.push(["shot", `사진·동영상 ${shots.length}`]);
+  for (const [k, label] of kinds) {
     const c = el("button", "chip" + (S.vaultKind === k ? " on" : ""), label);
     c.onclick = () => { S.vaultKind = k; render(); };
     chips.appendChild(c);
@@ -1912,6 +2018,36 @@ function renderVault(main) {
   const sc = el("div", "scroll");
   const cards = el("div", "cards");
   let n = 0;
+
+  if (S.vaultKind === "shot") {
+    // 파일 이름에 날짜가 있으면 날짜별로 묶고, 없는 것은 맨 아래 따로 모은다
+    const pick = S.date ? shots.filter(x => x.date === S.date) : shots;
+    const byDate = new Map();
+    for (const x of pick) {
+      const k = x.date || "";
+      if (!byDate.has(k)) byDate.set(k, []);
+      byDate.get(k).push(x);
+    }
+    const keys = [...byDate.keys()].sort((a, b) => (a && b ? (a < b ? 1 : -1) : a ? -1 : 1));
+    for (const k of keys) {
+      const h = el("div", "topic-meta",
+        `<b style="color:var(--text-2)">${k ? esc(fmtDate(k)) : "날짜를 알 수 없는 것"}</b> · ${byDate.get(k).length}개`);
+      h.style.margin = "6px 0 -2px";
+      cards.appendChild(h);
+      cards.appendChild(renderShots(byDate.get(k)));
+      n += byDate.get(k).length;
+    }
+    if (!n && S.date) {
+      cards.appendChild(el("div", "note",
+        "이 날짜로 묶인 사진이 없어요. 파일 이름에 날짜가 없으면 왼쪽에서 <b>전체 기간</b>을 골라야 보여요."));
+      n = 1;
+    }
+    if (n) { sc.appendChild(cards); right.appendChild(sc); }
+    else right.appendChild(el("div", "empty", "<h2>사진·동영상이 없어요</h2>"));
+    main.appendChild(left);
+    main.appendChild(right);
+    return;
+  }
 
   for (const d of days) {
     const items = vaultItems(d, S.vaultKind);
@@ -2218,17 +2354,23 @@ function renderEmpty(main) {
   const e = el("div", "empty");
   e.innerHTML = `
     <h2>단톡방 대화를 불러오세요</h2>
-    <p>카카오톡에서 내보낸 <code>.txt</code> 파일을 여기에 끌어다 놓으면 됩니다.
+    <p>카카오톡에서 내보낸 <code>.txt</code> 또는 사진까지 담긴 <code>.zip</code> 파일을 여기에 끌어다 놓으면 됩니다.
        방 하나가 위쪽 탭 하나가 돼요.</p>
     <div class="drop" id="drop">
       <button class="btn primary" id="pick">파일 고르기</button>
-      <div style="margin-top:10px;font-size:12px;color:var(--text-3)">또는 이 영역에 끌어다 놓기</div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-3)">또는 이 영역에 끌어다 놓기 · <b>.txt</b> 와 <b>.zip</b> 둘 다 돼요</div>
     </div>
     <div class="note">
       <b>대화 내보내는 법</b>
       <ol>
-        <li><b>휴대폰</b> — 채팅방 → 오른쪽 위 ≡ → 설정(톱니) → 대화 내용 → 대화 내보내기 → 텍스트만 보내기</li>
-        <li><b>PC</b> — 채팅방 오른쪽 위 ≡ → 대화내용 → 대화 내용 저장 → 텍스트 파일</li>
+        <li><b>휴대폰</b> — 채팅방 → ≡ → 설정 → 대화 내용 → 대화 내용 내보내기
+          <ul>
+            <li><b>텍스트 메시지만 저장</b> — 글만 담긴 <code>.txt</code>가 바로 전송돼요</li>
+            <li><b>모든 메시지 내부저장소에 저장</b> — 사진·동영상까지 <code>.zip</code>으로 폰에 저장돼요.
+              그 zip을 여기 넣으면 <b>자료함에서 사진까지</b> 볼 수 있어요</li>
+          </ul>
+        </li>
+        <li><b>PC</b> — 채팅방 오른쪽 위 ≡ → 대화내용 → 대화 내용 저장 → 텍스트 파일 (사진은 안 담겨요)</li>
       </ol>
     </div>
     <div class="note">
@@ -2363,11 +2505,119 @@ function decode(buf) {
   return utf8;
 }
 
+/* ── 압축파일(zip) 읽기 ──
+   카톡 '모든 메시지 내부저장소에 저장'은 txt와 사진·동영상을 zip 하나로 묶어 준다.
+   외부 라이브러리 없이 브라우저가 가진 압축 해제 기능만으로 읽는다. */
+
+function zipEntries(buf) {
+  const dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("압축파일을 읽지 못했어요. zip 파일이 맞는지 확인해 주세요.");
+  const count = dv.getUint16(eocd + 10, true);
+  if (count === 0xffff) throw new Error("파일이 너무 많은 압축파일이라 읽지 못했어요.");
+
+  let off = dv.getUint32(eocd + 16, true);
+  const out = [];
+  for (let n = 0; n < count; n++) {
+    if (off + 46 > buf.byteLength || dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize = dv.getUint32(off + 20, true);
+    const size = dv.getUint32(off + 24, true);
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const cmtLen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = new TextDecoder("utf-8").decode(new Uint8Array(buf, off + 46, nameLen));
+    const lnameLen = dv.getUint16(lho + 26, true);
+    const lextraLen = dv.getUint16(lho + 28, true);
+    out.push({ name, method, size, csize, start: lho + 30 + lnameLen + lextraLen });
+    off += 46 + nameLen + extraLen + cmtLen;
+  }
+  return out;
+}
+
+async function zipRead(buf, e) {
+  const raw = new Uint8Array(buf, e.start, e.csize);
+  if (e.method === 0) return raw;                    // 그냥 담아둔 것
+  if (e.method !== 8) throw new Error(`'${e.name}'은 지원하지 않는 압축 방식이에요.`);
+  const stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+const MIME = {
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+  webp: "image/webp", heic: "image/heic", bmp: "image/bmp",
+  mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", m4v: "video/mp4",
+  mp3: "audio/mpeg", m4a: "audio/mp4", aac: "audio/aac",
+};
+const extOf = n => (n.split(".").pop() || "").toLowerCase();
+const isMedia = n => !!MIME[extOf(n)];
+const kindOf = n => (MIME[extOf(n)] || "").split("/")[0];   // image | video | audio
+
+// 파일 이름에 날짜가 박혀 있으면 그 날 자료로 묶는다. 없으면 날짜 없이 모아 둔다.
+function dateInName(n) {
+  const m = n.match(/(20\d{2})[-_.]?(0[1-9]|1[0-2])[-_.]?(0[1-9]|[12]\d|3[01])/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+const VIDEO_MAX = 40 * 1024 * 1024;   // 이보다 큰 동영상은 저장 공간을 다 먹어서 건너뛴다
+
+async function handleZip(file) {
+  const buf = await file.arrayBuffer();
+  const entries = zipEntries(buf).filter(e => !e.name.endsWith("/"));
+  const txts = entries.filter(e => /\.(txt|csv)$/i.test(e.name)).sort((a, b) => b.size - a.size);
+  if (!txts.length) throw new Error("압축파일 안에서 대화 txt를 찾지 못했어요.");
+
+  const raw = decode((await zipRead(buf, txts[0])).buffer);
+  const fallback = file.name.replace(/\.zip$/i, "").replace(/^KakaoTalk(Chats)?[_ -]*/i, "");
+  const parsed = parseKakao(raw, fallback || "이름 없는 방");
+  if (!parsed.messages.length) throw new Error("압축파일 안의 txt에서 대화를 찾지 못했어요.");
+  const r = addRoom(parsed.name, parsed.messages, raw);
+
+  let saved = 0, skipped = 0;
+  const media = entries.filter(e => isMedia(e.name));
+  for (let i = 0; i < media.length; i++) {
+    const e = media[i];
+    if (kindOf(e.name) === "video" && e.size > VIDEO_MAX) { skipped++; continue; }
+    if (i % 20 === 0) busyNote(`사진·동영상 ${i + 1}/${media.length}개 넣는 중…`);
+    try {
+      const bytes = await zipRead(buf, e);
+      const short = e.name.split("/").pop();
+      const ok = await mediaPut({
+        id: `${r.id}|${short}`, roomId: r.id, name: short,
+        date: dateInName(short), kind: kindOf(short),
+        blob: new Blob([bytes], { type: MIME[extOf(short)] }),
+      });
+      ok ? saved++ : skipped++;
+    } catch (_) { skipped++; }
+  }
+  r.media = await mediaOf(r.id);
+  return { name: parsed.name, msgs: parsed.messages.length, saved, skipped, total: media.length };
+}
+
 async function handleFiles(fileList) {
-  const files = [...fileList].filter(f => /\.(txt|csv)$/i.test(f.name));
-  if (!files.length) { toast("카카오톡에서 내보낸 .txt 파일을 넣어주세요"); return; }
+  const files = [...fileList].filter(f => /\.(txt|csv|zip)$/i.test(f.name));
+  if (!files.length) { toast("카카오톡에서 내보낸 .txt 또는 .zip 파일을 넣어주세요"); return; }
 
   for (const f of files) {
+    if (/\.zip$/i.test(f.name)) {
+      // 사진까지 든 압축파일은 오래 걸린다. 진행 상황을 알려준다.
+      S.busy = "zip"; S.busyNote = `'${f.name}' 여는 중…`; render();
+      try {
+        const res = await handleZip(f);
+        toast(`'${res.name}' — 대화 ${res.msgs.toLocaleString()}건, ` +
+          `사진·동영상 ${res.saved.toLocaleString()}개를 넣었어요` +
+          (res.skipped ? ` (${res.skipped}개는 너무 크거나 지원하지 않아 건너뛰었어요)` : ""));
+      } catch (err) {
+        toast(err.message || "압축파일을 읽지 못했어요");
+      } finally {
+        S.busy = null; S.busyNote = null;
+      }
+      continue;
+    }
     const raw = decode(await f.arrayBuffer());
     const fallback = f.name.replace(/\.(txt|csv)$/i, "").replace(/^KakaoTalk(Chats)?[_ -]*/i, "");
     const parsed = parseKakao(raw, fallback || "이름 없는 방");
@@ -2407,6 +2657,7 @@ function addRoom(name, messages, raw) {
   S.roomId = r.id;
   S.date = r.days.length ? r.days[0].date : null;
   S.topicId = null;
+  return r;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -2539,6 +2790,7 @@ const SAMPLE = `AI 자동화 연구소 님과 카카오톡 대화
     // 원본 없이 예전 파서로 저장된 방은 스스로 고칠 수 없다. 같은 파일을 다시 넣어야 한다.
     r.stale = rec.pv !== PARSER_VERSION && !r.raws.length;
     analyze(r);
+    r.media = await mediaOf(r.id);
     S.rooms.push(r);
     if (rec.pv !== PARSER_VERSION && !r.stale) dbPut(r);
   }
