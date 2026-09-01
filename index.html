@@ -710,6 +710,15 @@ function stripBizWords(text) {
   return out.replace(/\s+/g, " ").trim();
 }
 
+/* 이름 자체가 업종을 말하고 있으면 뒤에 업종을 또 붙이지 않는다.
+ * 아이디는 띄어쓰기가 없어 '바'가 '바바라' 안에서도 걸리므로, 낱말이
+ * 이름의 맨 앞이나 맨 뒤에 올 때만 업종으로 본다. */
+const SHOP_WORD_LIST =
+  "bakery|brewery|kitchen|coffee|cafe|kafe|roaster|roastery|patisserie|" +
+  "dessert|teahouse|bread|pizza|pasta|burger|noodle|ramen|sushi|udon|soba|" +
+  "katsu|izakaya|grill|steak|dining|deli|eatery|room|house|market|store";
+const SHOP_WORDS = new RegExp(`^(?:${SHOP_WORD_LIST})|(?:${SHOP_WORD_LIST})$`);
+
 /** 계정 아이디 후보. 앞쪽일수록 그럴듯한 순서다. */
 function instagramHandles(place) {
   const raw = place.name;
@@ -722,17 +731,13 @@ function instagramHandles(place) {
   if (!core) core = raw;
 
   const segs = segment(core);
-  // 업종어를 넣은 형태와 뺀 형태를 모두 낸다. 하트베이커리는 heartbakery로도,
-  // heart로도 쓰이기 때문이다.
-  const stripped = stripBizWords(core);
   const bases = baseSpellings(core, english);
-  if (stripped && stripped !== core) {
-    baseSpellings(stripped, "").slice(0, 2).forEach(b => {
-      if (!bases.includes(b)) bases.push(b);
-    });
-  }
   const hoods = hotspotTokens(place.address);
-  const cats = isCafeLike(place) ? ["cafe", "coffee"] : ["room", "eatery"];
+  // 이름에 이미 업종이 들어 있으면 또 붙이지 않는다.
+  // hwasubrewery에 room을 붙이면 '브루어리 룸'이 되어 말이 안 된다.
+  const cats = SHOP_WORDS.test(bases[0] || "")
+    ? []
+    : (isCafeLike(place) ? ["cafe", "coffee"] : ["room", "eatery"]);
 
   /* 철자가 이미 확실한 경우가 있다. 상호에 영문이 붙어 있거나(탁트(TAKT)),
    * 이름이 통째로 외래어일 때다(버블케미스트리 → bubblechemistry).
@@ -757,7 +762,7 @@ function instagramHandles(place) {
   cats.forEach(c => stems.forEach(b => append(b, c, "업종")));
   if (stems[0]) {
     ["seoul", "kr", "official"].forEach(g => append(stems[0], g, "기타"));
-    if (isCafeLike(place)) append(stems[0], "kafe", "변형");
+    if (cats.length && isCafeLike(place)) append(stems[0], "kafe", "변형");
   }
   return out.slice(0, 20);
 }
