@@ -1373,6 +1373,9 @@ function renderSummary(main) {
     const ai = el("button", "btn sm primary",
       busy ? '<span class="spin">◌</span> 정리 중…' : (has ? "AI로 다시 정리" : "AI로 정리"));
     ai.disabled = busy;
+    // 얼마나 나갈지 모르는 채로 누르게 두지 않는다. 보낼 분량을 미리 보여준다.
+    ai.title = `이 날 보낼 분량: 약 ${dayPayload(d).length.toLocaleString()}자 ` +
+      `(전체 ${d.total.toLocaleString()}건 가운데 걸러 남은 것만)`;
     ai.onclick = () => runSummary(d.date, () => summarizeDay(r, d));
     rh.appendChild(ai);
 
@@ -1466,6 +1469,8 @@ function renderDigest(d) {
 
   const dayAI = aiDay(r, d.date);
   if (dayAI && dayAI.day) box.appendChild(aiBlock("이 날 AI 정리", dayAI.day));
+  else box.appendChild(el("div", "sub",
+    `AI로 정리하면 약 ${dayPayload(d).length.toLocaleString()}자를 보내요. 원문 전체가 아니라 걸러 남은 것만이에요.`));
 
   if (d.topics.length) {
     box.appendChild(el("div", "sec", `이 날 오간 이야기 ${d.topics.length}가지`));
