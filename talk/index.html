@@ -1356,12 +1356,31 @@ function openAISettings() {
   syncShape();
   fillModels(null);
 
+  // 목록을 안 불러온 상태에서는 저장된 모델 하나만 보여 '고를 게 없는' 화면이 된다.
+  // 키가 이미 있으면 열자마자 조용히 불러와 채운다.
+  const autoLoad = async () => {
+    if (!aiReady()) return;
+    modelSel.disabled = true;
+    const keep = modelSel.innerHTML;
+    modelSel.innerHTML = "<option>불러오는 중…</option>";
+    try {
+      AI.provider = prov.value;
+      fillModels(await listModels());
+    } catch (_) {
+      modelSel.innerHTML = keep;   // 실패하면 쓰던 것을 그대로 둔다. 버튼으로 다시 시도할 수 있다.
+    } finally {
+      modelSel.disabled = false;
+    }
+  };
+  autoLoad();
+
   keyIn.oninput = syncShape;
   prov.onchange = () => {
     AI.model = AI_DEFAULT_MODEL[prov.value];
     syncHelp();
     syncShape();
     fillModels(null);
+    autoLoad();
   };
   // 이 버튼이 키 확인을 겸한다. 성공하면 키가 살아있다는 뜻이다.
   sheet.querySelector("#aiLoad").onclick = async e => {
