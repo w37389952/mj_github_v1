@@ -969,8 +969,9 @@ function apiError(data, status) {
       "옛날에 받아둔 키라면 새로 하나 만드는 게 제일 빨라요.";
   }
   if (status === 429) return "요청이 잠시 몰렸어요. 조금 뒤에 다시 시도해 주세요.";
-  if (status === 400 && /model/i.test(msg)) return "모델 이름이 맞지 않아요. 설정에서 '모델 불러오기'를 눌러 골라 주세요.";
-  if (status === 404) return "그 모델을 찾지 못했어요. 설정에서 '모델 불러오기'를 눌러 목록에서 골라 주세요.";
+  // 어느 모델이 거절됐는지 밝혀야 설정에서 뭘 바꿔야 할지 알 수 있다
+  if (status === 404 || (status === 400 && /model/i.test(msg)))
+    return `'${AI.model}' 모델을 쓸 수 없어요. 설정에서 '키 확인 · 모델 불러오기'를 누르고 목록 맨 위 것으로 골라 주세요.`;
   return `요약에 실패했어요 (${status}) ${msg}`.trim();
 }
 
@@ -1019,15 +1020,33 @@ async function askGemini(system, user) {
 
 const askAI = (system, user) => (AI.provider === "gemini" ? askGemini : askClaude)(system, user);
 
+// 구글이 주는 목록에는 글쓰기와 무관한 모델과 이미 물러난 옛 모델이 섞여 있고
+// 순서도 쓸모 순이 아니다. 그대로 첫 줄을 고르면 404가 난다. 걸러서 줄 세운다.
+const GEMINI_SKIP = /embedding|aqa|imagen|veo|-tts|image-generation|native-audio|live-|vision/i;
+function rankGemini(id) {
+  let s = /^gemini-/.test(id) ? 100 : 0;
+  s += (parseFloat((id.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1]) || 0) * 10;
+  if (/flash/.test(id)) s += 8;            // 요약에는 값싸고 빠른 쪽이 맞다
+  if (/pro/.test(id)) s += 5;
+  if (/lite/.test(id)) s -= 1;           // 무료 등급에선 값 차이가 없으니 품질 쪽을 앞에 둔다
+  if (/latest/.test(id)) s += 2;
+  if (/preview|exp\b|-exp-|thinking/.test(id)) s -= 6;
+  return s;
+}
+
 async function listModels() {
   if (AI.provider === "gemini") {
-    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100",
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
       { headers: { "x-goog-api-key": AI.key.trim() } });
     const d = await res.json().catch(() => null);
     if (!res.ok) throw new Error(apiError(d, res.status));
-    return (d.models || [])
+    const all = (d.models || [])
       .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
-      .map(m => m.name.replace(/^models\//, ""));
+      .map(m => m.name.replace(/^models\//, ""))
+      .filter(id => !GEMINI_SKIP.test(id));
+    const ranked = all.sort((a, b) => rankGemini(b) - rankGemini(a));
+    if (!ranked.length) throw new Error("글을 쓸 수 있는 모델이 목록에 없어요. 다른 키로 시도해 주세요.");
+    return ranked;
   }
   const res = await fetch("https://api.anthropic.com/v1/models?limit=100", {
     headers: {
@@ -1236,12 +1255,15 @@ function openAISettings() {
 
   const fillModels = list => {
     modelSel.innerHTML = "";
-    const items = list && list.length ? list : [AI.model || AI_DEFAULT_MODEL[prov.value]];
-    for (const id of items) {
-      const o = el("option", null, esc(id));
+    const fromApi = !!(list && list.length);
+    const items = fromApi ? list : [AI.model || AI_DEFAULT_MODEL[prov.value]];
+    items.forEach((id, i) => {
+      // 목록은 쓸모 순으로 줄 세워 두었다. 맨 위가 이 용도에 가장 무난한 모델이다.
+      const o = el("option", null, esc(id) + (fromApi && i === 0 ? " — 추천" : ""));
       o.value = id;
       modelSel.appendChild(o);
-    }
+    });
+    // 저장해둔 모델이 목록에 없으면 맨 위(추천)가 그대로 선택된 채로 남는다
     if (AI.model && items.includes(AI.model)) modelSel.value = AI.model;
   };
   const syncHelp = () => {
