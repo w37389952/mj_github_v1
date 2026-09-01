@@ -615,6 +615,10 @@ function isPromptLike(t) {
   return hits >= 3;
 }
 
+// '사진' '동영상'은 무언가 오갔다는 표시일 뿐 파일 이름이 아니다.
+// 자료함 '파일'은 나중에 찾아 열어볼 문서를 모으는 곳이라 이런 표시는 넣지 않는다.
+const isPlaceholderFile = f => /^(사진|동영상|첨부|음성메시지|보이스톡)$/.test(f || "");
+
 function attachmentOf(t) {
   for (const raw of t.split("\n")) {
     const line = raw.trim();
@@ -911,7 +915,7 @@ function analyze(room) {
         total: real.length,
         topics: buildTopics(real, msgs),
         prompts: real.filter(m => m.prompt),
-        files: real.filter(m => m.file && !m.prompt),
+        files: real.filter(m => m.file && !m.prompt && !isPlaceholderFile(m.file)),
         links: real.filter(m => m.links.length),
       };
     });
@@ -1861,7 +1865,12 @@ function msgNode(m, prevUser, dim) {
 
   const badges = [];
   if (m.prompt) badges.push('<span class="badge p">프롬프트</span>');
-  if (m.file && !named) badges.push(`<span class="badge f">${esc(m.file)}</span>`);
+  if (m.file && !named) {
+    // 사진이 오갔다는 표시만 있고 파일이 없으면, 왜 안 보이는지 그 자리에서 밝힌다
+    badges.push(isPlaceholderFile(m.file) && !shots.length
+      ? `<span class="badge">${esc(m.file)} · 내보내기에 파일 없음</span>`
+      : `<span class="badge f">${esc(m.file)}</span>`);
+  }
   for (const l of m.links.slice(0, 3)) badges.push(`<span class="badge l">${esc(domainOf(l))}</span>`);
   e.innerHTML = `<div class="msg-side">${m.time}</div>
     <div class="msg-main">
