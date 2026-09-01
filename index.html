@@ -641,9 +641,17 @@ function instagramHandles(place) {
   core = stripBizWords(core);
   if (!core) core = stripBizWords(raw) || raw;
 
+  const segs = segment(core);
   const bases = baseSpellings(core, english);
   const hoods = hotspotTokens(place.address);
   const cats = isCafeLike(place) ? ["cafe", "coffee"] : ["room", "eatery"];
+
+  /* 철자가 이미 확실한 경우가 있다. 상호에 영문이 붙어 있거나(탁트(TAKT)),
+   * 이름이 통째로 외래어일 때다(버블케미스트리 → bubblechemistry).
+   * 그럴 때는 뒤에 붙이는 말도 그 철자에만 붙인다. 소리대로 옮긴 갈래에
+   * kr이나 cafe를 붙여봐야 쓰이지 않을 조합만 늘어난다. */
+  const certain = Boolean(english) || (segs.length > 0 && segs.every(s => s.en));
+  const stems = certain ? bases.slice(0, 1) : bases.slice(0, 2);
 
   const out = [];
   const push = (handle, note) => {
@@ -653,11 +661,11 @@ function instagramHandles(place) {
   };
 
   bases.forEach(b => push(b, ""));
-  hoods.forEach(h => bases.slice(0, 2).forEach(b => push(b + h, "지역")));
-  cats.forEach(c => bases.slice(0, 2).forEach(b => push(b + c, "업종")));
-  if (bases[0]) {
-    ["seoul", "kr", "official"].forEach(g => push(bases[0] + g, "기타"));
-    if (isCafeLike(place)) push(bases[0] + "kafe", "변형");
+  hoods.forEach(h => stems.forEach(b => push(b + h, "지역")));
+  cats.forEach(c => stems.forEach(b => push(b + c, "업종")));
+  if (stems[0]) {
+    ["seoul", "kr", "official"].forEach(g => push(stems[0] + g, "기타"));
+    if (isCafeLike(place)) push(stems[0] + "kafe", "변형");
   }
   return out.slice(0, 20);
 }
