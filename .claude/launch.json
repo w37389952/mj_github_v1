@@ -6,6 +6,13 @@
       "runtimeExecutable": "powershell",
       "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".claude/serve.ps1", "-Port", "8735"],
       "port": 8735
+    },
+    {
+      "name": "dantok",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".claude/serve.ps1", "-Port", "8736"],
+      "port": 8736,
+      "url": "http://localhost:8736"
     }
   ]
 }

@@ -20,7 +20,7 @@ $mime = @{
 while ($listener.IsListening) {
   $ctx = $listener.GetContext()
   $path = [System.Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath)
-  if ($path -eq "/") { $path = "/index.html" }
+  if ($path.EndsWith("/")) { $path += "index.html" }
   $file = Join-Path $root ($path.TrimStart("/") -replace "/", "\")
   $fullRoot = [System.IO.Path]::GetFullPath($root)
   $fullFile = [System.IO.Path]::GetFullPath($file)
