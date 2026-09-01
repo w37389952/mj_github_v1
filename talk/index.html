@@ -1848,10 +1848,6 @@ function buildMediaIndex() {
 }
 const mediaFor = mi => mediaIndex.get(mi) || [];
 
-// 사진·동영상이 오갔던 자리. 파일이 딸려왔든 아니든 대화에서 눈에 보여야 한다.
-const isShotSpot = m =>
-  !m.sys && (mediaFor(m.i).length > 0 || isPlaceholderFile(m.file) || RE_ONE_MEDIA.test(m.text.trim()));
-
 function msgNode(m, prevUser, dim) {
   if (m.sys) {
     const s = el("div", "msg sys");
@@ -1860,9 +1856,7 @@ function msgNode(m, prevUser, dim) {
     return s;
   }
   const shots = mediaFor(m.i);
-  // 사진 자리는 흐리게 두지 않는다. 찾아보라고 남겨두는 표시이기 때문이다.
-  const e = el("div", "msg" + (m.user === prevUser ? " same" : "") +
-    (dim && !isShotSpot(m) ? " dim" : ""));
+  const e = el("div", "msg" + (m.user === prevUser ? " same" : "") + (dim ? " dim" : ""));
   e.id = "m" + m.i;
   // 사진이 바로 아래 붙는데 해시 파일 이름까지 적어 두면 어수선하다
   const bare = m.text.trim();
@@ -1925,9 +1919,7 @@ function renderChat(d) {
   };
 
   for (const m of d.msgs) {
-    // 사진이 오갔던 자리는 접지 않는다. 파일이 없더라도 '여기 사진이 있었다'가 보여야
-    // 카톡 원문에서 찾아볼 수 있다. 짧다는 이유로 사담과 함께 묻히면 안 된다.
-    const folded = S.hideChatter && (m.sys || !m.keep) && !isShotSpot(m);
+    const folded = S.hideChatter && (m.sys || !m.keep);
     if (folded) { run.push(m); continue; }
     flush();
     wrap.appendChild(msgNode(m, prevUser, false));
