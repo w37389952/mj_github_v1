@@ -136,6 +136,16 @@ main { flex: 1 1 auto; min-height: 0; display: flex; overflow: hidden; }
 .day-topics { display: none; padding: 2px 10px 12px; }
 .day.open .day-topics { display: block; }
 
+/* 새로 들어온 날과 예전 날의 경계 */
+.new-rule {
+  width: 100%; display: flex; align-items: center; gap: 8px; border: 0;
+  background: var(--accent-soft); color: var(--accent);
+  padding: 6px 14px; font-size: 11px; font-weight: 700;
+  border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft);
+}
+.new-rule .x { margin-left: auto; font-weight: 600; opacity: .65; }
+.new-rule:hover .x { opacity: 1; text-decoration: underline; }
+
 .topic {
   width: 100%; text-align: left; border: 1px solid var(--line-soft);
   background: var(--panel-2); border-radius: var(--radius);
@@ -933,7 +943,7 @@ async function dbPut(room) {
   try {
     const d = await db();
     const rec = {
-      id: room.id, name: room.name, pv: PARSER_VERSION, raws: room.raws || [],
+      id: room.id, name: room.name, pv: PARSER_VERSION, raws: room.raws || [], newFrom: room.newFrom || null,
       messages: room.messages.map(m => ({
         i: m.i, date: m.date, time: m.time, ts: m.ts, user: m.user, text: m.text, sys: m.sys
       }))
@@ -1534,7 +1544,20 @@ function renderSummary(main) {
 
   const list = el("div", "scroll");
   list.id = "leftScroll";
+
+  // 다시 내보내 넣었을 때 어디부터가 새 대화인지 여기서 짚어준다.
+  // 목록이 최근 날짜부터라서 새로 들어온 날은 위쪽에 모인다.
+  const newCount = r.newFrom ? r.days.filter(d => d.date >= r.newFrom).length : 0;
+  let ruleDrawn = false;
+
   for (const d of r.days) {
+    if (newCount && !ruleDrawn && d.date < r.newFrom) {
+      const rule = el("button", "new-rule");
+      rule.innerHTML = `<span>↑ 여기까지 새로 들어온 ${newCount}일</span><span class="x">표시 지우기</span>`;
+      rule.onclick = () => { r.newFrom = null; dbPut(r); render(); };
+      list.appendChild(rule);
+      ruleDrawn = true;
+    }
     const box = el("div", "day" + (d.date === S.date ? " on open" : ""));
     box.dataset.day = d.date;
     const head = el("button", "day-head");
@@ -2359,6 +2382,7 @@ function addRoom(name, messages, raw) {
   let r = S.rooms.find(x => x.name === name);
   // 예전 파서로 읽힌 방이면 합치지 않고 통째로 갈아끼운다. 안 그러면 같은 대화가 두 벌 남는다.
   if (r && r.stale) { r.messages = []; r.raws = []; r.stale = false; }
+  const hadDates = r ? new Set(r.messages.map(m => m.date)) : null;
   if (r) {
     const seen = new Set(r.messages.map(m => `${m.date}|${m.time}|${m.user}|${m.text}`));
     const add = messages.filter(m => !seen.has(`${m.date}|${m.time}|${m.user}|${m.text}`));
@@ -2372,6 +2396,12 @@ function addRoom(name, messages, raw) {
   }
   // 원본을 함께 남긴다. 파서를 고쳤을 때 다시 불러올 필요 없이 스스로 다시 읽는다.
   if (raw) (r.raws = r.raws || []).push(raw);
+  // 다시 내보내 넣었을 때 어디부터가 새로 들어온 대화인지 표시해 둔다.
+  // 처음 불러오는 방은 전부가 새것이므로 표시하지 않는다.
+  if (hadDates && hadDates.size) {
+    const added = [...new Set(r.messages.map(m => m.date))].filter(x => !hadDates.has(x)).sort();
+    r.newFrom = added.length ? added[0] : r.newFrom;
+  }
   analyze(r);
   dbPut(r);
   S.roomId = r.id;
@@ -2505,7 +2535,7 @@ const SAMPLE = `AI 자동화 연구소 님과 카카오톡 대화
       }
       messages.sort((a, b) => a.ts - b.ts || a.i - b.i).forEach((m, i) => (m.i = i));
     }
-    const r = { id: rec.id, name: rec.name, messages, raws: rec.raws || [] };
+    const r = { id: rec.id, name: rec.name, messages, raws: rec.raws || [], newFrom: rec.newFrom || null };
     // 원본 없이 예전 파서로 저장된 방은 스스로 고칠 수 없다. 같은 파일을 다시 넣어야 한다.
     r.stale = rec.pv !== PARSER_VERSION && !r.raws.length;
     analyze(r);
