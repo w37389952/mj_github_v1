@@ -253,6 +253,8 @@ main { flex: 1 1 auto; min-height: 0; display: flex; overflow: hidden; }
   background: rgba(0,0,0,.6); color: #fff; padding: 1px 5px; border-radius: 4px;
 }
 .shot:hover { border-color: var(--accent); }
+/* 대화 안에 붙는 것은 작게 */
+.shots.in-chat { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); max-width: 420px; margin-top: 6px; }
 #viewer {
   position: fixed; inset: 0; background: rgba(8,10,16,.9); z-index: 80;
   display: flex; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out;
@@ -1824,6 +1826,20 @@ function renderDigest(d) {
   return box;
 }
 
+// 어느 메시지의 사진인지 알아낸 경우엔 대화 원문에 바로 붙여 보여준다.
+// 메시지마다 훑으면 느려서, 화면을 그릴 때 한 번만 묶어 둔다.
+let mediaIndex = new Map();
+function buildMediaIndex() {
+  mediaIndex = new Map();
+  const r = room();
+  for (const x of (r && r.media) || []) {
+    if (x.mi == null) continue;
+    if (!mediaIndex.has(x.mi)) mediaIndex.set(x.mi, []);
+    mediaIndex.get(x.mi).push(x);
+  }
+}
+const mediaFor = mi => mediaIndex.get(mi) || [];
+
 function msgNode(m, prevUser, dim) {
   if (m.sys) {
     const s = el("div", "msg sys");
@@ -1843,6 +1859,12 @@ function msgNode(m, prevUser, dim) {
       <div class="msg-text">${linkify(m.text)}</div>
       ${badges.length ? `<div class="msg-badges">${badges.join("")}</div>` : ""}
     </div>`;
+  const shots = mediaFor(m.i);
+  if (shots.length) {
+    const box = renderShots(shots);
+    box.classList.add("in-chat");
+    e.querySelector(".msg-main").appendChild(box);
+  }
   return e;
 }
 
@@ -1964,7 +1986,6 @@ function renderShots(items) {
 
 function renderVault(main) {
   const r = room();
-  freeShots();
   const left = el("div", "pane-left");
   left.appendChild(el("div", "pane-head", "<span>자료가 올라온 날</span>"));
   const list = el("div", "scroll");
@@ -2410,6 +2431,8 @@ function render() {
   if (prevChat && lastChatKey) scrollMem[lastChatKey] = prevChat.scrollTop;
 
   renderRooms();
+  freeShots();
+  buildMediaIndex();
   const main = $("#main");
   main.innerHTML = "";
   $("#views").style.display = S.rooms.length ? "flex" : "none";
@@ -2533,10 +2556,32 @@ function zipEntries(buf) {
     const name = new TextDecoder("utf-8").decode(new Uint8Array(buf, off + 46, nameLen));
     const lnameLen = dv.getUint16(lho + 26, true);
     const lextraLen = dv.getUint16(lho + 28, true);
-    out.push({ name, method, size, csize, start: lho + 30 + lnameLen + lextraLen });
+    // 압축파일은 파일마다 만든 시각을 함께 담는다. 이름에 날짜가 없을 때 기댈 곳이다.
+    const dTime = dv.getUint16(off + 12, true);
+    const dDate = dv.getUint16(off + 14, true);
+    out.push({
+      name, method, size, csize,
+      start: lho + 30 + lnameLen + lextraLen,
+      mdate: dDate ? `${1980 + (dDate >> 9)}-${pad2((dDate >> 5) & 15)}-${pad2(dDate & 31)}` : null,
+      mtime: dDate ? `${pad2(dTime >> 11)}:${pad2((dTime >> 5) & 63)}` : null,
+    });
     off += 46 + nameLen + extraLen + cmtLen;
   }
   return out;
+}
+
+// 카톡 txt는 사진 자리에 '사진' 한 단어만 남긴다. 그 자리들을 순서대로 세어 둔다.
+// '사진 3장'은 세 자리로 친다.
+function mediaSlots(messages) {
+  const slots = [];
+  for (const m of messages) {
+    if (m.sys) continue;
+    const t = m.text.trim();
+    const many = t.match(/^사진\s*(\d+)\s*장$/);
+    const n = many ? Number(many[1]) : /^<?(사진|동영상)>?$/.test(t) ? 1 : 0;
+    for (let k = 0; k < n; k++) slots.push(m);
+  }
+  return slots;
 }
 
 async function zipRead(buf, e) {
@@ -2579,6 +2624,12 @@ async function handleZip(file) {
 
   let saved = 0, skipped = 0;
   const media = entries.filter(e => isMedia(e.name));
+
+  // 파일 이름이 해시라 날짜를 알 수 없다. 대신 대화 속 '사진' 자리 수와 파일 수가 맞으면
+  // 담긴 순서대로 짝지어, 어느 메시지의 사진인지까지 알아낸다.
+  const slots = mediaSlots(parsed.messages);
+  const paired = slots.length > 0 && slots.length === media.length;
+
   for (let i = 0; i < media.length; i++) {
     const e = media[i];
     if (kindOf(e.name) === "video" && e.size > VIDEO_MAX) { skipped++; continue; }
@@ -2586,16 +2637,25 @@ async function handleZip(file) {
     try {
       const bytes = await zipRead(buf, e);
       const short = e.name.split("/").pop();
+      const slot = paired ? slots[i] : null;
       const ok = await mediaPut({
         id: `${r.id}|${short}`, roomId: r.id, name: short,
-        date: dateInName(short), kind: kindOf(short),
+        // 짝이 맞으면 그 메시지의 날짜·시각을, 아니면 이름이나 압축파일에 적힌 날짜를 쓴다
+        date: slot ? slot.date : (dateInName(short) || e.mdate),
+        time: slot ? slot.time : e.mtime,
+        mi: slot ? slot.i : null,
+        user: slot ? slot.user : "",
+        kind: kindOf(short),
         blob: new Blob([bytes], { type: MIME[extOf(short)] }),
       });
       ok ? saved++ : skipped++;
     } catch (_) { skipped++; }
   }
   r.media = await mediaOf(r.id);
-  return { name: parsed.name, msgs: parsed.messages.length, saved, skipped, total: media.length };
+  return {
+    name: parsed.name, msgs: parsed.messages.length,
+    saved, skipped, total: media.length, slots: slots.length, paired,
+  };
 }
 
 async function handleFiles(fileList) {
@@ -2609,8 +2669,11 @@ async function handleFiles(fileList) {
       try {
         const res = await handleZip(f);
         toast(`'${res.name}' — 대화 ${res.msgs.toLocaleString()}건, ` +
-          `사진·동영상 ${res.saved.toLocaleString()}개를 넣었어요` +
-          (res.skipped ? ` (${res.skipped}개는 너무 크거나 지원하지 않아 건너뛰었어요)` : ""));
+          `사진·동영상 ${res.saved.toLocaleString()}개를 넣었어요.` +
+          (res.skipped ? ` ${res.skipped}개는 너무 크거나 지원하지 않아 건너뛰었어요.` : "") +
+          (res.paired
+            ? `\n대화 속 사진 자리 ${res.slots}개와 파일 수가 맞아, 어느 메시지의 사진인지까지 짝지었어요.`
+            : `\n대화 속 사진 자리는 ${res.slots}개인데 파일은 ${res.total}개라 짝이 맞지 않아요. 날짜별로만 묶었어요.`));
       } catch (err) {
         toast(err.message || "압축파일을 읽지 못했어요");
       } finally {
