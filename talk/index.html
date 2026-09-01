@@ -732,6 +732,9 @@ function expandKeep(msgs) {
 }
 
 function snippet(t, n) {
+  // 사진 한 장이 통째로 해시 파일 이름으로 적혀 있는 줄은 그대로 보여줄 이유가 없다
+  const bare = t.trim();
+  if (RE_ONE_MEDIA.test(bare)) return kindOf(bare) === "video" ? "동영상" : "사진";
   const s = t.replace(RE_URL, m => {
     try { return "(" + new URL(m).hostname.replace(/^www\./, "") + " 링크)"; }
     catch (_) { return "(링크)"; }
@@ -1849,17 +1852,22 @@ function msgNode(m, prevUser, dim) {
   }
   const e = el("div", "msg" + (m.user === prevUser ? " same" : "") + (dim ? " dim" : ""));
   e.id = "m" + m.i;
+  const shots = mediaFor(m.i);
+  // 사진이 바로 아래 붙는데 해시 파일 이름까지 적어 두면 어수선하다
+  const bare = m.text.trim();
+  const named = shots.length && RE_ONE_MEDIA.test(bare);
+  const text = named ? (kindOf(bare) === "video" ? "동영상" : "사진") : m.text;
+
   const badges = [];
   if (m.prompt) badges.push('<span class="badge p">프롬프트</span>');
-  if (m.file) badges.push(`<span class="badge f">${esc(m.file)}</span>`);
+  if (m.file && !named) badges.push(`<span class="badge f">${esc(m.file)}</span>`);
   for (const l of m.links.slice(0, 3)) badges.push(`<span class="badge l">${esc(domainOf(l))}</span>`);
   e.innerHTML = `<div class="msg-side">${m.time}</div>
     <div class="msg-main">
       <div class="msg-who">${esc(m.user)}</div>
-      <div class="msg-text">${linkify(m.text)}</div>
+      <div class="msg-text">${linkify(text)}</div>
       ${badges.length ? `<div class="msg-badges">${badges.join("")}</div>` : ""}
     </div>`;
-  const shots = mediaFor(m.i);
   if (shots.length) {
     const box = renderShots(shots);
     box.classList.add("in-chat");
@@ -2600,6 +2608,9 @@ const MIME = {
 };
 // 대화 본문에 박혀 있는 파일 이름을 찾아내는 눈
 const RE_MEDIA_TOKEN = /[\w][\w.\-()]*\.(?:jpg|jpeg|png|gif|webp|heic|bmp|mp4|mov|webm|m4v|mp3|m4a|aac)/gi;
+// 줄 전체가 파일 이름 하나인 경우 / 사진이 있었다는 표시만 남은 경우
+const RE_ONE_MEDIA = /^[\w][\w.\-()]*\.(?:jpg|jpeg|png|gif|webp|heic|bmp|mp4|mov|webm|m4v|mp3|m4a|aac)$/i;
+const RE_PLACEHOLDER = /^<?(사진|동영상)>?$/;
 const extOf = n => (n.split(".").pop() || "").toLowerCase();
 const isMedia = n => !!MIME[extOf(n)];
 const kindOf = n => (MIME[extOf(n)] || "").split("/")[0];   // image | video | audio
@@ -2624,7 +2635,7 @@ async function handleZip(file) {
   if (!parsed.messages.length) throw new Error("압축파일 안의 txt에서 대화를 찾지 못했어요.");
   const r = addRoom(parsed.name, parsed.messages, raw);
 
-  let saved = 0, skipped = 0;
+  let saved = 0, skipped = 0, attached = 0;
   const media = entries.filter(e => isMedia(e.name));
 
   // 어느 메시지의 사진인지 알아내는 방법이 둘이다.
@@ -2638,9 +2649,16 @@ async function handleZip(file) {
       if (byName.has(k) && !owner.has(k)) owner.set(k, m);
     }
   }
-  // ② 이름이 안 적혀 있으면, 대화 속 '사진' 자리 수와 파일 수가 맞을 때만 순서대로 짝짓는다.
+  // ② 이름이 안 적힌 나머지는, 남은 '사진' 자리 수와 개수가 맞을 때만 순서대로 짝짓는다.
   const slots = mediaSlots(parsed.messages);
-  const byOrder = owner.size === 0 && slots.length > 0 && slots.length === media.length;
+  const rest = media.filter(e => !owner.has(e.name.split("/").pop().toLowerCase()));
+  const byOrder = rest.length > 0 && rest.length === slots.length;
+  const restSlot = new Map(byOrder ? rest.map((e, i) => [e.name, slots[i]]) : []);
+
+  // 합치면서 메시지 번호가 다시 매겨진다. 짝지을 때 쓴 번호는 합치기 전 것이라
+  // 그대로 쓰면 엉뚱한 자리에 붙는다. 내용으로 방 안의 실제 번호를 다시 찾는다.
+  const idxOf = new Map(r.messages.map(m => [msgKey(m), m.i]));
+  const realIndex = m => (m ? idxOf.get(msgKey(m)) : undefined);
 
   for (let i = 0; i < media.length; i++) {
     const e = media[i];
@@ -2649,24 +2667,25 @@ async function handleZip(file) {
     try {
       const bytes = await zipRead(buf, e);
       const short = e.name.split("/").pop();
-      const slot = owner.get(short.toLowerCase()) || (byOrder ? slots[i] : null);
+      const slot = owner.get(short.toLowerCase()) || restSlot.get(e.name) || null;
+      const mi = realIndex(slot);
       const ok = await mediaPut({
         id: `${r.id}|${short}`, roomId: r.id, name: short,
         // 짝이 맞으면 그 메시지의 날짜·시각을, 아니면 이름이나 압축파일에 적힌 날짜를 쓴다
         date: slot ? slot.date : (dateInName(short) || e.mdate),
         time: slot ? slot.time : e.mtime,
-        mi: slot ? slot.i : null,
+        mi: mi === undefined ? null : mi,
         user: slot ? slot.user : "",
         kind: kindOf(short),
         blob: new Blob([bytes], { type: MIME[extOf(short)] }),
       });
-      ok ? saved++ : skipped++;
+      if (ok) { saved++; if (mi !== undefined) attached++; } else skipped++;
     } catch (_) { skipped++; }
   }
   r.media = await mediaOf(r.id);
   return {
     name: parsed.name, msgs: parsed.messages.length,
-    saved, skipped, total: media.length,
+    saved, skipped, attached, total: media.length,
     slots: slots.length, named: owner.size, byOrder,
   };
 }
@@ -2684,11 +2703,10 @@ async function handleFiles(fileList) {
         toast(`'${res.name}' — 대화 ${res.msgs.toLocaleString()}건, ` +
           `사진·동영상 ${res.saved.toLocaleString()}개를 넣었어요.` +
           (res.skipped ? ` ${res.skipped}개는 너무 크거나 지원하지 않아 건너뛰었어요.` : "") +
-          (res.named
-            ? `\n대화에 적힌 파일 이름으로 ${res.named}개를 제자리에 붙였어요.`
-            : res.byOrder
-              ? `\n대화 속 사진 자리 ${res.slots}개와 파일 수가 맞아 순서대로 짝지었어요.`
-              : `\n어느 메시지의 사진인지는 알 수 없어 날짜별로만 묶었어요. (사진 자리 ${res.slots}개 / 파일 ${res.total}개)`));
+          (res.attached
+            ? `\n그중 ${res.attached}개는 대화 원문의 제자리에 붙였어요.` +
+              (res.attached < res.saved ? ` 나머지 ${res.saved - res.attached}개는 자료함에만 모였어요.` : "")
+            : `\n어느 메시지의 사진인지는 알 수 없어 자료함에만 모았어요. (사진 자리 ${res.slots}개 / 파일 ${res.total}개)`));
       } catch (err) {
         toast(err.message || "압축파일을 읽지 못했어요");
       } finally {
@@ -2740,8 +2758,27 @@ function addRoom(name, messages, raw) {
   if (r && r.stale) { r.messages = []; r.raws = []; r.stale = false; }
   const hadDates = r ? new Set(r.messages.map(m => m.date)) : null;
   if (r) {
-    const seen = new Set(r.messages.map(m => `${m.date}|${m.time}|${m.user}|${m.text}`));
-    const add = messages.filter(m => !seen.has(`${m.date}|${m.time}|${m.user}|${m.text}`));
+    const seen = new Set(r.messages.map(msgKey));
+
+    // 같은 순간의 사진이 내보내기 방식에 따라 '사진'으로도, 파일 이름으로도 적힌다.
+    // 둘을 따로 쌓으면 같은 사진이 두 줄로 보인다. 빈 '사진' 자리를 파일 이름이 물려받게 한다.
+    const slotKey = m => `${m.date}|${m.time}|${m.user}`;
+    const holes = new Map();
+    for (const m of r.messages) {
+      if (m.sys || !RE_PLACEHOLDER.test(m.text.trim())) continue;
+      if (!holes.has(slotKey(m))) holes.set(slotKey(m), []);
+      holes.get(slotKey(m)).push(m);
+    }
+
+    const add = [];
+    for (const m of messages) {
+      if (seen.has(msgKey(m))) continue;
+      if (!m.sys && RE_ONE_MEDIA.test(m.text.trim())) {
+        const q = holes.get(slotKey(m));
+        if (q && q.length) { q.shift().text = m.text; continue; }
+      }
+      add.push(m);
+    }
     r.messages = r.messages.concat(add).sort((a, b) => a.ts - b.ts || a.i - b.i);
     r.messages.forEach((m, i) => (m.i = i));
     toast(mergedInto
