@@ -514,16 +514,20 @@ const LOANWORDS_ALL = { ...LOANWORDS, ...SHORT_LOANWORDS };
  * 뒤 값들은 영어를 한글로 옮겨 지은 상호를 되돌리기 위한 것이다. 한국어는
  * 영어의 자음군을 '으'를 끼워 적고(plato → 플라토), 영어 -er을 '어'로,
  * 일본어 tsu를 '츠'로 적는다. 그 되돌림을 갈래로 넣어 둔다. */
+// ㄷ·ㅌ에 th를 둔 것은 영어 the·three가 한글로 '더'·'스리'가 되기 때문이다.
 const LEAD_ALT = [
-  ["g","k","c"], ["kk","gg"], ["n"], ["d","t"], ["tt","dd"], ["r","l"], ["m"],
-  ["b","p","v"], ["pp","bb"], ["s","sh","c"], ["ss","s"], [""],
-  ["j","z"], ["jj"], ["ch","ts","c"], ["k","c"], ["t"], ["p","f"], ["h"],
+  ["g","k","c"], ["kk","gg"], ["n"], ["d","t","th"], ["tt","dd"], ["r","l"], ["m"],
+  ["b","p","v"], ["pp","bb"], ["s","sh","c","th"], ["ss","s"], [""],
+  ["j","z"], ["jj"], ["ch","ts","c"], ["k","c"], ["t","th"], ["p","f"], ["h"],
 ];
+/* 사전이 걸러주므로 갈래를 넓게 잡는다. 영어의 애매모음은 한글로 'ㅓ'가 되어
+ * company의 pa가 '퍼'로 적히는데, 그런 되돌림까지 열어 두는 것이다. */
 const VOWEL_ALT = [
-  ["a","ar"], ["ae","ai","a"], ["ya"], ["yae"], ["eo","er","u","o"],
-  ["e","ea"], ["yeo","yo"], ["ye"], ["o","oh","ou"], ["wa"], ["wae"],
-  ["oe","we"], ["yo"], ["u","oo","ou"], ["wo","weo"], ["we"],
-  ["wi","ui"], ["yu"], ["","eu","u"], ["ui","i"], ["i","ee","ea","y"],
+  ["a","ar","au"], ["ae","ai","a","e"], ["ya"], ["yae"],
+  ["eo","er","u","o","a","or"], ["e","ea","a"], ["yeo","yo"], ["ye"],
+  ["o","oh","ou","oa","aw"], ["wa"], ["wae"], ["oe","we"], ["yo"],
+  ["u","oo","ou","ew","o"], ["wo","weo"], ["we"], ["wi","ui"], ["yu","ew"],
+  ["","eu","u"], ["ui","i"], ["i","ee","ea","y","ie","e"],
 ];
 const TAIL_ALT = [
   [""], ["k","g","c"], ["k"], ["k"], ["n"], ["n"], ["n"], ["t","s"],
@@ -532,7 +536,92 @@ const TAIL_ALT = [
   ["t"], ["p"], ["t"],
 ];
 
-const MAX_BASES = 6;
+const MAX_BASES = 8;
+
+/* 상호에 자주 쓰이는 영어 낱말. 낱말을 하나하나 등록하는 사전이 아니라,
+ * 만들어낸 철자가 '영어처럼 보이는지' 판정하는 데 쓰는 검증기다.
+ * 이것이 있어야 표기 규칙을 넓게 잡아도 쓰레기 후보가 위로 올라오지 않는다. */
+const EN_WORDS = new Set((
+  // 사람·관계
+  "my our your the and of for with by all one two three four five six seven " +
+  "eight nine ten first second third half double triple mr ms dr sir lady " +
+  "boy girl man woman kid baby son daughter brother sister friend guest king " +
+  "queen prince princess master chief captain doctor artist maker keeper " +
+  "lover dreamer walker runner rider hunter fisher farmer baker chef cook " +
+  "barista brother people family team crew club union society company " +
+  "corporation partners brothers sisters friends neighbor neighbour " +
+  // 장소·건물
+  "house home room hall studio atelier gallery museum library office shop " +
+  "store market mart plaza mall center centre place space spot corner side " +
+  "street road avenue lane alley bridge station stop port dock harbor " +
+  "harbour terminal garage factory mill works workshop lab laboratory " +
+  "kitchen bar pub tavern inn hotel motel lodge cabin hut cottage villa " +
+  "castle tower building floor roof rooftop terrace balcony garden yard " +
+  "park field farm ranch camp base camp ground playground court club " +
+  "school academy college university institute church temple shrine " +
+  // 자연
+  "sun moon star sky cloud rain snow wind storm thunder light shadow dark " +
+  "fire flame water sea ocean wave beach shore island lake river stream " +
+  "spring well fountain mountain hill valley cliff rock stone sand desert " +
+  "forest wood woods tree leaf leaves branch root roots seed flower bloom " +
+  "blossom petal grass green garden meadow earth land ground soil sky " +
+  "dawn sunrise sunset dusk night day noon morning evening midnight " +
+  "season summer winter autumn fall spring weather rainbow horizon " +
+  // 색
+  "red blue green yellow orange purple violet pink brown black white gray " +
+  "grey silver gold golden bronze copper ivory cream beige navy mint coral " +
+  "amber ruby emerald jade pearl crystal diamond " +
+  // 동물
+  "cat dog bird fish bear wolf fox deer rabbit bunny mouse horse cow pig " +
+  "sheep goat lion tiger panda koala monkey elephant whale dolphin shark " +
+  "turtle penguin owl eagle hawk dove swan duck goose chicken rooster " +
+  "butterfly bee ant spider snail frog crab shrimp squid octopus pug " +
+  // 음식·음료
+  "food dish meal plate bowl cup mug glass bottle pot pan spoon fork knife " +
+  "table chair bread toast bun bagel baguette croissant pastry cake " +
+  "cupcake cookie biscuit cracker pie tart scone muffin donut doughnut " +
+  "waffle pancake crepe pudding jelly candy chocolate caramel vanilla " +
+  "honey sugar salt pepper spice herb cheese butter cream milk yogurt " +
+  "egg meat beef pork chicken lamb duck fish salmon tuna shrimp crab " +
+  "rice noodle pasta pizza burger sandwich salad soup stew curry steak " +
+  "grill barbecue bbq fry fried roast bake baked coffee espresso latte " +
+  "americano mocha cappuccino brew brewing roast roasted roaster roastery " +
+  "bean beans blend drip pour tea chai matcha juice soda cola beer ale " +
+  "lager stout wine whisky whiskey vodka gin rum cocktail bar brewery " +
+  "bakery patisserie deli delicatessen bistro brasserie cafe caffe " +
+  "restaurant diner eatery canteen kitchen dining ramen sushi udon soba " +
+  "katsu tempura izakaya taco burrito kebab falafel " +
+  "apple banana cherry lemon lime orange peach pear plum grape berry " +
+  "strawberry blueberry raspberry mango melon kiwi coconut olive avocado " +
+  "tomato potato onion garlic ginger carrot corn bean pea mushroom " +
+  // 성질·느낌
+  "good best better great grand big little small tiny mini micro macro " +
+  "new old young fresh pure clean clear bright shiny warm cool cold hot " +
+  "soft hard light heavy deep high low long short wide narrow round " +
+  "square simple plain rich poor sweet sour bitter salty spicy mild " +
+  "slow fast quick easy hard happy lucky merry jolly calm quiet silent " +
+  "wild free open close secret hidden lost found true real honest brave " +
+  "wise smart clever bold noble royal classic modern vintage retro urban " +
+  "rustic natural organic local daily weekly monthly yearly " +
+  "beautiful lovely pretty cute charming elegant gentle kind sweet " +
+  // 추상
+  "love heart soul spirit mind dream story tale memory moment time hour " +
+  "minute second day week month year life living lifestyle style mood " +
+  "vibe feel feeling touch sense taste flavor flavour scent aroma smell " +
+  "sound music song note tune rhythm beat harmony balance focus point " +
+  "line circle square shape form color colour art craft design draw " +
+  "paint print photo picture image frame view scene stage show play " +
+  "game sport run walk step jump climb travel journey trip tour path " +
+  "way road route map plan idea think mind wonder magic miracle luck " +
+  "chance hope wish joy smile laugh peace rest relax comfort cozy " +
+  "chemistry physics biology history nature culture nation world global " +
+  "korea seoul busan jeju asia europe america paris london tokyo " +
+  // 흔한 접미·기타
+  "official original select choice premium special limited signature " +
+  "standard basic classic edition version project studio works collective " +
+  "society brothers sons daughters and company co inc ltd " +
+  "cafe coffee bakery brewery kitchen table house room lab factory"
+).split(/\s+/).filter(w => w.length >= 2));
 
 /* 음절을 이어 붙이면 한국어 표기 특유의 자국이 남는다.
  * 플라토는 '플'의 ㄹ과 '라'의 ㄹ이 겹쳐 pl+ra가 되므로 하나로 합쳐야 plato가 된다. */
@@ -541,6 +630,62 @@ function tidySpelling(s) {
     .replace(/(?:ll|lr|rl|rr)/g, "l")
     .replace(/([bcdfgjkmnpstvz])\1+/g, "$1$1")
     .replace(/^-+|-+$/g, "");
+}
+
+/* 만들어낸 철자가 영어 낱말로 쪼개지는지 본다.
+ *
+ * craftroot는 craft와 root로 온전히 쪼개지지만 kraeptrut은 아무것도 안 걸린다.
+ * 이 차이로 '영어로 지은 상호'의 원래 철자를 골라낸다. 낱말을 하나씩 등록하는
+ * 대신 흔한 영어 낱말 사전 하나로 모든 상호를 판정하는 것이 요점이다. */
+// 낱말의 앞부분 모음. 만들다 만 철자도 영어로 가고 있는지 볼 수 있게 한다.
+const EN_PREFIXES = new Set();
+EN_WORDS.forEach(w => {
+  for (let i = 2; i <= w.length; i++) EN_PREFIXES.add(w.slice(0, i));
+});
+
+/* 짧은 낱말은 우연히 걸린다. 'ourenokatsu'의 our가 그렇다. 그래서 네 글자
+ * 이상만 세고, 길이의 제곱으로 무게를 준다. company처럼 긴 낱말이 통째로
+ * 맞아떨어질 때만 표준 표기를 제치도록 하기 위해서다. */
+const MIN_WORD = 4;
+
+function englishness(s) {
+  const n = s.length;
+  if (!n) return 0;
+  // score[i] = 앞에서 i글자까지 볼 때 얻을 수 있는 무게의 최댓값
+  const score = new Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    score[i] = score[i - 1];
+    for (let len = MIN_WORD; len <= Math.min(12, i); len++) {
+      if (EN_WORDS.has(s.slice(i - len, i))) {
+        score[i] = Math.max(score[i], score[i - len] + len * len);
+      }
+    }
+  }
+  return score[n] / (n * n);
+}
+
+/* 아직 다 만들지 않은 철자를 평가한다. 끝부분이 어떤 낱말의 앞부분이면
+ * 그것도 쳐준다. 'compa'는 아직 낱말이 아니지만 company로 가는 중이다.
+ * 이렇게 해야 후보를 쳐낼 때 정답으로 가는 길을 미리 끊지 않는다. */
+function partialEnglishness(s) {
+  const n = s.length;
+  if (!n) return 0;
+  const score = new Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    score[i] = score[i - 1];
+    for (let len = MIN_WORD; len <= Math.min(12, i); len++) {
+      if (EN_WORDS.has(s.slice(i - len, i))) {
+        score[i] = Math.max(score[i], score[i - len] + len * len);
+      }
+    }
+  }
+  let best = score[n];
+  // 끝에 남은 조각이 낱말의 앞부분이면 그만큼 쳐준다. 아직 만드는 중일 뿐이다.
+  for (let len = 2; len <= Math.min(12, n); len++) {
+    const tail = s.slice(n - len);
+    if (EN_PREFIXES.has(tail)) best = Math.max(best, score[n - len] + len * len * 0.8);
+  }
+  return best / (n * n);
 }
 
 /** 한 음절의 표기 후보. 앞쪽일수록 표준에 가깝고, 그 순서가 곧 비용이 된다. */
@@ -561,7 +706,7 @@ function syllableSpellings(ch) {
   })));
   rows.sort((a, b) => a.cost - b.cost);
   rows.forEach(r => { if (!out.some(o => o.s === r.s)) out.push(r); });
-  return out.slice(0, 6);
+  return out.slice(0, 10);
 }
 
 /** 문자열을 여러 철자로 옮긴다.
@@ -578,17 +723,30 @@ function spellVariants(text) {
       const item = typeof o === "string" ? { s: o, cost: 0 } : o;
       next.push({ s: p.s + item.s, cost: p.cost + item.cost });
     }));
-    next.sort((a, b) => a.cost - b.cost);
-    combos = next.slice(0, 120);
+    // 비용만 보고 자르면 company처럼 값비싼 정답이 먼저 잘려나간다.
+    // 영어로 가고 있는 정도를 함께 보고 남긴다.
+    next.forEach(c => { c.en = partialEnglishness(c.s); });
+    next.sort((a, b) => (b.en - a.en) || (a.cost - b.cost));
+    combos = next.slice(0, 250);
   }
   const seen = new Set();
   const out = [];
-  combos.forEach(c => {
-    const s = tidySpelling(c.s);
+  const add = (str, cost) => {
+    const s = tidySpelling(str);
     if (!s || seen.has(s)) return;
     seen.add(s);
-    out.push({ s, cost: c.cost });
+    out.push({ s, cost, en: englishness(s) });
+  };
+  combos.forEach(c => {
+    add(c.s, c.cost);
+    // 영어 장모음 i는 한글로 '아이'가 된다. 바이트 → bite, 플라이 → fly
+    add(c.s.replace(/ai/g, "i"), c.cost + 1);
+    add(c.s.replace(/ai/g, "y"), c.cost + 1);
   });
+
+  /* 영어 낱말로 잘 쪼개지는 것을 앞에 둔다. 같은 정도라면 표준 표기에
+   * 가까운 쪽이 앞이다. 이 정렬이 craftroot를 kraeptrut보다 위로 올린다. */
+  out.sort((a, b) => (b.en - a.en) || (a.cost - b.cost) || (a.s.length - b.s.length));
   return out;
 }
 
@@ -635,23 +793,27 @@ function baseSpellings(core, english) {
     const next = [];
     combos.forEach(p => choices.forEach(c =>
       next.push({ s: p.s + c.s, cost: p.cost + c.cost })));
-    next.sort((a, b) => a.cost - b.cost);
-    combos = next.slice(0, 60);
+    next.forEach(c => { c.en = partialEnglishness(c.s); });
+    next.sort((a, b) => (b.en - a.en) || (a.cost - b.cost));
+    combos = next.slice(0, 250);
   });
 
   const seen = new Set();
+  const scored = [];
+  combos.forEach(c => {
+    const s = tidySpelling(c.s);
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    scored.push({ s, cost: c.cost, en: englishness(s) });
+  });
+  scored.sort((a, b) => (b.en - a.en) || (a.cost - b.cost) || (a.s.length - b.s.length));
+
   const out = [];
   if (english) {
     const e = english.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (e) { seen.add(e); out.push(e); }
+    if (e) out.push(e);
   }
-  combos.forEach(c => {
-    const s = tidySpelling(c.s);
-    if (s && !seen.has(s)) { seen.add(s); out.push(s); }
-    // 영어 장모음 i는 한글로 '아이'가 된다. bite → 바이트
-    const alt = tidySpelling(c.s.replace(/ai/g, "i"));
-    if (alt && !seen.has(alt)) { seen.add(alt); out.push(alt); }
-  });
+  scored.forEach(c => { if (!out.includes(c.s)) out.push(c.s); });
   return out.slice(0, MAX_BASES);
 }
 
@@ -787,6 +949,9 @@ function instagramHandles(place) {
     ["seoul", "kr", "official"].forEach(g => append(stems[0], g, "기타"));
     if (cats.length && isCafeLike(place)) append(stems[0], "kafe", "변형");
   }
+  // 이름이 아주 길면 만든 철자가 모두 아이디 길이 제한을 넘는다.
+  // 그럴 때는 앞부분만 잘라서라도 하나는 내놓는다.
+  if (!out.length && bases[0]) push(bases[0].slice(0, 30), "줄임");
   return out.slice(0, 20);
 }
 
