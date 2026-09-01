@@ -219,7 +219,8 @@
   }
   .insta-panel {
     position: absolute; z-index: 30; right: 0; top: calc(100% + 6px);
-    min-width: 210px; max-width: 280px; max-height: 340px; overflow-y: auto;
+    min-width: 240px; max-width: min(340px, 78vw);
+    max-height: 340px; overflow-y: auto;
     background: var(--surface); border: 1px solid var(--line);
     border-radius: 12px; padding: 6px; box-shadow: 0 8px 28px rgba(0,0,0,.16);
   }
@@ -232,7 +233,8 @@
   .insta-row a {
     flex: 1; min-width: 0; padding: 5px 0; font-size: 13.5px;
     color: var(--ink); text-decoration: none;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    /* 아이디는 끝까지 보여야 한다. 길면 줄을 바꿔서라도 다 드러낸다. */
+    white-space: normal; overflow-wrap: anywhere; line-height: 1.35;
   }
   .insta-row:hover a { color: var(--accent); }
   .insta-row .note {
@@ -410,24 +412,74 @@ const BIZ_WORDS = [
   "스튜디오", "공방", "키친", "팩토리", "coffee", "cafe", "roasters",
 ];
 
-// 자주 쓰이는 외래어. 소리대로 옮기면 철자가 어긋나므로 먼저 바꾼다.
+/* 자주 쓰이는 외래어. 상호를 영어로 짓는 경우가 많은데 소리대로 옮기면
+ * 철자가 어긋나므로(케미스트리 → kemiseuteuri) 여기서 먼저 바로잡는다.
+ * 표에 있으면 그 철자가 첫 번째 후보가 된다. */
 const LOANWORDS = {
+  // 음식·음료
   "피자": "pizza", "파스타": "pasta", "버거": "burger", "베이글": "bagel",
   "쿠키": "cookie", "케이크": "cake", "와플": "waffle", "도넛": "donut",
-  "젤라또": "gelato", "스콘": "scone", "샐러드": "salad", "치킨": "chicken",
-  "라멘": "ramen", "누들": "noodle", "푸드": "food", "밀크": "milk",
-  "라떼": "latte", "브루어리": "brewery", "하우스": "house", "홈": "home",
-  "룸": "room", "숍": "shop", "스토어": "store", "마켓": "market",
+  "젤라또": "gelato", "젤라토": "gelato", "스콘": "scone", "샐러드": "salad",
+  "치킨": "chicken", "라멘": "ramen", "누들": "noodle", "푸드": "food",
+  "밀크": "milk", "라떼": "latte", "라테": "latte", "커피": "coffee",
+  "에스프레소": "espresso", "아메리카노": "americano", "모카": "mocha",
+  "블렌드": "blend", "브루잉": "brewing", "브루": "brew",
+  "로스팅": "roasting", "크림": "cream", "슈가": "sugar", "허니": "honey",
+  "초코": "choco", "초콜릿": "chocolate", "바닐라": "vanilla",
+  "카라멜": "caramel", "캐러멜": "caramel", "민트": "mint", "티라미수": "tiramisu",
+  "푸딩": "pudding", "타르트": "tart", "크로플": "croffle", "크루아상": "croissant",
+  "브런치": "brunch", "런치": "lunch", "디너": "dinner", "그릴": "grill",
+  "스테이크": "steak", "샌드위치": "sandwich", "토스트": "toast",
+  "브레드": "bread", "도우": "dough", "그레인": "grain",
+  "주스": "juice", "소다": "soda", "에일": "ale", "라거": "lager",
+  "와인": "wine", "위스키": "whisky", "칵테일": "cocktail",
+  // 공간·업태
+  "브루어리": "brewery", "하우스": "house", "홈": "home", "룸": "room",
+  "숍": "shop", "샵": "shop", "스토어": "store", "마켓": "market",
   "랩": "lab", "클럽": "club", "플레이스": "place", "스페이스": "space",
-  "테이블": "table", "스푼": "spoon", "그린": "green", "블루": "blue",
-  "화이트": "white", "블랙": "black", "레드": "red", "핑크": "pink",
-  "문": "moon", "스타": "star", "가든": "garden", "포레스트": "forest",
+  "스팟": "spot", "코너": "corner", "스트리트": "street", "로드": "road",
+  "브릿지": "bridge", "스테이션": "station", "라운지": "lounge",
+  "테라스": "terrace", "루프탑": "rooftop", "갤러리": "gallery",
+  "아뜰리에": "atelier", "아틀리에": "atelier", "스튜디오": "studio",
+  "워크숍": "workshop", "워크샵": "workshop", "팩토리": "factory",
+  "오피스": "office", "키친": "kitchen", "다이닝": "dining", "테이블": "table",
+  "펍": "pub", "델리": "deli", "베이커리": "bakery",
+  "파티세리": "patisserie", "카페": "cafe", "커피숍": "coffeeshop",
+  // 성질·느낌
+  "케미스트리": "chemistry", "스토리": "story", "메모리": "memory",
+  "미라클": "miracle", "매직": "magic", "시크릿": "secret", "히든": "hidden",
+  "버블": "bubble", "슬로우": "slow", "패스트": "fast", "스위트": "sweet",
+  "소프트": "soft", "퓨어": "pure", "프레시": "fresh", "데일리": "daily",
+  "리틀": "little", "빅": "big", "뉴": "new", "올드": "old", "굿": "good",
+  "베스트": "best", "그랜드": "grand", "로얄": "royal", "클래식": "classic",
+  "모던": "modern", "빈티지": "vintage", "어반": "urban", "로컬": "local",
+  "네이처": "nature", "오가닉": "organic", "심플": "simple", "딥": "deep",
+  "하이": "high", "라이트": "light", "웜": "warm", "쿨": "cool",
+  "드림": "dream", "소울": "soul", "무드": "mood", "바이브": "vibe",
+  "커넥트": "connect", "밸런스": "balance", "포커스": "focus",
+  // 자연·색·시간
+  "그린": "green", "블루": "blue", "화이트": "white", "블랙": "black",
+  "레드": "red", "핑크": "pink", "옐로우": "yellow", "브라운": "brown",
+  "그레이": "gray", "실버": "silver", "골드": "gold", "아이보리": "ivory",
+  "스타": "star", "스카이": "sky",
+  "클라우드": "cloud", "레인": "rain", "스노우": "snow", "윈드": "wind",
+  "가든": "garden", "포레스트": "forest", "파크": "park",
+  "밸리": "valley", "리버": "river", "레이크": "lake", "오션": "ocean",
+  "비치": "beach", "아일랜드": "island", "스톤": "stone", "우드": "wood",
   "레몬": "lemon", "체리": "cherry", "베리": "berry", "피치": "peach",
+  "애플": "apple", "망고": "mango", "올리브": "olive", "로즈": "rose",
+  "데이": "day", "나이트": "night", "모닝": "morning", "이브닝": "evening",
+  "스프링": "spring", "서머": "summer", "어텀": "autumn", "윈터": "winter",
+  // 동물·사물
   "하트": "heart", "허브": "hub", "퍼그": "pug", "베어": "bear",
-  "래빗": "rabbit", "버니": "bunny", "폭스": "fox", "데이": "day",
-  "모닝": "morning", "슬로우": "slow", "리틀": "little", "드림": "dream",
-  "소울": "soul", "굿": "good", "뉴": "new",
+  "래빗": "rabbit", "버니": "bunny", "폭스": "fox", "울프": "wolf",
+  "캣": "cat", "버드": "bird", "펭귄": "penguin",
+  "타이거": "tiger", "웨일": "whale", "스푼": "spoon", "포크": "fork",
+  "포트": "pot", "박스": "box", "도어": "door",
 };
+
+// 한 글자짜리는 '문래'의 '문'처럼 한국어 낱말을 잘못 쪼갤 수 있어 쓰지 않는다.
+Object.keys(LOANWORDS).forEach(k => { if (k.length < 2) delete LOANWORDS[k]; });
 
 // 음절을 이루는 자모의 로마자 표기. 첫 값이 국어의 로마자 표기법 기준이고
 // 나머지는 사람들이 아이디에 실제로 자주 쓰는 변형이다.
