@@ -527,7 +527,8 @@ const VOWEL_ALT = [
   ["eo","er","u","o","a","or"], ["e","ea","a"], ["yeo","yo"], ["ye"],
   ["o","oh","ou","oa","aw"], ["wa"], ["wae"], ["oe","we"], ["yo"],
   ["u","oo","ou","ew","o"], ["wo","weo"], ["we"], ["wi","ui"], ["yu","ew"],
-  ["","eu","u"], ["ui","i"], ["i","ee","ea","y","ie","e"],
+  // ㅡ의 표준은 eu다. 영어 자음군을 되돌리는 ''는 사전이 인정할 때만 쓰이게 둔다.
+  ["eu","","u"], ["ui","i"], ["i","ee","ea","y","ie","e"],
 ];
 const TAIL_ALT = [
   [""], ["k","g","c"], ["k"], ["k"], ["n"], ["n"], ["n"], ["t","s"],
@@ -615,7 +616,7 @@ const EN_WORDS = new Set((
   "way road route map plan idea think mind wonder magic miracle luck " +
   "chance hope wish joy smile laugh peace rest relax comfort cozy " +
   "chemistry physics biology history nature culture nation world global " +
-  "korea seoul busan jeju asia europe america paris london tokyo " +
+  "seoul busan jeju asia europe america paris london tokyo " +
   // 흔한 접미·기타
   "official original select choice premium special limited signature " +
   "standard basic classic edition version project studio works collective " +
@@ -625,11 +626,12 @@ const EN_WORDS = new Set((
 
 /* 음절을 이어 붙이면 한국어 표기 특유의 자국이 남는다.
  * 플라토는 '플'의 ㄹ과 '라'의 ㄹ이 겹쳐 pl+ra가 되므로 하나로 합쳐야 plato가 된다. */
-function tidySpelling(s) {
-  return s
-    .replace(/(?:ll|lr|rl|rr)/g, "l")
-    .replace(/([bcdfgjkmnpstvz])\1+/g, "$1$1")
-    .replace(/^-+|-+$/g, "");
+/* 음절을 이어 붙인다. 앞 음절의 받침 ㄹ과 뒤 음절의 첫 ㄹ이 겹치면 하나로
+ * 합쳐야 plato가 된다. 나중에 한꺼번에 지우면 음절 경계가 어긋나므로
+ * 붙이는 자리에서 처리한다. */
+function joinPart(prev, part) {
+  if (/[lr]$/.test(prev) && /^[lr]/.test(part)) return prev + part.slice(1);
+  return prev + part;
 }
 
 /* 만들어낸 철자가 영어 낱말로 쪼개지는지 본다.
@@ -648,15 +650,30 @@ EN_WORDS.forEach(w => {
  * 맞아떨어질 때만 표준 표기를 제치도록 하기 위해서다. */
 const MIN_WORD = 4;
 
-function englishness(s) {
+/* 영어 낱말이 이름의 상당 부분을 덮을 때만 표준 표기를 제친다.
+ * '골라유 도시락'에서 cola 하나가 걸렸다고 gollayu를 colayu로 바꾸면 곤란하다.
+ * craft+root처럼 이름을 거의 다 덮을 때만 영어로 본다. */
+const EN_THRESHOLD = 0.3;
+const enWeight = en => (en >= EN_THRESHOLD ? en : 0);
+
+/* 영어 낱말이 한글로 적히면 반드시 음절 단위로 떨어진다. craft는 크·래·프·트
+ * 넉 자를 통째로 차지한다. 반대로 '구름'에서 cool을 찾으려면 '구'의 coo와
+ * '름'의 l을 가로질러야 하는데, 그렇게 걸리는 것은 우연이지 영어가 아니다.
+ * 그래서 낱말의 시작과 끝이 음절 경계에 놓일 때만 인정한다. */
+function englishness(s, bounds) {
   const n = s.length;
   if (!n) return 0;
-  // score[i] = 앞에서 i글자까지 볼 때 얻을 수 있는 무게의 최댓값
+  const isEdge = new Array(n + 1).fill(false);
+  isEdge[0] = true;
+  (bounds || []).forEach(b => { if (b <= n) isEdge[b] = true; });
+  isEdge[n] = true;
+
   const score = new Array(n + 1).fill(0);
   for (let i = 1; i <= n; i++) {
     score[i] = score[i - 1];
+    if (!isEdge[i]) continue;
     for (let len = MIN_WORD; len <= Math.min(12, i); len++) {
-      if (EN_WORDS.has(s.slice(i - len, i))) {
+      if (isEdge[i - len] && EN_WORDS.has(s.slice(i - len, i))) {
         score[i] = Math.max(score[i], score[i - len] + len * len);
       }
     }
@@ -667,14 +684,20 @@ function englishness(s) {
 /* 아직 다 만들지 않은 철자를 평가한다. 끝부분이 어떤 낱말의 앞부분이면
  * 그것도 쳐준다. 'compa'는 아직 낱말이 아니지만 company로 가는 중이다.
  * 이렇게 해야 후보를 쳐낼 때 정답으로 가는 길을 미리 끊지 않는다. */
-function partialEnglishness(s) {
+function partialEnglishness(s, bounds) {
   const n = s.length;
   if (!n) return 0;
+  const isEdge = new Array(n + 1).fill(false);
+  isEdge[0] = true;
+  (bounds || []).forEach(b => { if (b <= n) isEdge[b] = true; });
+  isEdge[n] = true;
+
   const score = new Array(n + 1).fill(0);
   for (let i = 1; i <= n; i++) {
     score[i] = score[i - 1];
+    if (!isEdge[i]) continue;
     for (let len = MIN_WORD; len <= Math.min(12, i); len++) {
-      if (EN_WORDS.has(s.slice(i - len, i))) {
+      if (isEdge[i - len] && EN_WORDS.has(s.slice(i - len, i))) {
         score[i] = Math.max(score[i], score[i - len] + len * len);
       }
     }
@@ -682,8 +705,10 @@ function partialEnglishness(s) {
   let best = score[n];
   // 끝에 남은 조각이 낱말의 앞부분이면 그만큼 쳐준다. 아직 만드는 중일 뿐이다.
   for (let len = 2; len <= Math.min(12, n); len++) {
-    const tail = s.slice(n - len);
-    if (EN_PREFIXES.has(tail)) best = Math.max(best, score[n - len] + len * len * 0.8);
+    if (!isEdge[n - len]) continue;
+    if (EN_PREFIXES.has(s.slice(n - len))) {
+      best = Math.max(best, score[n - len] + len * len * 0.8);
+    }
   }
   return best / (n * n);
 }
@@ -713,40 +738,45 @@ function syllableSpellings(ch) {
  *
  * 음절마다 앞에서부터 잘라내면 마지막 음절만 다른 후보들만 남는다.
  * 표준에서 얼마나 벗어났는지를 비용으로 세어 두고 마지막에 낮은 것부터 고른다. */
+/* 후보를 쳐낸다.
+ *
+ * 영어로 보이는 쪽만 남기면 '골라유'처럼 cola가 우연히 걸리는 이름에서
+ * 표준 표기가 통째로 밀려난다. 반대로 비용만 보면 company가 완성되기 전에
+ * 잘린다. 그래서 두 기준으로 각각 뽑아 합친다. */
+function prune(list) {
+  const byEnglish = [...list].sort((a, b) => (b.en - a.en) || (a.cost - b.cost));
+  const byCost = [...list].sort((a, b) => (a.cost - b.cost) || (b.en - a.en));
+  return [...new Set([...byEnglish.slice(0, 180), ...byCost.slice(0, 70)])];
+}
+
 function spellVariants(text) {
-  let combos = [{ s: "", cost: 0 }];
+  let combos = [{ s: "", cost: 0, bounds: [] }];
   for (const ch of text) {
     const options = syllableSpellings(ch);
     if (!options.length) continue;
     const next = [];
     combos.forEach(p => options.forEach(o => {
       const item = typeof o === "string" ? { s: o, cost: 0 } : o;
-      next.push({ s: p.s + item.s, cost: p.cost + item.cost });
+      const s = joinPart(p.s, item.s);
+      next.push({ s, cost: p.cost + item.cost, bounds: [...p.bounds, s.length] });
     }));
     // 비용만 보고 자르면 company처럼 값비싼 정답이 먼저 잘려나간다.
     // 영어로 가고 있는 정도를 함께 보고 남긴다.
-    next.forEach(c => { c.en = partialEnglishness(c.s); });
-    next.sort((a, b) => (b.en - a.en) || (a.cost - b.cost));
-    combos = next.slice(0, 250);
+    next.forEach(c => { c.en = partialEnglishness(c.s, c.bounds); });
+    combos = prune(next);
   }
+
   const seen = new Set();
   const out = [];
-  const add = (str, cost) => {
-    const s = tidySpelling(str);
-    if (!s || seen.has(s)) return;
-    seen.add(s);
-    out.push({ s, cost, en: englishness(s) });
-  };
   combos.forEach(c => {
-    add(c.s, c.cost);
-    // 영어 장모음 i는 한글로 '아이'가 된다. 바이트 → bite, 플라이 → fly
-    add(c.s.replace(/ai/g, "i"), c.cost + 1);
-    add(c.s.replace(/ai/g, "y"), c.cost + 1);
+    if (!c.s || seen.has(c.s)) return;
+    seen.add(c.s);
+    out.push({ s: c.s, cost: c.cost, bounds: c.bounds, en: englishness(c.s, c.bounds) });
   });
 
   /* 영어 낱말로 잘 쪼개지는 것을 앞에 둔다. 같은 정도라면 표준 표기에
    * 가까운 쪽이 앞이다. 이 정렬이 craftroot를 kraeptrut보다 위로 올린다. */
-  out.sort((a, b) => (b.en - a.en) || (a.cost - b.cost) || (a.s.length - b.s.length));
+  out.sort((a, b) => (enWeight(b.en) - enWeight(a.en)) || (a.cost - b.cost) || (a.s.length - b.s.length));
   return out;
 }
 
@@ -785,28 +815,34 @@ function baseSpellings(core, english) {
   // 외래어인 줄 아는 조각은 영어 철자 하나만 쓴다. 소리대로 옮긴 것을 함께
   // 만들면 brewery를 알면서도 beurueori 같은 갈래가 목록을 채운다.
   const perSegment = segment(core).map(seg =>
-    seg.en ? [{ s: seg.en, cost: 0 }] : spellVariants(seg.ko).slice(0, 5)
+    // 외래어인 줄 아는 조각은 그 자체가 하나의 낱말이므로 경계도 통째다.
+    seg.en ? [{ s: seg.en, cost: 0, bounds: [seg.en.length] }]
+           : spellVariants(seg.ko).slice(0, 5)
   ).filter(s => s.length);
 
-  let combos = [{ s: "", cost: 0 }];
+  let combos = [{ s: "", cost: 0, bounds: [] }];
   perSegment.forEach(choices => {
     const next = [];
-    combos.forEach(p => choices.forEach(c =>
-      next.push({ s: p.s + c.s, cost: p.cost + c.cost })));
-    next.forEach(c => { c.en = partialEnglishness(c.s); });
-    next.sort((a, b) => (b.en - a.en) || (a.cost - b.cost));
-    combos = next.slice(0, 250);
+    combos.forEach(p => choices.forEach(c => {
+      const s = joinPart(p.s, c.s);
+      const shift = s.length - c.s.length;
+      next.push({
+        s, cost: p.cost + c.cost,
+        bounds: [...p.bounds, ...c.bounds.map(b => b + shift)],
+      });
+    }));
+    next.forEach(c => { c.en = partialEnglishness(c.s, c.bounds); });
+    combos = prune(next);
   });
 
   const seen = new Set();
   const scored = [];
   combos.forEach(c => {
-    const s = tidySpelling(c.s);
-    if (!s || seen.has(s)) return;
-    seen.add(s);
-    scored.push({ s, cost: c.cost, en: englishness(s) });
+    if (!c.s || seen.has(c.s)) return;
+    seen.add(c.s);
+    scored.push({ s: c.s, cost: c.cost, en: englishness(c.s, c.bounds) });
   });
-  scored.sort((a, b) => (b.en - a.en) || (a.cost - b.cost) || (a.s.length - b.s.length));
+  scored.sort((a, b) => (enWeight(b.en) - enWeight(a.en)) || (a.cost - b.cost) || (a.s.length - b.s.length));
 
   const out = [];
   if (english) {
@@ -814,6 +850,13 @@ function baseSpellings(core, english) {
     if (e) out.push(e);
   }
   scored.forEach(c => { if (!out.includes(c.s)) out.push(c.s); });
+  // 영어 장모음 i가 '아이'로 적힌 경우(바이트 → bite). 음절 경계가 달라지므로
+  // 사전 판정은 하지 않고 뒤쪽에 덧붙인다.
+  scored.slice(0, 3).forEach(c => {
+    [c.s.replace(/ai/g, "i"), c.s.replace(/ai/g, "y")].forEach(v => {
+      if (v !== c.s && v.length >= 3 && !out.includes(v)) out.push(v);
+    });
+  });
   return out.slice(0, MAX_BASES);
 }
 
