@@ -274,6 +274,18 @@ def stamp_history(items, seen, today):
             item["changes"] = changes
 
 
+def dedupe(items):
+    """관리번호가 같은 건은 한 번만 남긴다."""
+    seen_ids = set()
+    out = []
+    for item in items:
+        if item["id"] in seen_ids:
+            continue
+        seen_ids.add(item["id"])
+        out.append(item)
+    return out
+
+
 def snapshot(items):
     """다음 회차에 견주어 볼 수 있도록 이번 값을 남긴다."""
     return {
@@ -325,6 +337,11 @@ def main():
                 excluded += 1
                 continue
             bucket.append(item)
+
+    # 원본이 같은 관리번호를 두 번 주는 경우가 있다(푸드트럭에서 특히 잦다).
+    # 관리번호가 고유키이므로 그것으로 한 번만 남긴다.
+    opened = dedupe(opened)
+    changed = dedupe(changed)
 
     opened.sort(key=lambda p: (p["licenseDate"], p["name"]), reverse=True)
     changed.sort(key=lambda p: (p["modifiedDate"], p["name"]), reverse=True)
