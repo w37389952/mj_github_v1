@@ -1444,6 +1444,15 @@ function blogCard(post) {
   card.querySelector(".blog-desc").textContent = post.description;
   card.querySelector(".blogger").textContent = post.blogger;
   card.querySelector(".area").textContent = post.area;
+  // 협찬 글도 버리지 않는다. 초대받아 가오픈 전에 다녀온 글일 수 있어서다.
+  // 대신 표시해 두어 가려 볼 수 있게 한다.
+  if (post.promo) {
+    const badge = document.createElement("span");
+    badge.className = "badge change";
+    badge.textContent = "협찬 언급";
+    badge.title = "협찬·체험단 문구가 있습니다. 초대받아 미리 다녀온 글일 수도 있습니다.";
+    card.querySelector(".meta").appendChild(badge);
+  }
   card.querySelector(".map-link").href = post.link;
   card.querySelector(".hide-btn").addEventListener("click", () => hidePost(post.link));
   return card;

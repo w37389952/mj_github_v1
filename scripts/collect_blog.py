@@ -31,10 +31,27 @@ AREAS = [
     "해방촌", "후암동", "가로수길", "압구정", "청담동", "성북동", "문래동",
     "송파", "잠실", "여의도", "공덕", "신촌", "홍대", "종로", "명동",
 ]
-TOPICS = ["신상카페", "가오픈", "오픈 카페", "신상 맛집"]
+# 사람들이 실제로 쓰는 말을 넓게 잡는다. '신상카페'만 치면 블로그를 업으로
+# 하는 사람 글만 걸리고, 지인 가게 소식을 알리는 일상글은 빠진다.
+TOPICS = [
+    "신상카페", "가오픈", "새로 생긴 카페", "오픈했어요", "프리오픈",
+]
+# 지역을 안 붙이고 서울 전체로 한 번 더 훑을 말들.
+WIDE_TOPICS = [
+    "서울 신상카페", "서울 가오픈 카페", "카페 오픈 소식", "정식오픈 카페",
+    "새로 생긴 맛집", "카페 오픈 준비",
+]
 
-# 광고·홍보 글에 흔한 말. 걸리면 뺀다.
-SPAM = ["체험단", "협찬", "원고료", "소정의", "제공받", "광고", "공동구매", "쿠폰"]
+# 협찬 글을 버리지 않는다. 초대받아 가오픈 전에 다녀온 글일 수 있고,
+# 그런 글이 오히려 가장 빠른 소식이다. 대신 표시해 두어 사람이 가려 보게 한다.
+PROMO =["체험단", "협찬", "원고료", "소정의", "제공받", "무료로 제공", "서포터즈"]
+
+# 이건 가게 소식이 아니라 장사 글이다. 이쪽은 뺀다.
+SPAM = ["공동구매", "쿠폰", "할인코드", "적립금", "부업", "재테크", "대출"]
+
+
+def is_promo(text):
+    return any(word in text for word in PROMO)
 
 
 def is_spam(text):
@@ -59,8 +76,8 @@ def main():
     posts = {}
     dropped_mine = dropped_spam = dropped_old = 0
 
-    queries = [f"{area} {topic}" for area in AREAS for topic in TOPICS[:2]]
-    queries += [f"서울 {topic}" for topic in TOPICS]
+    queries = [f"{area} {topic}" for area in AREAS for topic in TOPICS]
+    queries += WIDE_TOPICS
 
     for query in queries:
         for item in naver.search("blog", query, display=20, sort="date"):
@@ -84,7 +101,7 @@ def main():
                 dropped_spam += 1
                 continue
 
-            posts[link] = {
+            post = {
                 "title": title,
                 "description": desc,
                 "link": link,
@@ -93,6 +110,9 @@ def main():
                 "date": posted.isoformat(),
                 "area": query.split()[0],
             }
+            if is_promo(title + desc):
+                post["promo"] = True
+            posts[link] = post
         time.sleep(0.1)
 
     items = sorted(posts.values(), key=lambda p: p["date"], reverse=True)
@@ -107,8 +127,9 @@ def main():
         encoding="utf-8",
     )
 
-    print(f"검색어 {len(queries)}개 → 글 {len(items)}건")
-    print(f"  내 글 제외 {dropped_mine} / 광고 의심 {dropped_spam} / 기간 밖 {dropped_old}")
+    promo = sum(1 for p in items if p.get("promo"))
+    print(f"검색어 {len(queries)}개 → 글 {len(items)}건 (그중 협찬 표시 {promo}건)")
+    print(f"  내 글 제외 {dropped_mine} / 장사글 제외 {dropped_spam} / 기간 밖 {dropped_old}")
 
 
 if __name__ == "__main__":
