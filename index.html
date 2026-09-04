@@ -1228,23 +1228,29 @@ function buildMulti(container, field, label, entries) {
  *
  * 상호가 바뀌었다는 것은 그 자리에 다른 가게가 들어왔다는 뜻이라 가장 중요한
  * 신호다. 그래서 이전 상호까지 함께 보여주고 눈에 띄게 표시한다. */
+/* 가게가 바뀌었는지를 말해 주는 것은 상호와 주소다. 그 둘은 이전 값까지
+ * 함께 보여주고 진하게 표시한다. 업종은 조용히 알리기만 한다. */
+const KEY_CHANGES = { name: "이전 상호", address: "이전 주소" };
+
 function addChangeMarks(card, place) {
   const changes = place.changes || [];
   if (!changes.length) return;
 
-  const nameChange = changes.find(c => c.field === "name");
-  if (nameChange) {
-    card.classList.add("renamed");
-    const was = document.createElement("div");
-    was.className = "was";
-    was.textContent = `이전 상호: ${nameChange.before}`;
-    card.querySelector(".addr").after(was);
-  }
+  const anchor = card.querySelector(".addr");
+  changes
+    .filter(c => KEY_CHANGES[c.field])
+    .forEach(c => {
+      card.classList.add("renamed");
+      const was = document.createElement("div");
+      was.className = "was";
+      was.textContent = `${KEY_CHANGES[c.field]}: ${c.before}`;
+      anchor.after(was);
+    });
 
   const meta = card.querySelector(".meta");
   changes.forEach(c => {
     const badge = document.createElement("span");
-    badge.className = "badge change" + (c.field === "name" ? " strong" : "");
+    badge.className = "badge change" + (KEY_CHANGES[c.field] ? " strong" : "");
     badge.textContent = `${c.label} 바뀜`;
     if (c.before) badge.title = `이전: ${c.before}`;
     meta.insertBefore(badge, meta.firstChild);
