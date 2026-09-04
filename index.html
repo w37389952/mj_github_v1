@@ -1082,11 +1082,16 @@ function detailLine(place) {
   return bits.join("  ·  ");
 }
 
-// 이 방문자가 이 탭을 지난번에 봤을 때는 없었던 건인지.
+/* 이 방문자가 이 탭을 지난번에 봤을 때와 달라진 건인지.
+ *
+ * 목록은 원본이 바뀐 날짜순으로 늘어놓는다. 그런데 처음 등장한 날로만 따지면,
+ * 이미 있던 건이 다시 수정되어 위로 올라와도 NEW가 안 붙어 순서와 어긋나 보인다.
+ * 그래서 '마지막으로 달라진 날'을 쓴다. */
 function isNewToVisitor(place) {
   const base = tab().baseline;
-  if (!base || !place.firstSeen) return false;
-  return place.firstSeen > base;
+  const when = place.updatedSeen || place.firstSeen;
+  if (!base || !when) return false;
+  return when > base;
 }
 
 function store(key, value) {
