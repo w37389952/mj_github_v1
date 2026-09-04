@@ -187,15 +187,17 @@
     <h2>네이버에서 붙여넣기 <span class="sub">지도 앱 → 공유 → 복사한 내용을 그대로 붙이세요</span></h2>
     <div class="field">
       <textarea id="fPaste" style="min-height:70px" placeholder="틸데
-서울 용산구 두텁바위로 15 1층
-https://naver.me/xxxxxxx"></textarea>
+서울 용산구 두텁바위로 15 1층"></textarea>
     </div>
     <div class="row">
       <button type="button" class="btn ghost" id="parse">읽어서 채우기</button>
       <span id="parseMsg" style="font-size:12.5px;color:var(--ink-faint)"></span>
     </div>
     <div class="note" style="margin-top:12px">
-      영업시간과 주차는 네이버가 API로 주지 않아 자동으로 못 채웁니다. 그 둘만 손으로 넣으세요.
+      모바일 앱에서 공유하면 이름과 주소가 함께 복사되어 그대로 읽힙니다.
+      <b>링크(naver.me/…)만 복사된 경우에는 읽을 수 없습니다</b> — 그 안에는 가게 번호만 들어 있고,
+      이 페이지에서 네이버에 물어볼 수가 없습니다. 그럴 때는 이름과 주소를 직접 넣어주세요.
+      영업시간과 주차는 네이버가 API로도 주지 않아 늘 손으로 넣어야 합니다.
     </div>
   </section>
 
@@ -673,7 +675,17 @@ function parsePaste(raw) {
 }
 
 $("parse").addEventListener("click", () => {
-  const got = parsePaste($("fPaste").value);
+  const raw = ($("fPaste").value || "").trim();
+  // 짧은 링크(naver.me)나 지도 주소는 가게 번호만 담고 있다. 이름도 주소도
+  // 들어 있지 않고, 브라우저에서 네이버를 직접 부를 수도 없어서 풀 방법이 없다.
+  const onlyLink = raw && raw.split(/\s+/).every(x => /^https?:\/\//.test(x));
+  if (onlyLink) {
+    $("parseMsg").textContent =
+      "링크만으로는 못 읽습니다 — 그 안에 가게 번호만 들어 있어요. "
+      + "지도 화면에서 가게 이름과 주소를 복사해 함께 붙여넣거나, 아래에 직접 넣어주세요.";
+    return;
+  }
+  const got = parsePaste(raw);
   if (!got || (!got.name && !got.address)) {
     $("parseMsg").textContent = "읽지 못했습니다. 아래에 직접 넣어주세요.";
     return;
