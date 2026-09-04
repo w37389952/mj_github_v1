@@ -106,6 +106,20 @@
   .cand .meta b { color: var(--accent); font-weight: 700; }
   .cand .acts { flex-shrink: 0; }
 
+  .kw {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 13px; margin-bottom: 7px;
+    display: flex; gap: 10px; align-items: center; justify-content: space-between;
+  }
+  .kw .q { font-size: 14.5px; font-weight: 600; }
+  .kw .n { font-size: 13px; color: var(--ink-soft); }
+  .grade {
+    font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 9px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .grade.easy { background: var(--ok-bg); color: var(--ok); }
+  .grade.unknown { background: none; color: var(--ink-faint); border: 1px solid var(--line); }
+
   pre.prompt {
     background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
     padding: 14px; font-size: 13px; line-height: 1.62; white-space: pre-wrap;
@@ -146,6 +160,22 @@
     <a class="tab" href="index.html" role="tab" aria-selected="false">신상 검색</a>
     <span class="tab" role="tab" aria-selected="true">글쓰기</span>
   </div>
+
+  <section>
+    <h2>네이버에서 붙여넣기 <span class="sub">지도 앱 → 공유 → 복사한 내용을 그대로 붙이세요</span></h2>
+    <div class="field">
+      <textarea id="fPaste" style="min-height:70px" placeholder="틸데
+서울 용산구 두텁바위로 15 1층
+https://naver.me/xxxxxxx"></textarea>
+    </div>
+    <div class="row">
+      <button type="button" class="btn ghost" id="parse">읽어서 채우기</button>
+      <span id="parseMsg" style="font-size:12.5px;color:var(--ink-faint)"></span>
+    </div>
+    <div class="note" style="margin-top:12px">
+      영업시간과 주차는 네이버가 API로 주지 않아 자동으로 못 채웁니다. 그 둘만 손으로 넣으세요.
+    </div>
+  </section>
 
   <section>
     <h2>가게 정보 <span class="sub">역명과 동네를 꼭 채우세요 — 제목 검색어가 여기서 나옵니다</span></h2>
@@ -223,6 +253,11 @@
     </section>
 
     <section>
+      <h2>키워드 경쟁도 <span class="sub">그 검색어에 이미 쓰인 블로그 글 수 — 적을수록 1위가 쉽습니다</span></h2>
+      <div id="compet"></div>
+    </section>
+
+    <section>
       <h2>글 지시문 <span class="sub">복사해서 클로드 대화창에 붙이고 사진을 함께 올리세요</span></h2>
       <pre class="prompt" id="prompt"></pre>
       <div class="row"><button type="button" class="btn ghost" id="copyPrompt">지시문 복사</button></div>
@@ -258,7 +293,7 @@
 
 <script>
 const KEY = "seoul-radar:write";
-const F = ["fName","fArea","fStation","fNear","fType","fVisit","fMenu","fTrait","fHours","fPark","fInsta","fPhotos","fMemo"];
+const F = ["fPaste","fName","fArea","fStation","fNear","fType","fVisit","fMenu","fTrait","fHours","fPark","fInsta","fPhotos","fMemo"];
 const $ = id => document.getElementById(id);
 
 function load() {
@@ -380,6 +415,63 @@ ${v.memo || "(메모 없음)"}
 - 마지막에 한 문단으로 다시 방문할지, 누구에게 맞는 곳인지 적어라.`;
 }
 
+/* 경쟁도는 수집기가 밤에 미리 재둔 값을 읽는다. 브라우저가 네이버를
+   직접 부를 수 없어서(CORS) 이렇게 우회한다. 파일이 없어도 화면은 돌아간다. */
+let KW = null;
+fetch("data/keywords.json")
+  .then(r => (r.ok ? r.json() : null))
+  .then(j => { KW = j; if ($("out").classList.contains("show")) renderCompetition(readForm()); })
+  .catch(() => {});
+
+function grade(total) {
+  if (total == null) return { cls: "unknown", label: "모름" };
+  if (total < 3000) return { cls: "easy", label: "노려볼 만함" };
+  if (total < 20000) return { cls: "", label: "보통" };
+  return { cls: "", label: "어려움" };
+}
+
+function renderCompetition(v) {
+  const box = $("compet");
+  box.innerHTML = "";
+  const t = v.type || "카페";
+  const queries = [
+    `${v.area} ${t}`,
+    `${v.area} ${t} 추천`,
+    `${v.area} ${t} 신상`,
+    v.near ? `${v.near} ${t}` : "",
+  ].filter(Boolean);
+
+  if (!KW) {
+    const p = document.createElement("div");
+    p.className = "note";
+    p.textContent = "경쟁도 자료가 아직 없습니다. 오늘 밤 수집이 돌면 채워집니다.";
+    box.append(p);
+    return;
+  }
+
+  queries.forEach(q => {
+    const total = KW.counts ? KW.counts[q] : undefined;
+    const g = grade(total == null ? null : total);
+    const el = document.createElement("div");
+    el.className = "kw";
+    const left = document.createElement("div");
+    left.innerHTML = `<div class="q">${q}</div><div class="n">${
+      total == null ? "아직 재지 않은 검색어입니다" : total.toLocaleString() + "건"
+    }</div>`;
+    const badge = document.createElement("span");
+    badge.className = `grade ${g.cls}`.trim();
+    badge.textContent = g.label;
+    el.append(left, badge);
+    box.append(el);
+  });
+
+  const tip = document.createElement("div");
+  tip.className = "note";
+  tip.textContent = "‘어려움’만 있으면 가게 이름과 메뉴를 제목 앞쪽에 두세요. "
+    + "경쟁자가 없는 고유명은 지수가 낮아도 1위를 먹습니다.";
+  box.append(tip);
+}
+
 function render() {
   const v = readForm();
   if (!v.name || !v.area) {
@@ -413,6 +505,7 @@ function render() {
     $("cands").append(el);
   });
 
+  renderCompetition(v);
   $("prompt").textContent = buildPrompt(v, cands);
 
   const tags = buildTags(v);
@@ -447,6 +540,90 @@ function fallback(text, done) {
   try { document.execCommand("copy"); done(); } catch (e) {}
   ta.remove();
 }
+
+/* 네이버 지도 공유 텍스트를 읽는다.
+   브라우저에서 네이버를 직접 부르면 CORS에 막히므로, 사용자가 복사해 온
+   글자만 가지고 푼다. 네트워크를 안 타서 즉시 되고 실패해도 손해가 없다. */
+/* 한글에는 \b(단어 경계)를 쓰면 안 된다. \b는 영숫자 기준이라
+   '(연남동)'의 동 뒤가 경계로 잡히지 않는다. 대신 앞뒤 글자를 직접 본다. */
+const DONG = /(?:^|[\s(,])([가-힣]{2,4}동|[가-힣]{2,3}가)(?=$|[\s),\d])/;
+const ROAD = /(서울[^\n,]*?(?:로|길)\s*[\d-]+[^\n]*)/;
+const GU = /(?:^|[\s(,])([가-힣]{1,4}구)(?=$|[\s),])/;
+
+function parsePaste(raw) {
+  const text = (raw || "").replace(/\r/g, "").trim();
+  if (!text) return null;
+  const lines = text.split("\n").map(s => s.trim()).filter(Boolean);
+  const out = {};
+
+  const addrLine = lines.find(l => ROAD.test(l)) || "";
+  if (addrLine) out.address = ROAD.exec(addrLine)[1].trim();
+
+  // 이름은 주소도 링크도 아닌 첫 줄. '틸데 : 네이버' 같은 꼬리는 떼어낸다.
+  const nameLine = lines.find(l =>
+    !/^https?:\/\//.test(l) && !ROAD.test(l) && !/^\d/.test(l));
+  if (nameLine) {
+    out.name = nameLine
+      .replace(/\s*[:|]\s*(네이버|NAVER).*$/i, "")
+      .replace(/\s*-\s*네이버.*$/i, "")
+      .trim();
+  }
+
+  // 동네는 주소 안이나 괄호 안에 있다.
+  const dongSrc = (out.address || "") + " " + text;
+  const dong = DONG.exec(dongSrc);
+  if (dong) out.area = dong[1];
+  const gu = GU.exec(dongSrc);
+  if (gu) out.gu = gu[1];
+
+  // 업종은 붙여넣은 글자에서 짐작만 한다. 틀리면 사용자가 고르면 된다.
+  // 주소는 빼고 본다. '두텁바위로'의 '바'가 업종 '바'로 잡히는 일을 막는다.
+  const TYPES = ["베이커리","브런치","디저트","이자카야","파스타","고기집","술집","카페","맛집","바"];
+  const noAddr = text.replace(ROAD, " ");
+  out.type = TYPES.find(t =>
+    t.length >= 2 ? noAddr.includes(t)
+                  : new RegExp(`(?:^|[\\s(,])${t}(?=$|[\\s),])`).test(noAddr)
+  ) || "";
+
+  // 주소도 네이버 링크도 없으면 제대로 붙여넣은 게 아니다.
+  out.looksComplete = Boolean(out.address) || /naver\.(me|com)/.test(text);
+  return out;
+}
+
+$("parse").addEventListener("click", () => {
+  const got = parsePaste($("fPaste").value);
+  if (!got || (!got.name && !got.address)) {
+    $("parseMsg").textContent = "읽지 못했습니다. 아래에 직접 넣어주세요.";
+    return;
+  }
+  const filled = [];
+  if (got.name && !$("fName").value) { $("fName").value = got.name; filled.push("가게 이름"); }
+  if (got.area && !$("fArea").value) { $("fArea").value = got.area; filled.push("동네"); }
+  if (got.type) {
+    const opt = [...$("fType").options].find(o => o.value === got.type);
+    if (opt) { $("fType").value = got.type; filled.push("업종"); }
+  }
+  save();
+  const head = filled.length
+    ? `${filled.join(" · ")} 채웠습니다.`
+    : "이미 채워진 칸은 건드리지 않았습니다.";
+  $("parseMsg").textContent = got.looksComplete
+    ? `${head} 역·영업시간·주차는 손으로 넣어주세요.`
+    : `${head} 주소가 안 보입니다 — 지도 앱의 '공유'로 복사한 내용인지 확인해 주세요.`;
+});
+
+/* 레이더에서 '글쓰기로 보내기'로 넘어오면 주소창에 정보가 실려 온다. */
+(function fromRadar() {
+  const q = new URLSearchParams(location.search);
+  if (![...q.keys()].length) return;
+  const map = { name: "fName", area: "fArea", type: "fType" };
+  let any = false;
+  Object.entries(map).forEach(([k, id]) => {
+    const v = q.get(k);
+    if (v) { $(id).value = v; any = true; }
+  });
+  if (any) { save(); history.replaceState(null, "", location.pathname); }
+})();
 
 $("go").addEventListener("click", render);
 $("clear").addEventListener("click", () => {
