@@ -67,6 +67,10 @@ jobs:
           fi
           python scripts/collect_keywords.py
 
+      - name: 순위 추적
+        # 검색 결과만 긁으므로 인증키가 필요 없다. 실패해도 배포는 계속한다.
+        run: python scripts/track_ranks.py || echo "순위 추적을 건너뜁니다."
+
       - name: 결과 커밋
         run: |
           git config user.name "github-actions[bot]"
