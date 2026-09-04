@@ -55,11 +55,13 @@ TREND_BODY = {
     ],
 }
 
+# 2026-09-05 1차 확인: datalab/* 네 곳은 모두 404였다. 이관 안내를 보니
+# 경로가 datalab이 아니라 search-trend로 바뀌었다. 유력한 순서로 둔다.
 TREND_URLS = [
+    "https://naverapihub.apigw.ntruss.com/search-trend/v1/search",
+    "https://naveropenapi.apigw.ntruss.com/datalab/v1/search",
+    "https://naverapihub.apigw.ntruss.com/searchtrend/v1/search",
     "https://naverapihub.apigw.ntruss.com/datalab/v1/search",
-    "https://naverapihub.apigw.ntruss.com/datalab/v1/search/trend",
-    "https://naverapihub.apigw.ntruss.com/v1/datalab/search",
-    "https://openapi.naver.com/v1/datalab/search",
 ]
 
 
