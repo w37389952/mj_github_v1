@@ -225,22 +225,61 @@ def audit():
 
 
 def load_seen(path):
-    """관리번호 → 우리 데이터에 처음 등장한 날짜."""
+    """관리번호 → 지난 회차의 기록.
+
+    예전에는 처음 등장한 날짜만 문자열로 담았다. 그 형식도 읽어준다.
+    """
     if not path.exists():
         return {}
     stored = json.loads(path.read_text(encoding="utf-8"))
-    return stored if isinstance(stored, dict) else {}
+    if not isinstance(stored, dict):
+        return {}
+    return {
+        key: (value if isinstance(value, dict) else {"first": value})
+        for key, value in stored.items()
+    }
 
 
-def stamp_first_seen(items, seen, today):
-    """각 건이 언제 처음 등장했는지 표시한다.
+# 무엇이 바뀌었는지 알려주는 필드는 원본에 없다. UPDATEGBN이 신규/수정만
+# 구분할 뿐이다. 그래서 지난 회차 값과 직접 견주어 알아낸다.
+#
+# 전화번호는 행정상의 정정인 경우가 대부분이라 보지 않는다.
+# 가게가 바뀌었는지를 말해 주는 것은 상호와 주소다.
+TRACKED = {
+    "name": "상호",
+    "address": "주소",
+    "bizType": "업종",
+    "area": "면적",
+}
 
-    방문자마다 마지막 방문 시각과 비교해 NEW 표시를 띄우는 데 쓴다.
-    첫 실행에서는 등장 시점을 알 수 없으므로 날짜 필드로 근사한다.
+
+def stamp_history(items, seen, today):
+    """처음 등장한 날짜와, 지난 회차 이후 바뀐 항목을 표시한다.
+
+    상호가 바뀌었다는 것은 대개 그 자리에 다른 가게가 들어왔다는 뜻이라
+    가장 눈여겨볼 신호다.
     """
     for item in items:
+        before = seen.get(item["id"])
         fallback = item["modifiedDate"] or item["licenseDate"]
-        item["firstSeen"] = seen.get(item["id"]) or (today if seen else fallback)
+        item["firstSeen"] = (before or {}).get("first") or (today if seen else fallback)
+
+        changes = []
+        if before:
+            for field, label in TRACKED.items():
+                old = before.get(field)
+                if old is not None and old != item.get(field):
+                    changes.append({"field": field, "label": label, "before": old})
+        if changes:
+            item["changes"] = changes
+
+
+def snapshot(items):
+    """다음 회차에 견주어 볼 수 있도록 이번 값을 남긴다."""
+    return {
+        p["id"]: {"first": p["firstSeen"], **{f: p.get(f) for f in TRACKED}}
+        for p in items
+    }
 
 
 def write_json(path, payload):
@@ -293,8 +332,8 @@ def main():
     DATA_DIR.mkdir(exist_ok=True)
     seen_opened = load_seen(DATA_DIR / "seen.json")
     seen_changed = load_seen(DATA_DIR / "seen-changed.json")
-    stamp_first_seen(opened, seen_opened, today.isoformat())
-    stamp_first_seen(changed, seen_changed, today.isoformat())
+    stamp_history(opened, seen_opened, today.isoformat())
+    stamp_history(changed, seen_changed, today.isoformat())
 
     meta = {
         "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -317,8 +356,8 @@ def main():
     write_json(DATA_DIR / "changed.json", {**meta, "places": changed})
 
     # 조회 기간에서 빠진 건은 다시 나타날 일이 없으므로 기억할 필요도 없다.
-    write_json(DATA_DIR / "seen.json", {p["id"]: p["firstSeen"] for p in opened})
-    write_json(DATA_DIR / "seen-changed.json", {p["id"]: p["firstSeen"] for p in changed})
+    write_json(DATA_DIR / "seen.json", snapshot(opened))
+    write_json(DATA_DIR / "seen-changed.json", snapshot(changed))
 
     print(f"\n최근 {WINDOW_DAYS}일")
     print(f"  신규 오픈: {len(opened):,}곳")
