@@ -1,0 +1,32 @@
+name: 네이버 응답 확인 (수동 실행)
+
+# 네이버 검색 API가 실제로 어떤 모양으로 응답하는지 눈으로 보기 위한 것이다.
+# NAVER API HUB로 옮겨가며 주소와 인증 헤더가 모두 바뀌었으므로,
+# 코드를 짜기 전에 실제 응답을 확인한다.
+#
+# GitHub 저장소 > Actions > 이 워크플로 > Run workflow 로 실행한다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: 검색어
+        required: false
+        default: 연남동 신상카페
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 응답 확인
+        env:
+          NAVER_API_KEY_ID: ${{ secrets.NAVER_API_KEY_ID }}
+          NAVER_API_KEY: ${{ secrets.NAVER_API_KEY }}
+          PROBE_QUERY: ${{ inputs.query }}
+        run: python scripts/probe_naver.py
