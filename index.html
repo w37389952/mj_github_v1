@@ -82,6 +82,18 @@
     font-size: 12.5px; color: var(--ink-faint); margin-top: 8px;
   }
 
+  /* 블로그 탭 안에서만 나오는 하위 탭. 글쓰기는 별도 페이지라 데이터를 안 받는다. */
+  .subtabs { display: flex; gap: 4px; margin-top: 12px; }
+  .subtab {
+    font-size: 13.5px; font-weight: 600; text-decoration: none;
+    color: var(--ink-soft); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px;
+  }
+  .subtab:hover { color: var(--ink); }
+  .subtab[aria-selected="true"] {
+    color: var(--accent); border-color: var(--accent); background: var(--accent-soft);
+  }
+
   .stats-toggle {
     display: block; margin: 8px 0 0 auto; padding: 2px;
     font: inherit; font-size: 12.5px; cursor: pointer;
@@ -328,6 +340,10 @@
     <button type="button" class="tab" id="tabBlog" role="tab" aria-selected="false">
       블로그 <span class="dot" id="dotBlog" hidden></span>
     </button>
+  </div>
+  <div class="subtabs" id="subtabs" hidden>
+    <span class="subtab" aria-selected="true">신상 검색</span>
+    <a class="subtab" href="write.html" aria-selected="false">글쓰기</a>
   </div>
   <div class="tab-hint" id="tabHint"></div>
 
@@ -1656,6 +1672,7 @@ function refreshForTab() {
 
   // 블로그 글에는 지역·업종·구분이 없다. 쓸 수 없는 조건은 감춘다.
   const isBlog = t.kind === "blog";
+  $("subtabs").hidden = !isBlog;
   [$("districtMulti"), $("bizTypeMulti"), $("categoryFilter")]
     .forEach(el => { el.hidden = isBlog; });
   if (isBlog) { selected.district.clear(); selected.bizType.clear(); }

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>블로그 글쓰기 — 서울 신상 레이더</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --ink: #2d2419;
+    --ink-soft: #6f6252;
+    --ink-faint: #a3968a;
+    --accent: #8a5a2b;
+    --accent-soft: #f0e4d6;
+    --line: #e8dfd3;
+    --ok: #3f6b34;
+    --ok-bg: #e7f0e4;
+    --warn: #8a5a2b;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1712;
+      --surface: #262019;
+      --ink: #f0e8dd;
+      --ink-soft: #b5a794;
+      --ink-faint: #7d7163;
+      --accent: #d9a469;
+      --accent-soft: #3a2e20;
+      --line: #3a3128;
+      --ok: #a4cf97;
+      --ok-bg: #2c3a28;
+      --warn: #d9a469;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  header .eyebrow {
+    font-size: 13px; letter-spacing: .12em; color: var(--accent);
+    font-weight: 700; text-transform: uppercase;
+  }
+  header h1 { font-size: 28px; margin-top: 4px; letter-spacing: -0.02em; }
+  header .period { color: var(--ink-soft); margin-top: 6px; font-size: 15px; }
+
+  .tabs { display: flex; gap: 6px; margin-top: 22px; border-bottom: 1px solid var(--line); }
+  .tab {
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    color: var(--ink-soft); background: none; border: none; text-decoration: none;
+    padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+  section { margin-top: 28px; }
+  h2 {
+    font-size: 15px; letter-spacing: .04em; color: var(--accent);
+    font-weight: 700; margin-bottom: 10px;
+  }
+  h2 .sub { color: var(--ink-faint); font-weight: 500; letter-spacing: 0; font-size: 13px; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.wide { grid-column: 1 / -1; }
+  label { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+  label .hint { color: var(--ink-faint); font-weight: 400; }
+  input, textarea, select {
+    font: inherit; font-size: 14.5px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 11px; width: 100%;
+  }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 84px; line-height: 1.6; }
+
+  .btn {
+    font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+    background: var(--accent); color: var(--bg); border: none;
+    border-radius: 10px; padding: 11px 20px;
+  }
+  .btn:hover { opacity: .9; }
+  .btn.ghost {
+    background: var(--surface); color: var(--accent); border: 1px solid var(--line);
+    font-size: 13px; font-weight: 600; padding: 7px 12px;
+  }
+  .btn.ghost.done { color: var(--ok); border-color: var(--ok); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+
+  .out { display: none; }
+  .out.show { display: block; }
+
+  .cand {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+    display: flex; gap: 12px; align-items: flex-start; justify-content: space-between;
+  }
+  .cand .txt { flex: 1; min-width: 0; }
+  .cand .title { font-size: 15px; font-weight: 600; word-break: keep-all; }
+  .cand .meta { font-size: 12.5px; color: var(--ink-faint); margin-top: 4px; }
+  .cand .meta b { color: var(--accent); font-weight: 700; }
+  .cand .acts { flex-shrink: 0; }
+
+  pre.prompt {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; font-size: 13px; line-height: 1.62; white-space: pre-wrap;
+    word-break: break-word; max-height: 420px; overflow-y: auto;
+    font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+  }
+  .tagbox {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; font-size: 13.5px; line-height: 1.8; word-break: break-all;
+  }
+  .tagbox .count { display: block; font-size: 12.5px; color: var(--ink-faint); margin-top: 8px; }
+
+  ul.check { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  ul.check li {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 13px; font-size: 14px; display: flex; gap: 9px; align-items: flex-start;
+  }
+  ul.check .why { display: block; font-size: 12.5px; color: var(--ink-faint); margin-top: 2px; }
+  ul.check .mark { flex-shrink: 0; }
+
+  .note {
+    margin-top: 10px; padding: 11px 14px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--accent); font-size: 13.5px;
+  }
+  footer { margin-top: 44px; color: var(--ink-faint); font-size: 12.5px; }
+  footer a { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">서울 신상 레이더</div>
+    <h1>블로그 글쓰기</h1>
+    <div class="period">가게 정보를 넣으면 제목 후보와 글 지시문을 만들어 줍니다.</div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <a class="tab" href="index.html" role="tab" aria-selected="false">신상 검색</a>
+    <span class="tab" role="tab" aria-selected="true">글쓰기</span>
+  </div>
+
+  <section>
+    <h2>가게 정보 <span class="sub">역명과 동네를 꼭 채우세요 — 제목 검색어가 여기서 나옵니다</span></h2>
+    <div class="grid">
+      <div class="field">
+        <label for="fName">가게 이름</label>
+        <input id="fName" placeholder="틸데">
+      </div>
+      <div class="field">
+        <label for="fArea">동네 <span class="hint">(OO동)</span></label>
+        <input id="fArea" placeholder="후암동">
+      </div>
+      <div class="field">
+        <label for="fStation">가장 가까운 역 <span class="hint">(제목에 넣습니다)</span></label>
+        <input id="fStation" placeholder="숙대입구역">
+      </div>
+      <div class="field">
+        <label for="fNear">인접 지역 <span class="hint">(선택 · 같이 검색되는 동네)</span></label>
+        <input id="fNear" placeholder="남영동">
+      </div>
+      <div class="field">
+        <label for="fType">업종</label>
+        <select id="fType">
+          <option>카페</option><option>맛집</option><option>베이커리</option>
+          <option>브런치</option><option>디저트</option><option>술집</option>
+          <option>바</option><option>이자카야</option><option>파스타</option>
+          <option>고기집</option><option>한식</option><option>일식</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fVisit">방문 시점</label>
+        <input id="fVisit" placeholder="2026년 9월">
+      </div>
+      <div class="field wide">
+        <label for="fMenu">대표 메뉴 <span class="hint">(쉼표로 구분 · 검색어와 태그에 씁니다)</span></label>
+        <input id="fMenu" placeholder="양갱, 빙수, 크림라떼">
+      </div>
+      <div class="field wide">
+        <label for="fTrait">특징 <span class="hint">(쉼표로 구분 · 신상/2호점/루프탑/반려동물 동반 등)</span></label>
+        <input id="fTrait" placeholder="신상, 2호점, 통창">
+      </div>
+      <div class="field">
+        <label for="fHours">영업시간</label>
+        <input id="fHours" placeholder="12:00 - 21:00 (월 휴무)">
+      </div>
+      <div class="field">
+        <label for="fPark">주차</label>
+        <input id="fPark" placeholder="불가 · 인근 공영주차장">
+      </div>
+      <div class="field">
+        <label for="fInsta">인스타</label>
+        <input id="fInsta" placeholder="@tilde_seoul">
+      </div>
+      <div class="field">
+        <label for="fPhotos">사진 장수 <span class="hint">(대표 1 + 나머지)</span></label>
+        <input id="fPhotos" type="number" min="1" placeholder="40">
+      </div>
+      <div class="field wide">
+        <label for="fMemo">맛과 분위기 메모 <span class="hint">(몇 문장이면 충분합니다. 이걸 바탕으로 본문이 나옵니다)</span></label>
+        <textarea id="fMemo" placeholder="양갱이 안 달고 팥 맛이 진했다. 빙수는 우유 얼음이라 부드러웠다. 2층은 창가 자리가 좋고 혼자 오기 편했다. 웨이팅은 없었다."></textarea>
+      </div>
+    </div>
+
+    <div class="row">
+      <button type="button" class="btn" id="go">만들기</button>
+      <button type="button" class="btn ghost" id="clear">입력 지우기</button>
+      <span class="sub" style="font-size:12.5px;color:var(--ink-faint)">입력은 이 브라우저에만 저장됩니다</span>
+    </div>
+  </section>
+
+  <div class="out" id="out">
+    <section>
+      <h2>제목 후보 <span class="sub">괄호 안은 검색어 개수 — 1위 글들은 4~6개를 물고 있습니다</span></h2>
+      <div id="cands"></div>
+    </section>
+
+    <section>
+      <h2>글 지시문 <span class="sub">복사해서 클로드 대화창에 붙이고 사진을 함께 올리세요</span></h2>
+      <pre class="prompt" id="prompt"></pre>
+      <div class="row"><button type="button" class="btn ghost" id="copyPrompt">지시문 복사</button></div>
+    </section>
+
+    <section>
+      <h2>네이버 태그 <span class="sub">최대 30개 — 발행 화면 태그란에 그대로 붙여넣기</span></h2>
+      <div class="tagbox"><span id="tags"></span><span class="count" id="tagCount"></span></div>
+      <div class="row"><button type="button" class="btn ghost" id="copyTags">태그 복사</button></div>
+    </section>
+
+    <section>
+      <h2>발행 전 점검 <span class="sub">2026-09-04 상위 노출 글 36편을 분석해 뽑은 항목</span></h2>
+      <ul class="check">
+        <li><span class="mark">☐</span><span><b>본문 2,500자 이상</b><span class="why">상위 1위 글 중앙값 2,600자. 최근 글은 1,982자였습니다.</span></span></li>
+        <li><span class="mark">☐</span><span><b>제목에 검색어 4개 이상</b><span class="why">역명 · 동네 · 업종 · 메뉴 · 의도어를 섞습니다.</span></span></li>
+        <li><span class="mark">☐</span><span><b>스티커 1~2개</b><span class="why">상위 69%가 사용. 근거는 약한 편이니 부담 없이.</span></span></li>
+        <li><span class="mark">☐</span><span><b>이전 글 링크카드 1개</b><span class="why">상위 39%가 사용. 같은 동네 글로 연결하면 좋습니다.</span></span></li>
+        <li><span class="mark">☐</span><span><b>지도 첨부</b><span class="why">상위 97%. 이미 늘 하고 있는 항목입니다.</span></span></li>
+      </ul>
+      <div class="note">
+        상단 <b>&lt;요약&gt; ✔</b> 블록은 상위 1위 글 중 8%만 씁니다. 다만 조회수 하락은
+        이 블록을 넣기 전인 4~6월에 이미 일어났으므로, 원인은 아닙니다. 빼도 넣어도 됩니다.
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    제목·본문 기준은 2026-09-04에 36개 키워드의 1위 글과 haranalice 글 20편을 비교해 얻었습니다.
+    상관관계이지 인과는 아니므로, 몇 편 시험한 뒤 순위 변화를 보고 판단하세요.
+  </footer>
+</div>
+
+<script>
+const KEY = "seoul-radar:write";
+const F = ["fName","fArea","fStation","fNear","fType","fVisit","fMenu","fTrait","fHours","fPark","fInsta","fPhotos","fMemo"];
+const $ = id => document.getElementById(id);
+
+function load() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return; }
+  F.forEach(id => { if (saved[id] != null) $(id).value = saved[id]; });
+}
+function save() {
+  const d = {};
+  F.forEach(id => { d[id] = $(id).value; });
+  try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
+}
+
+const splitList = s => (s || "").split(/[,·]/).map(x => x.trim()).filter(Boolean);
+
+function readForm() {
+  const v = {};
+  F.forEach(id => { v[id.slice(1).toLowerCase()] = $(id).value.trim(); });
+  v.menus = splitList(v.menu);
+  v.traits = splitList(v.trait);
+  return v;
+}
+
+// 검색어로 셀 만한 토큰만 센다. '~에 2호점을 오픈한' 같은 수식어는 검색어가 아니다.
+function countKeywords(title, v) {
+  const parts = [
+    v.station, v.area, v.near, v.type, v.name,
+    v.area && v.type ? `${v.area} ${v.type}` : "",
+    ...v.menus, ...v.traits,
+    "후기", "추천", "내돈내산", "신상",
+  ].filter(Boolean);
+  const hit = new Set();
+  parts.forEach(p => { if (title.includes(p)) hit.add(p); });
+  return hit.size;
+}
+
+function titleCandidates(v) {
+  const t = v.type || "카페";
+  const menu1 = v.menus[0] || "";
+  const menu2 = v.menus[1] || "";
+  const trait1 = v.traits[0] || "";
+  const out = [];
+  const push = s => { const x = s.replace(/\s+/g, " ").trim(); if (x && !out.includes(x)) out.push(x); };
+
+  push(`${v.station} ${t} ${v.name} ${v.area} | ${menu1} ${menu2} ${t} ${trait1} 후기`);
+  push(`[${v.area} ${t}] ${v.name} — ${menu1} 맛있는 ${trait1} ${t} 내돈내산 후기`);
+  push(`${v.area} ${t} 추천 ${v.name} | ${v.station} ${menu1} ${t} 솔직후기`);
+  push(`${v.name} ${v.area} ${t} ㅣ ${menu1} ${menu2} ${v.station} 데이트 코스 추천`);
+  if (v.near) push(`${v.area} ${v.near} ${t} ${v.name} ${trait1} ${menu1} 후기`);
+  push(`${v.station} ${trait1} ${t} ${v.name} ${menu1} 내돈내산`);
+
+  return out.slice(0, 5).map(title => ({ title, n: countKeywords(title, v), len: title.length }));
+}
+
+function buildTags(v) {
+  const t = v.type || "카페";
+  const base = [
+    v.name, v.area, v.station, v.near,
+    `${v.area}${t}`, `${v.station}${t}`, `${v.area} ${t}`,
+    `${v.area}맛집`, `서울${t}`, `${t}추천`, `${v.area}${t}추천`,
+    ...v.menus, ...v.traits,
+    ...v.menus.map(m => `${v.area}${m}`),
+    ...v.traits.map(x => `${v.area}${x}`),
+    "신상카페", "내돈내산", "솔직후기", "서울맛집", "데이트코스",
+  ];
+  const seen = new Set();
+  const tags = [];
+  base.filter(Boolean).forEach(x => {
+    const c = x.replace(/\s+/g, "");
+    if (c.length < 2 || seen.has(c)) return;
+    seen.add(c); tags.push(c);
+  });
+  return tags.slice(0, 30);
+}
+
+function buildPrompt(v, cands) {
+  const t = v.type || "카페";
+  const photos = v.photos || "40";
+  return `너는 네이버 블로그 "하란의 카페일지"의 글을 대신 쓴다.
+아래 규칙과 정보를 지켜 완성된 글 한 편을 써라.
+
+[문체 규칙 — 기존 글 50편에서 뽑음]
+- 평서체(~했다, ~였다). 존댓말·해요체 쓰지 않는다.
+- 첫 줄은 "※${v.visit || "2026년 9월"} 방문"으로 시작한다.
+- 그 아래 한 줄로: ${v.area} ${t} — 가게를 한 문장으로 설명 + ${v.station}
+- 이어서 정보 블록:
+    영업시간 ${v.hours || "(입력 없음)"}
+    주차 ${v.park || "(입력 없음)"}
+    위치 / 인스타 ${v.insta || "(입력 없음)"}
+- 감탄사와 이모지를 남발하지 않는다. 담백하게 쓴다.
+- 광고처럼 들리는 표현("강추", "인생") 대신 관찰한 사실을 쓴다.
+
+[분량 — 이번에 반드시 지킬 것]
+- 본문 2,500자 이상. 기존 글이 평균 2,000자여서 상위 노출 글(중앙값 2,600자)보다 짧았다.
+- 사진 ${photos}장에 맞춰 문단을 나누고, 사진마다 두세 문장씩 붙인다.
+- 사진 자리는 [사진 1] [사진 2] ... 로 표시해 준다.
+
+[제목]
+아래 후보 중 하나를 고르거나 비슷하게 다듬어 맨 위에 제시하라.
+${cands.map((c, i) => `${i + 1}. ${c.title}  (검색어 ${c.n}개)`).join("\n")}
+
+[가게 정보]
+- 이름: ${v.name}
+- 동네: ${v.area}${v.near ? ` (인접: ${v.near})` : ""}
+- 가까운 역: ${v.station}
+- 업종: ${t}
+- 대표 메뉴: ${v.menus.join(", ") || "(입력 없음)"}
+- 특징: ${v.traits.join(", ") || "(입력 없음)"}
+
+[내가 보고 느낀 것 — 이걸 본문의 뼈대로 삼아라]
+${v.memo || "(메모 없음)"}
+
+[하지 말 것]
+- 내가 쓰지 않은 맛·가격·메뉴를 지어내지 마라. 모르는 것은 비워두고 [확인 필요]라고 표시해라.
+- 사진에 없는 장면을 묘사하지 마라.
+
+[끝에]
+- 본문 안에 해시태그를 자연스럽게 몇 개 섞어라(#${(v.name || "").replace(/\s+/g, "")} 등).
+- 마지막에 한 문단으로 다시 방문할지, 누구에게 맞는 곳인지 적어라.`;
+}
+
+function render() {
+  const v = readForm();
+  if (!v.name || !v.area) {
+    alert("가게 이름과 동네는 채워주세요. 제목 검색어가 거기서 나옵니다.");
+    return;
+  }
+  const cands = titleCandidates(v);
+
+  $("cands").innerHTML = "";
+  cands.forEach(c => {
+    const el = document.createElement("div");
+    el.className = "cand";
+    const txt = document.createElement("div");
+    txt.className = "txt";
+    const ti = document.createElement("div");
+    ti.className = "title";
+    ti.textContent = c.title;
+    const me = document.createElement("div");
+    me.className = "meta";
+    me.innerHTML = `검색어 <b>${c.n}개</b> · ${c.len}자`;
+    txt.append(ti, me);
+    const acts = document.createElement("div");
+    acts.className = "acts";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn ghost";
+    btn.textContent = "복사";
+    btn.addEventListener("click", () => copy(c.title, btn, "복사"));
+    acts.append(btn);
+    el.append(txt, acts);
+    $("cands").append(el);
+  });
+
+  $("prompt").textContent = buildPrompt(v, cands);
+
+  const tags = buildTags(v);
+  $("tags").textContent = tags.map(x => "#" + x).join(" ");
+  $("tagCount").textContent = `${tags.length}개 / 최대 30개`;
+  $("tags").dataset.plain = tags.join(",");
+
+  $("out").classList.add("show");
+  $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+  save();
+}
+
+function copy(text, btn, label) {
+  const done = () => {
+    btn.classList.add("done");
+    btn.textContent = "복사됨";
+    setTimeout(() => { btn.classList.remove("done"); btn.textContent = label; }, 1600);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => fallback(text, done));
+  } else {
+    fallback(text, done);
+  }
+}
+function fallback(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.append(ta);
+  ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) {}
+  ta.remove();
+}
+
+$("go").addEventListener("click", render);
+$("clear").addEventListener("click", () => {
+  F.forEach(id => { $(id).value = ""; });
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  $("out").classList.remove("show");
+});
+$("copyPrompt").addEventListener("click", e => copy($("prompt").textContent, e.target, "지시문 복사"));
+$("copyTags").addEventListener("click", e => copy($("tags").textContent, e.target, "태그 복사"));
+F.forEach(id => $(id).addEventListener("change", save));
+
+load();
+</script>
+</body>
+</html>
