@@ -117,9 +117,8 @@
   </div>
 
   <div class="note" style="background:none;border:1px solid var(--line);color:var(--ink-soft)">
-    글마다 아래 단추로 표시해 주세요. 표시한 것끼리만 견줍니다.
+    <b>아무것도 안 누른 글은 ‘예전 방식’으로 칩니다.</b> 새로 쓴 것만 표시하세요.
     <br><b>새 방식</b> — 제목에 ‘동네+업종’을 붙이고 2,500자를 넘긴 글
-    <br><b>예전 방식</b> — 늘 쓰던 대로 쓴 글. 비교 기준이 됩니다
     <br><b>제외</b> — 협찬글·일상글처럼 성격이 달라 견주기 어려운 글
     <br><span style="color:var(--ink-faint)">표시는 이 브라우저에만 저장되고, 안 눌러도 순위는 계속 쌓입니다.</span>
   </div>
@@ -209,7 +208,8 @@ function render(data) {
 function markButtons(logNo, box) {
   const wrap = document.createElement("div");
   wrap.className = "marks";
-  [["exp", "새 방식"], ["ctl", "예전 방식"], ["off", "제외"]].forEach(([key, label]) => {
+  // 예전 방식이 대부분이므로 그것을 기본값으로 둔다. 누를 일을 줄인다.
+  [["exp", "새 방식"], ["off", "제외"]].forEach(([key, label]) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "mark";
@@ -221,7 +221,7 @@ function markButtons(logNo, box) {
       saveLabels();
       [...wrap.children].forEach(b =>
         b.setAttribute("aria-pressed",
-          String(LABELS[logNo] === {"새 방식": "exp", "예전 방식": "ctl", "제외": "off"}[b.textContent])));
+          String(LABELS[logNo] === {"새 방식": "exp", "제외": "off"}[b.textContent])));
       box.classList.toggle("off", LABELS[logNo] === "off");
       renderSummary();
     });
@@ -233,7 +233,9 @@ function markButtons(logNo, box) {
 /* 표시한 글들의 '가장 좋았던 순위'를 평균 내어 견준다.
    30위 밖은 순위가 없으므로 평균에서 빼고 몇 편인지만 따로 적는다. */
 function groupStats(kind) {
-  const rows = Object.entries(DATA.posts).filter(([id]) => LABELS[id] === kind);
+  // 'ctl'은 표시가 없는 글 전부다. 예전 방식이 대부분이라 그것을 기본으로 둔다.
+  const rows = Object.entries(DATA.posts).filter(([id]) =>
+    kind === "ctl" ? !LABELS[id] : LABELS[id] === kind);
   let ranked = [], missing = 0, posts = rows.length;
   rows.forEach(([, post]) => {
     (post.keywords || []).forEach(kw => {
@@ -252,7 +254,8 @@ function renderSummary() {
   if (!DATA) return;
   const exp = groupStats("exp");
   const ctl = groupStats("ctl");
-  if (!exp.posts && !ctl.posts) { $("summary").hidden = true; return; }
+  // 표시가 하나도 없으면 전부 '예전 방식'이라 견줄 것이 없다.
+  if (!exp.posts) { $("summary").hidden = true; return; }
 
   $("summary").hidden = false;
   $("summaryBody").innerHTML = `
@@ -260,13 +263,14 @@ function renderSummary() {
       <tr><th></th><th>글</th><th>검색어에 잡힘</th><th>30위 밖</th><th>평균 최고 순위</th></tr>
       <tr><td>새 방식</td><td>${exp.posts}편</td><td>${exp.hit}개</td><td>${exp.missing}개</td>
           <td class="num">${exp.avg ? exp.avg + "위" : "–"}</td></tr>
-      <tr><td>예전 방식</td><td>${ctl.posts}편</td><td>${ctl.hit}개</td><td>${ctl.missing}개</td>
+      <tr><td>예전 방식 <span style="color:var(--ink-faint);font-size:12px">(표시 안 한 글)</span></td>
+          <td>${ctl.posts}편</td><td>${ctl.hit}개</td><td>${ctl.missing}개</td>
           <td class="num">${ctl.avg ? ctl.avg + "위" : "–"}</td></tr>
     </table>
     <div class="hint">${
-      exp.posts >= 3 && ctl.posts >= 3
-        ? "각 3편 이상 모였습니다. 다만 편수가 적으면 우연일 수 있으니 5편씩은 쌓아 보세요."
-        : "새 방식과 예전 방식을 각각 3편 이상 표시해야 견줄 만해집니다."
+      exp.posts >= 3
+        ? "새 방식 글이 3편 이상 모였습니다. 다만 편수가 적으면 우연일 수 있으니 5편까지는 쌓아 보세요."
+        : `새 방식으로 쓴 글을 ${3 - exp.posts}편 더 표시하면 견줄 만해집니다.`
     }</div>`;
 }
 
