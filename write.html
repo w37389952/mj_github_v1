@@ -248,7 +248,7 @@ https://naver.me/xxxxxxx"></textarea>
 
   <div class="out" id="out">
     <section>
-      <h2>제목 후보 <span class="sub">괄호 안은 검색어 개수 — 1위 글들은 4~6개를 물고 있습니다</span></h2>
+      <h2>제목 후보 <span class="sub">상위 노출 글은 조각 4~6개를 담고, 65%가 ‘동네+업종’을 붙여서 씁니다</span></h2>
       <div id="cands"></div>
     </section>
 
@@ -338,14 +338,22 @@ function titleCandidates(v) {
   const out = [];
   const push = s => { const x = s.replace(/\s+/g, " ").trim(); if (x && !out.includes(x)) out.push(x); };
 
-  push(`${v.station} ${t} ${v.name} ${v.area} | ${menu1} ${menu2} ${t} ${trait1} 후기`);
+  push(`${v.area} ${t} ${v.name} ${v.station} | ${menu1} ${menu2} ${trait1} ${t} 후기`);
   push(`[${v.area} ${t}] ${v.name} — ${menu1} 맛있는 ${trait1} ${t} 내돈내산 후기`);
   push(`${v.area} ${t} 추천 ${v.name} | ${v.station} ${menu1} ${t} 솔직후기`);
   push(`${v.name} ${v.area} ${t} ㅣ ${menu1} ${menu2} ${v.station} 데이트 코스 추천`);
   if (v.near) push(`${v.area} ${v.near} ${t} ${v.name} ${trait1} ${menu1} 후기`);
   push(`${v.station} ${trait1} ${t} ${v.name} ${menu1} 내돈내산`);
 
-  return out.slice(0, 5).map(title => ({ title, n: countKeywords(title, v), len: title.length }));
+  const target = v.area && t ? `${v.area}${t}` : "";
+  return out.slice(0, 5).map(title => ({
+    title,
+    n: countKeywords(title, v),
+    len: title.length,
+    // 상위 노출 글의 65%는 '동네+업종'을 붙여서 그대로 담고 있다.
+    // 사이에 다른 말이 끼면 구절이 끊긴다. 그걸 표시해 준다.
+    hasPhrase: Boolean(target) && title.replace(/\s/g, "").includes(target),
+  }));
 }
 
 function buildTags(v) {
@@ -501,7 +509,10 @@ function render() {
     ti.textContent = c.title;
     const me = document.createElement("div");
     me.className = "meta";
-    me.innerHTML = `검색어 <b>${c.n}개</b> · ${c.len}자`;
+    const phrase = c.hasPhrase
+      ? `· <b>‘${v.area} ${v.type || "카페"}’ 붙어 있음 ✓</b>`
+      : `· <span style="color:var(--ink-faint)">‘${v.area} ${v.type || "카페"}’ 끊김</span>`;
+    me.innerHTML = `검색어 <b>${c.n}개</b> · ${c.len}자 ${phrase}`;
     txt.append(ti, me);
     const acts = document.createElement("div");
     acts.className = "acts";
