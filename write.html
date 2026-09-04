@@ -107,6 +107,24 @@
   .cand .acts { flex-shrink: 0; }
 
   section[hidden] { display: none; }
+
+  .ac {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 20;
+    background: var(--surface); border: 1px solid var(--accent);
+    border-radius: 10px; margin-top: 3px; overflow: hidden;
+    max-height: 260px; overflow-y: auto;
+    box-shadow: 0 6px 20px rgba(0,0,0,.12);
+  }
+  .ac[hidden] { display: none; }
+  .ac button {
+    font: inherit; display: block; width: 100%; text-align: left;
+    background: none; border: none; cursor: pointer; padding: 8px 12px;
+    border-bottom: 1px solid var(--line); color: var(--ink);
+  }
+  .ac button:last-child { border-bottom: none; }
+  .ac button:hover, .ac button.on { background: var(--accent-soft); }
+  .ac .nm { font-size: 14px; font-weight: 600; }
+  .ac .ad { font-size: 12.5px; color: var(--ink-faint); }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
     font: inherit; font-size: 13px; cursor: pointer;
@@ -194,19 +212,21 @@
       <span id="parseMsg" style="font-size:12.5px;color:var(--ink-faint)"></span>
     </div>
     <div class="note" style="margin-top:12px">
-      모바일 앱에서 공유하면 이름과 주소가 함께 복사되어 그대로 읽힙니다.
-      <b>링크(naver.me/…)만 복사된 경우에는 읽을 수 없습니다</b> — 그 안에는 가게 번호만 들어 있고,
-      이 페이지에서 네이버에 물어볼 수가 없습니다. 그럴 때는 이름과 주소를 직접 넣어주세요.
-      영업시간과 주차는 네이버가 API로도 주지 않아 늘 손으로 넣어야 합니다.
+      <b>PC에서는 아래 ‘가게 이름’ 칸에 두 글자만 쳐 보세요.</b> 레이더가 모아 둔
+      서울 신상 가게 7천 곳에서 찾아 주소와 동네를 채웁니다. 네이버에 안 물어봐도 됩니다.
+      <br>모바일 앱 공유는 이름과 주소가 함께 복사되어 위 칸에 그대로 붙이면 읽힙니다.
+      링크(naver.me/…)만 복사된 경우에는 가게 번호밖에 없어 읽을 수 없습니다.
+      <br>영업시간과 주차는 어느 쪽으로도 자동으로 못 채웁니다. 늘 손으로 넣어주세요.
     </div>
   </section>
 
   <section>
     <h2>가게 정보 <span class="sub">역명과 동네를 꼭 채우세요 — 제목 검색어가 여기서 나옵니다</span></h2>
     <div class="grid">
-      <div class="field">
-        <label for="fName">가게 이름</label>
-        <input id="fName" placeholder="틸데">
+      <div class="field" style="position:relative">
+        <label for="fName">가게 이름 <span class="hint">(치면 레이더에서 찾아 채웁니다)</span></label>
+        <input id="fName" placeholder="틸데" autocomplete="off">
+        <div class="ac" id="ac" hidden></div>
       </div>
       <div class="field">
         <label for="fArea">동네 <span class="hint">(OO동)</span></label>
@@ -673,6 +693,85 @@ function parsePaste(raw) {
   out.looksComplete = Boolean(out.address) || /naver\.(me|com)/.test(text);
   return out;
 }
+
+/* 가게 이름 자동완성.
+   브라우저는 네이버를 직접 부를 수 없으므로(오늘 여섯 곳을 다 시험해 막힌 것을
+   확인했다) 밖에 묻지 않는다. 대신 레이더가 이미 모아 둔 서울 신상 가게 목록에서
+   찾는다. 목록은 이름을 두 글자 치기 전에는 내려받지 않는다. */
+let SHOPS = null, shopsLoading = false;
+
+function loadShops() {
+  if (SHOPS || shopsLoading) return Promise.resolve();
+  shopsLoading = true;
+  return fetch("data/shops.json")
+    .then(r => (r.ok ? r.json() : null))
+    .then(j => { SHOPS = (j && j.rows) || []; })
+    .catch(() => { SHOPS = []; })
+    .finally(() => { shopsLoading = false; });
+}
+
+function findShops(text) {
+  const q = text.trim().replace(/\s/g, "");
+  if (!SHOPS || q.length < 2) return [];
+  const hits = [];
+  for (const row of SHOPS) {
+    if (row[0].replace(/\s/g, "").includes(q)) {
+      hits.push(row);
+      if (hits.length >= 8) break;
+    }
+  }
+  return hits;
+}
+
+/* 주소에서 동네를 뽑는다. 괄호 안이 가장 정확하고, 없으면 법정동을 찾는다. */
+function areaFromAddress(address) {
+  const paren = /\(([^),]+)/.exec(address || "");
+  if (paren && /(동|가)$/.test(paren[1].trim())) return paren[1].trim();
+  const dong = DONG.exec(" " + (address || ""));
+  return dong ? dong[1] : "";
+}
+
+const BIZ_TO_TYPE = {
+  "커피숍": "카페", "까페": "카페", "과자점": "베이커리", "제과점": "베이커리",
+  "경양식": "카페", "기타": "카페", "한식": "맛집", "중국식": "맛집",
+  "일식": "맛집", "분식": "맛집", "호프/통닭": "술집", "정종/대포집/소주방": "술집",
+  "패스트푸드": "맛집", "외국음식전문점(인도,태국등)": "맛집",
+};
+
+function fillFromShop(row) {
+  const [name, address, biz] = row;
+  $("fName").value = name.replace(/\([^)]*\)\s*$/, "").trim() || name;
+  const area = areaFromAddress(address);
+  if (area) $("fArea").value = area;
+  const guess = BIZ_TO_TYPE[biz];
+  if (guess && [...$("fType").options].some(o => o.value === guess)) {
+    $("fType").value = guess;
+  }
+  $("ac").hidden = true;
+  save();
+  $("parseMsg").textContent = `레이더에서 찾았습니다 — ${address}`;
+}
+
+function renderAc(hits) {
+  const box = $("ac");
+  box.innerHTML = "";
+  if (!hits.length) { box.hidden = true; return; }
+  hits.forEach(row => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.innerHTML = `<span class="nm">${row[0]}</span><br><span class="ad">${row[1]}</span>`;
+    btn.addEventListener("mousedown", e => { e.preventDefault(); fillFromShop(row); });
+    box.append(btn);
+  });
+  box.hidden = false;
+}
+
+$("fName").addEventListener("input", () => {
+  const text = $("fName").value;
+  if (text.trim().length < 2) { $("ac").hidden = true; return; }
+  loadShops().then(() => renderAc(findShops(text)));
+});
+$("fName").addEventListener("blur", () => setTimeout(() => { $("ac").hidden = true; }, 120));
 
 $("parse").addEventListener("click", () => {
   const raw = ($("fPaste").value || "").trim();
