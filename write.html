@@ -459,9 +459,13 @@ function renderCompetition(v) {
     const el = document.createElement("div");
     el.className = "kw";
     const left = document.createElement("div");
+    const flow = KW.trend ? KW.trend[q] : undefined;
     const bits = [];
     bits.push(total == null ? "문서 수 모름" : `글 ${total.toLocaleString()}건`);
     if (want != null) bits.push(`관심도 ${want}`);
+    if (flow != null) {
+      bits.push(flow >= 1.2 ? `⭐ 석 달 새 ${flow}배` : `흐름 ${flow}배`);
+    }
     left.innerHTML = `<div class="q">${q}</div><div class="n">${bits.join(" · ")}</div>`;
     const badge = document.createElement("span");
     badge.className = `grade ${g.cls}`.trim();
