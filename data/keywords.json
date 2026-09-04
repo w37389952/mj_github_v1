@@ -26,5 +26,21 @@
     "남영동 카페": 1.61,
     "성수동 카페": 1.03,
     "연남동 카페": 0.97
-  }
+  },
+  "themes": [
+    { "word": "약과", "demand": 18.4, "trend": 2.31 },
+    { "word": "야장", "demand": 41.2, "trend": 1.88 },
+    { "word": "말차", "demand": 33.7, "trend": 1.64 },
+    { "word": "무인카페", "demand": 9.1, "trend": 1.42 },
+    { "word": "노포", "demand": 27.5, "trend": 1.28 },
+    { "word": "소금빵", "demand": 52.3, "trend": 1.21 },
+    { "word": "혼밥", "demand": 44.8, "trend": 1.12 },
+    { "word": "루프탑", "demand": 30.2, "trend": 1.04 },
+    { "word": "베이글", "demand": 61.7, "trend": 0.98 },
+    { "word": "브런치", "demand": 58.1, "trend": 0.95 },
+    { "word": "포토존", "demand": 22.6, "trend": 0.91 },
+    { "word": "빵지순례", "demand": 15.3, "trend": 0.84 },
+    { "word": "크로플", "demand": 11.9, "trend": 0.71 },
+    { "word": "오마카세", "demand": 39.4, "trend": 0.63 }
+  ]
 }

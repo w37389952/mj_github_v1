@@ -106,6 +106,21 @@
   .cand .meta b { color: var(--accent); font-weight: 700; }
   .cand .acts { flex-shrink: 0; }
 
+  section[hidden] { display: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font: inherit; font-size: 13px; cursor: pointer;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px;
+    display: inline-flex; align-items: baseline; gap: 5px;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.hot { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .chip.cold { opacity: .55; }
+  .chip .rate { font-size: 11.5px; color: var(--ink-faint); }
+  .chip.hot .rate { color: var(--accent); }
+  .chip-hint { font-size: 12.5px; color: var(--ink-faint); margin-top: 8px; }
+
   .kw {
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
     padding: 9px 13px; margin-bottom: 7px;
@@ -160,6 +175,12 @@
     <a class="tab" href="index.html" role="tab" aria-selected="false">신상 검색</a>
     <span class="tab" role="tab" aria-selected="true">글쓰기</span>
   </div>
+
+  <section id="themeBox" hidden>
+    <h2>요즘 뜨는 말 <span class="sub" id="themeWhen"></span></h2>
+    <div class="chips" id="themeChips"></div>
+    <div class="chip-hint">누르면 아래 ‘특징’ 칸에 담깁니다. 배수는 석 달 사이 검색이 몇 배가 되었는지입니다.</div>
+  </section>
 
   <section>
     <h2>네이버에서 붙여넣기 <span class="sub">지도 앱 → 공유 → 복사한 내용을 그대로 붙이세요</span></h2>
@@ -248,7 +269,7 @@ https://naver.me/xxxxxxx"></textarea>
 
   <div class="out" id="out">
     <section>
-      <h2>제목 후보 <span class="sub">괄호 안은 검색어 개수 — 1위 글들은 4~6개를 물고 있습니다</span></h2>
+      <h2>제목 후보 <span class="sub">상위 노출 글은 조각 4~6개를 담고, 65%가 ‘동네+업종’을 붙여서 씁니다</span></h2>
       <div id="cands"></div>
     </section>
 
@@ -338,14 +359,22 @@ function titleCandidates(v) {
   const out = [];
   const push = s => { const x = s.replace(/\s+/g, " ").trim(); if (x && !out.includes(x)) out.push(x); };
 
-  push(`${v.station} ${t} ${v.name} ${v.area} | ${menu1} ${menu2} ${t} ${trait1} 후기`);
+  push(`${v.area} ${t} ${v.name} ${v.station} | ${menu1} ${menu2} ${trait1} ${t} 후기`);
   push(`[${v.area} ${t}] ${v.name} — ${menu1} 맛있는 ${trait1} ${t} 내돈내산 후기`);
   push(`${v.area} ${t} 추천 ${v.name} | ${v.station} ${menu1} ${t} 솔직후기`);
   push(`${v.name} ${v.area} ${t} ㅣ ${menu1} ${menu2} ${v.station} 데이트 코스 추천`);
   if (v.near) push(`${v.area} ${v.near} ${t} ${v.name} ${trait1} ${menu1} 후기`);
   push(`${v.station} ${trait1} ${t} ${v.name} ${menu1} 내돈내산`);
 
-  return out.slice(0, 5).map(title => ({ title, n: countKeywords(title, v), len: title.length }));
+  const target = v.area && t ? `${v.area}${t}` : "";
+  return out.slice(0, 5).map(title => ({
+    title,
+    n: countKeywords(title, v),
+    len: title.length,
+    // 상위 노출 글의 65%는 '동네+업종'을 붙여서 그대로 담고 있다.
+    // 사이에 다른 말이 끼면 구절이 끊긴다. 그걸 표시해 준다.
+    hasPhrase: Boolean(target) && title.replace(/\s/g, "").includes(target),
+  }));
 }
 
 function buildTags(v) {
@@ -420,8 +449,47 @@ ${v.memo || "(메모 없음)"}
 let KW = null;
 fetch("data/keywords.json")
   .then(r => (r.ok ? r.json() : null))
-  .then(j => { KW = j; if ($("out").classList.contains("show")) renderCompetition(readForm()); })
+  .then(j => {
+    KW = j;
+    renderThemes();
+    if ($("out").classList.contains("show")) renderCompetition(readForm());
+  })
   .catch(() => {});
+
+/* 요즘 무엇이 뜨는지. 글감을 정할 때 보라고 맨 위에 둔다.
+   누르면 '특징' 칸에 담겨서 제목과 태그에 그대로 반영된다. */
+function renderThemes() {
+  const themes = KW && KW.themes;
+  if (!themes || !themes.length) return;
+  const box = $("themeChips");
+  box.innerHTML = "";
+
+  const rising = themes.filter(t => t.trend != null).slice(0, 14);
+  const list = rising.length ? rising : themes.slice(0, 14);
+  list.forEach(t => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    const flow = t.trend;
+    btn.className = "chip" + (flow >= 1.2 ? " hot" : flow != null && flow < 0.9 ? " cold" : "");
+    btn.innerHTML = `${t.word}<span class="rate">${flow != null ? flow + "배" : ""}</span>`;
+    btn.addEventListener("click", () => {
+      const el = $("fTrait");
+      const has = splitList(el.value);
+      if (!has.includes(t.word)) {
+        el.value = has.concat(t.word).join(", ");
+        save();
+      }
+      btn.classList.add("done");
+      btn.style.opacity = "1";
+    });
+    box.append(btn);
+  });
+
+  if (KW.generatedAt) {
+    $("themeWhen").textContent = KW.generatedAt.slice(0, 10) + " 기준";
+  }
+  $("themeBox").hidden = false;
+}
 
 /* 글이 적다고 다 좋은 자리는 아니다. 아무도 안 찾는 말일 수 있다.
    그래서 공급(문서 수)과 수요(관심도)를 같이 보고 판정한다. */
@@ -501,7 +569,10 @@ function render() {
     ti.textContent = c.title;
     const me = document.createElement("div");
     me.className = "meta";
-    me.innerHTML = `검색어 <b>${c.n}개</b> · ${c.len}자`;
+    const phrase = c.hasPhrase
+      ? `· <b>‘${v.area} ${v.type || "카페"}’ 붙어 있음 ✓</b>`
+      : `· <span style="color:var(--ink-faint)">‘${v.area} ${v.type || "카페"}’ 끊김</span>`;
+    me.innerHTML = `검색어 <b>${c.n}개</b> · ${c.len}자 ${phrase}`;
     txt.append(ti, me);
     const acts = document.createElement("div");
     acts.className = "acts";
