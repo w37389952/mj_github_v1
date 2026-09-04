@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>순위 추적 — 서울 신상 레이더</title>
+<style>
+  :root {
+    --bg: #faf7f2; --surface: #ffffff; --ink: #2d2419; --ink-soft: #6f6252;
+    --ink-faint: #a3968a; --accent: #8a5a2b; --accent-soft: #f0e4d6;
+    --line: #e8dfd3; --up: #3f6b34; --up-bg: #e7f0e4; --down: #a4453a;
+    --down-bg: #f5e4e2; --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1712; --surface: #262019; --ink: #f0e8dd; --ink-soft: #b5a794;
+      --ink-faint: #7d7163; --accent: #d9a469; --accent-soft: #3a2e20;
+      --line: #3a3128; --up: #a4cf97; --up-bg: #2c3a28; --down: #e5a49b;
+      --down-bg: #3d2926;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+  header .eyebrow {
+    font-size: 13px; letter-spacing: .12em; color: var(--accent);
+    font-weight: 700; text-transform: uppercase;
+  }
+  header h1 { font-size: 28px; margin-top: 4px; letter-spacing: -0.02em; }
+  header .period { color: var(--ink-soft); margin-top: 6px; font-size: 15px; }
+
+  .tabs { display: flex; gap: 6px; margin-top: 22px; border-bottom: 1px solid var(--line); }
+  .tab {
+    font-size: 15px; font-weight: 600; color: var(--ink-soft); text-decoration: none;
+    padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .note {
+    margin-top: 18px; padding: 11px 14px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--accent); font-size: 13.5px;
+  }
+
+  .post {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px 16px; margin-top: 12px;
+  }
+  .post h3 { font-size: 15.5px; font-weight: 600; word-break: keep-all; }
+  .post .when { font-size: 12.5px; color: var(--ink-faint); margin-top: 3px; }
+  .kwrow {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line);
+  }
+  .kwrow:first-of-type { border-top: none; }
+  .kwname { font-size: 14px; font-weight: 600; min-width: 130px; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 34px; }
+  .bar {
+    width: 9px; border-radius: 2px 2px 0 0; background: var(--accent-soft);
+    position: relative;
+  }
+  .bar.miss { background: var(--line); }
+  .now {
+    font-size: 13.5px; font-weight: 700; border-radius: 999px; padding: 2px 10px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .now.miss { background: none; color: var(--ink-faint); border: 1px solid var(--line); }
+  .delta { font-size: 12.5px; font-weight: 700; }
+  .delta.up { color: var(--up); }
+  .delta.down { color: var(--down); }
+  .empty { color: var(--ink-soft); margin-top: 20px; font-size: 15px; }
+
+  .marks { display: flex; gap: 5px; margin-top: 9px; }
+  .mark {
+    font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    background: none; color: var(--ink-faint);
+    border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+  }
+  .mark:hover { color: var(--ink); }
+  .mark[aria-pressed="true"] {
+    color: var(--accent); border-color: var(--accent); background: var(--accent-soft);
+  }
+  .post.off { opacity: .45; }
+
+  .summary {
+    background: var(--surface); border: 1px solid var(--accent);
+    border-radius: var(--radius); padding: 14px 16px; margin-top: 18px;
+  }
+  .summary h2 { font-size: 15px; color: var(--accent); margin-bottom: 8px; }
+  .summary table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .summary td, .summary th { padding: 5px 4px; text-align: left; }
+  .summary th { color: var(--ink-faint); font-weight: 600; font-size: 12.5px; }
+  .summary .num { font-weight: 700; }
+  .summary .hint { font-size: 12.5px; color: var(--ink-faint); margin-top: 8px; }
+  footer { margin-top: 44px; color: var(--ink-faint); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">서울 신상 레이더</div>
+    <h1>순위 추적</h1>
+    <div class="period" id="period">불러오는 중…</div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <a class="tab" href="index.html" role="tab" aria-selected="false">신상 검색</a>
+    <a class="tab" href="write.html" role="tab" aria-selected="false">글쓰기</a>
+    <span class="tab" role="tab" aria-selected="true">순위</span>
+  </div>
+
+  <div class="note">
+    막대는 날마다 잰 순위입니다. <b>높을수록 좋은 자리</b>이고, 회색은 30위 밖이라 못 찾은 날입니다.
+  </div>
+
+  <div class="note" style="background:none;border:1px solid var(--line);color:var(--ink-soft)">
+    <b>아무것도 안 누른 글은 ‘예전 방식’으로 칩니다.</b> 새로 쓴 것만 표시하세요.
+    <br><b>새 방식</b> — 제목에 ‘동네+업종’을 붙이고 2,500자를 넘긴 글
+    <br><b>제외</b> — 협찬글·일상글처럼 성격이 달라 견주기 어려운 글
+    <br><span style="color:var(--ink-faint)">표시는 이 브라우저에만 저장되고, 안 눌러도 순위는 계속 쌓입니다.</span>
+  </div>
+
+  <div class="summary" id="summary" hidden>
+    <h2>새 방식 vs 예전 방식</h2>
+    <div id="summaryBody"></div>
+  </div>
+
+  <div id="list"></div>
+
+  <footer>
+    새 글은 자동으로 추가됩니다. 목표 검색어는 제목에서 ‘동네 + 업종’과 가게 이름을 뽑아 정합니다.
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const MAX_RANK = 30;
+
+/* 어떤 글이 실험이고 어떤 글이 대조인지는 이 브라우저에만 둔다.
+   수집기는 최근 글을 전부 재므로, 고르는 일은 화면에서만 하면 된다. */
+const LABEL_KEY = "seoul-radar:rankLabels";
+let LABELS = {};
+try { LABELS = JSON.parse(localStorage.getItem(LABEL_KEY) || "{}"); } catch (e) {}
+function saveLabels() {
+  try { localStorage.setItem(LABEL_KEY, JSON.stringify(LABELS)); } catch (e) {}
+}
+
+let DATA = null;
+
+fetch("data/ranks.json")
+  .then(r => (r.ok ? r.json() : null))
+  .then(render)
+  .catch(() => {
+    $("period").textContent = "기록을 불러오지 못했습니다.";
+  });
+
+function render(data) {
+  DATA = data;
+  if (!data || !data.posts || !Object.keys(data.posts).length) {
+    $("period").textContent = "아직 기록이 없습니다.";
+    const p = document.createElement("div");
+    p.className = "empty";
+    p.textContent = "오늘 밤 수집이 처음 돌면 글과 순위가 채워집니다. "
+      + "이틀은 지나야 오르내림이 보입니다.";
+    $("list").append(p);
+    return;
+  }
+
+  $("period").textContent = (data.generatedAt || "").slice(0, 10) + " 기준 · 글 "
+    + Object.keys(data.posts).length + "편";
+
+  const posts = Object.entries(data.posts)
+    .sort((a, b) => (b[1].date || "").localeCompare(a[1].date || ""));
+
+  posts.forEach(([logNo, post]) => {
+    const box = document.createElement("div");
+    box.className = "post";
+
+    const h = document.createElement("h3");
+    const a = document.createElement("a");
+    a.href = `https://blog.naver.com/${data.blogId}/${logNo}`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = post.title;
+    a.style.color = "inherit";
+    h.append(a);
+
+    const when = document.createElement("div");
+    when.className = "when";
+    when.textContent = post.date || "";
+    box.append(h, when, markButtons(logNo, box));
+
+    const days = Object.keys(post.history || {}).sort();
+    (post.keywords || []).forEach(kw => {
+      const series = days.map(d => (post.history[d] || {})[kw] ?? null);
+      box.append(keywordRow(kw, days, series));
+    });
+    if (LABELS[logNo] === "off") box.classList.add("off");
+    $("list").append(box);
+  });
+
+  renderSummary();
+}
+
+function markButtons(logNo, box) {
+  const wrap = document.createElement("div");
+  wrap.className = "marks";
+  // 예전 방식이 대부분이므로 그것을 기본값으로 둔다. 누를 일을 줄인다.
+  [["exp", "새 방식"], ["off", "제외"]].forEach(([key, label]) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mark";
+    btn.textContent = label;
+    btn.setAttribute("aria-pressed", String(LABELS[logNo] === key));
+    btn.addEventListener("click", () => {
+      LABELS[logNo] = LABELS[logNo] === key ? undefined : key;
+      if (!LABELS[logNo]) delete LABELS[logNo];
+      saveLabels();
+      [...wrap.children].forEach(b =>
+        b.setAttribute("aria-pressed",
+          String(LABELS[logNo] === {"새 방식": "exp", "제외": "off"}[b.textContent])));
+      box.classList.toggle("off", LABELS[logNo] === "off");
+      renderSummary();
+    });
+    wrap.append(btn);
+  });
+  return wrap;
+}
+
+/* 표시한 글들의 '가장 좋았던 순위'를 평균 내어 견준다.
+   30위 밖은 순위가 없으므로 평균에서 빼고 몇 편인지만 따로 적는다. */
+function groupStats(kind) {
+  // 'ctl'은 표시가 없는 글 전부다. 예전 방식이 대부분이라 그것을 기본으로 둔다.
+  const rows = Object.entries(DATA.posts).filter(([id]) =>
+    kind === "ctl" ? !LABELS[id] : LABELS[id] === kind);
+  let ranked = [], missing = 0, posts = rows.length;
+  rows.forEach(([, post]) => {
+    (post.keywords || []).forEach(kw => {
+      const vals = Object.values(post.history || {})
+        .map(row => row[kw]).filter(v => v);
+      if (vals.length) ranked.push(Math.min(...vals));
+      else missing++;
+    });
+  });
+  const avg = ranked.length
+    ? (ranked.reduce((a, b) => a + b, 0) / ranked.length).toFixed(1) : null;
+  return { posts, avg, hit: ranked.length, missing };
+}
+
+function renderSummary() {
+  if (!DATA) return;
+  const exp = groupStats("exp");
+  const ctl = groupStats("ctl");
+  // 표시가 하나도 없으면 전부 '예전 방식'이라 견줄 것이 없다.
+  if (!exp.posts) { $("summary").hidden = true; return; }
+
+  $("summary").hidden = false;
+  $("summaryBody").innerHTML = `
+    <table>
+      <tr><th></th><th>글</th><th>검색어에 잡힘</th><th>30위 밖</th><th>평균 최고 순위</th></tr>
+      <tr><td>새 방식</td><td>${exp.posts}편</td><td>${exp.hit}개</td><td>${exp.missing}개</td>
+          <td class="num">${exp.avg ? exp.avg + "위" : "–"}</td></tr>
+      <tr><td>예전 방식 <span style="color:var(--ink-faint);font-size:12px">(표시 안 한 글)</span></td>
+          <td>${ctl.posts}편</td><td>${ctl.hit}개</td><td>${ctl.missing}개</td>
+          <td class="num">${ctl.avg ? ctl.avg + "위" : "–"}</td></tr>
+    </table>
+    <div class="hint">${
+      exp.posts >= 3
+        ? "새 방식 글이 3편 이상 모였습니다. 다만 편수가 적으면 우연일 수 있으니 5편까지는 쌓아 보세요."
+        : `새 방식으로 쓴 글을 ${3 - exp.posts}편 더 표시하면 견줄 만해집니다.`
+    }</div>`;
+}
+
+function keywordRow(kw, days, series) {
+  const row = document.createElement("div");
+  row.className = "kwrow";
+
+  const name = document.createElement("div");
+  name.className = "kwname";
+  name.textContent = kw;
+
+  const spark = document.createElement("div");
+  spark.className = "spark";
+  series.slice(-21).forEach((rank, i) => {
+    const bar = document.createElement("div");
+    // 1위가 가장 높게 보이도록 뒤집는다.
+    const h = rank ? Math.max(4, (MAX_RANK - Math.min(rank, MAX_RANK) + 1) / MAX_RANK * 34) : 4;
+    bar.className = "bar" + (rank ? "" : " miss");
+    bar.style.height = h + "px";
+    bar.title = `${days.slice(-21)[i]} · ${rank ? rank + "위" : "30위 밖"}`;
+    spark.append(bar);
+  });
+
+  const last = series[series.length - 1];
+  const now = document.createElement("span");
+  now.className = "now" + (last ? "" : " miss");
+  now.textContent = last ? `${last}위` : "30위 밖";
+
+  row.append(name, spark, now);
+
+  // 처음 잰 날과 견주어 얼마나 움직였는지.
+  const firstSeen = series.find(v => v);
+  if (last && firstSeen && firstSeen !== last) {
+    const diff = firstSeen - last;
+    const d = document.createElement("span");
+    d.className = "delta " + (diff > 0 ? "up" : "down");
+    d.textContent = diff > 0 ? `▲ ${diff}칸 올라감` : `▼ ${-diff}칸 내려감`;
+    row.append(d);
+  }
+  return row;
+}
+</script>
+</body>
+</html>
