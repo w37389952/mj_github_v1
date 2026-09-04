@@ -67,6 +67,9 @@ jobs:
           fi
           python scripts/collect_keywords.py
 
+      - name: 가게 이름 목록 만들기
+        run: python scripts/build_shop_index.py || echo "목록 만들기를 건너뜁니다."
+
       - name: 순위 추적
         # 검색 결과만 긁으므로 인증키가 필요 없다. 실패해도 배포는 계속한다.
         run: python scripts/track_ranks.py || echo "순위 추적을 건너뜁니다."
