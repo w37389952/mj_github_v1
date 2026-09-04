@@ -139,6 +139,18 @@
   .chip.hot .rate { color: var(--accent); }
   .chip-hint { font-size: 12.5px; color: var(--ink-faint); margin-top: 8px; }
 
+  .fold { margin-top: 14px; }
+  .fold > summary {
+    cursor: pointer; font-size: 13px; color: var(--ink-soft);
+    list-style: none; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .fold > summary::-webkit-details-marker { display: none; }
+  .fold > summary::before { content: "▸"; font-size: 10px; }
+  .fold[open] > summary::before { content: "▾"; }
+  .fold > summary:hover { color: var(--accent); }
+  /* 자식에 display를 지정해 두면 접힌 details가 안 감춰진다. 직접 눌러 준다. */
+  .fold:not([open]) > *:not(summary) { display: none; }
+
   .kw {
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
     padding: 9px 13px; margin-bottom: 7px;
@@ -199,25 +211,6 @@
     <h2>요즘 뜨는 말 <span class="sub" id="themeWhen"></span></h2>
     <div class="chips" id="themeChips"></div>
     <div class="chip-hint">누르면 아래 ‘특징’ 칸에 담깁니다. 배수는 석 달 사이 검색이 몇 배가 되었는지입니다.</div>
-  </section>
-
-  <section>
-    <h2>네이버에서 붙여넣기 <span class="sub">지도 앱 → 공유 → 복사한 내용을 그대로 붙이세요</span></h2>
-    <div class="field">
-      <textarea id="fPaste" style="min-height:70px" placeholder="틸데
-서울 용산구 두텁바위로 15 1층"></textarea>
-    </div>
-    <div class="row">
-      <button type="button" class="btn ghost" id="parse">읽어서 채우기</button>
-      <span id="parseMsg" style="font-size:12.5px;color:var(--ink-faint)"></span>
-    </div>
-    <div class="note" style="margin-top:12px">
-      <b>PC에서는 아래 ‘가게 이름’ 칸에 두 글자만 쳐 보세요.</b> 레이더가 모아 둔
-      서울 신상 가게 7천 곳에서 찾아 주소와 동네를 채웁니다. 네이버에 안 물어봐도 됩니다.
-      <br>모바일 앱 공유는 이름과 주소가 함께 복사되어 위 칸에 그대로 붙이면 읽힙니다.
-      링크(naver.me/…)만 복사된 경우에는 가게 번호밖에 없어 읽을 수 없습니다.
-      <br>영업시간과 주차는 어느 쪽으로도 자동으로 못 채웁니다. 늘 손으로 넣어주세요.
-    </div>
   </section>
 
   <section>
@@ -282,6 +275,22 @@
         <textarea id="fMemo" placeholder="양갱이 안 달고 팥 맛이 진했다. 빙수는 우유 얼음이라 부드러웠다. 2층은 창가 자리가 좋고 혼자 오기 편했다. 웨이팅은 없었다."></textarea>
       </div>
     </div>
+
+    <details class="fold">
+      <summary>모바일에서 공유한 내용 붙여넣기</summary>
+      <div class="field" style="margin-top:10px">
+        <textarea id="fPaste" style="min-height:64px" placeholder="틸데
+서울 용산구 두텁바위로 15 1층"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button type="button" class="btn ghost" id="parse">읽어서 채우기</button>
+        <span id="parseMsg" style="font-size:12.5px;color:var(--ink-faint)"></span>
+      </div>
+      <div class="chip-hint">
+        모바일 앱 공유는 이름과 주소가 함께 복사됩니다.
+        링크(naver.me/…)만 복사된 경우에는 가게 번호밖에 없어 읽을 수 없습니다.
+      </div>
+    </details>
 
     <div class="row">
       <button type="button" class="btn" id="go">만들기</button>
