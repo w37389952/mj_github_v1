@@ -130,8 +130,8 @@ def search_trend(keywords, start, end, time_unit="month", attempts=3):
                 points = result.get("data") or []
                 if not points:
                     continue
-                # 마지막 달이 지금에 가장 가깝다. 그걸 관심도로 삼는다.
-                out[result.get("title")] = points[-1].get("ratio")
+                # 흐름을 통째로 준다. 마지막 값만 보면 '오르는 중'을 놓친다.
+                out[result.get("title")] = [p.get("ratio") for p in points]
             return out
         except urllib.error.HTTPError as exc:
             if exc.code in (400, 404):

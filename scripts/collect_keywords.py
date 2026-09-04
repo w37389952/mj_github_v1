@@ -41,28 +41,35 @@ ANCHOR = "성수동 카페"
 
 
 def collect_demand(queries):
-    """검색어별 관심도를 잰다. 기준 대비 몇 %인지로 바꿔 돌려준다.
+    """검색어별 관심도와 그 흐름을 잰다.
 
     한 번에 다섯 개까지 되므로 기준 하나 + 실제 네 개씩 나눠 부른다.
+    돌려주는 값은 기준 대비 몇 %인지(demand)와, 석 달 사이 몇 배가
+    되었는지(trend)다. trend가 1보다 크면 찾는 사람이 늘고 있다는 뜻이다.
     """
     end = date.today()
     start = end - timedelta(days=90)
     demand = {}
+    trend = {}
 
     for i in range(0, len(queries), 4):
         batch = queries[i:i + 4]
         got = naver.search_trend(
             [ANCHOR] + batch, start.isoformat(), end.isoformat())
-        base = got.get(ANCHOR)
+        anchor_series = got.get(ANCHOR) or []
+        base = anchor_series[-1] if anchor_series else None
         if not base:
             continue
         for query in batch:
-            raw = got.get(query)
-            if raw is None:
+            series = got.get(query)
+            if not series:
                 continue
-            demand[query] = round(raw / base * 100, 1)
+            demand[query] = round(series[-1] / base * 100, 1)
+            # 첫 달이 0이면 배수를 낼 수 없다. 그런 말은 흐름을 비워 둔다.
+            if len(series) >= 2 and series[0]:
+                trend[query] = round(series[-1] / series[0], 2)
         time.sleep(0.1)
-    return demand
+    return demand, trend
 
 
 def bucket(total):
@@ -103,7 +110,7 @@ def main():
         print("문서 수를 하나도 받지 못했습니다.", file=sys.stderr)
         sys.exit(1)
 
-    demand = collect_demand(sorted(entries))
+    demand, trend = collect_demand(sorted(entries))
     print(f"관심도를 잰 검색어 {len(demand)}개 (기준: {ANCHOR} = 100)")
 
     DATA_DIR.mkdir(exist_ok=True)
@@ -112,11 +119,13 @@ def main():
             "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
             "note": ("counts는 그 검색어로 이미 쓰인 블로그 글 수(공급). "
                      "demand는 검색 관심도(수요)로, "
-                     f"'{ANCHOR}'를 100으로 놓은 상대값이다."),
+                     f"'{ANCHOR}'를 100으로 놓은 상대값이다. "
+                     "trend는 석 달 사이 몇 배가 되었는지로, 1보다 크면 느는 중이다."),
             "anchor": ANCHOR,
             "buckets": {"easy": "3천 미만", "medium": "3천~2만", "hard": "2만 이상"},
             "counts": entries,
             "demand": demand,
+            "trend": trend,
         }, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
@@ -131,9 +140,28 @@ def main():
     if scored:
         scored.sort(key=lambda x: -x[3])
         print("  노려볼 만한 쪽 12개 (수요는 있는데 글이 적은 순):")
-        print(f"    {'문서수':>9}  {'관심도':>6}  검색어")
+        print(f"    {'문서수':>9}  {'관심도':>6}  {'흐름':>5}  검색어")
         for query, total, want, _ in scored[:12]:
-            print(f"    {total:>9,}  {want:>6.1f}  {query}")
+            flow = trend.get(query)
+            mark = f"{flow:>5.2f}" if flow else "    –"
+            print(f"    {total:>9,}  {want:>6.1f}  {mark}  {query}")
+
+    # 수요가 오르는 중인데 아직 글이 적은 자리. 가장 값진 목록이다.
+    rising = [
+        (q, entries[q], demand[q], trend[q])
+        for q in entries
+        if q in demand and q in trend and trend[q] >= 1.2 and entries[q] < 20000
+    ]
+    if rising:
+        rising.sort(key=lambda x: -x[3])
+        print()
+        print("  ⭐ 뜨는 중인데 아직 글이 적은 검색어:")
+        print(f"    {'문서수':>9}  {'관심도':>6}  {'흐름':>5}  검색어")
+        for query, total, want, flow in rising[:12]:
+            print(f"    {total:>9,}  {want:>6.1f}  {flow:>5.2f}배  {query}")
+    else:
+        print()
+        print("  뜨는 중인 검색어는 이번엔 없습니다.")
 
 
 if __name__ == "__main__":
