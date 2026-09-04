@@ -1082,11 +1082,16 @@ function detailLine(place) {
   return bits.join("  ·  ");
 }
 
-// 이 방문자가 이 탭을 지난번에 봤을 때는 없었던 건인지.
+/* 이 방문자가 이 탭을 지난번에 봤을 때와 달라진 건인지.
+ *
+ * 목록은 원본이 바뀐 날짜순으로 늘어놓는다. 그런데 처음 등장한 날로만 따지면,
+ * 이미 있던 건이 다시 수정되어 위로 올라와도 NEW가 안 붙어 순서와 어긋나 보인다.
+ * 그래서 '마지막으로 달라진 날'을 쓴다. */
 function isNewToVisitor(place) {
   const base = tab().baseline;
-  if (!base || !place.firstSeen) return false;
-  return place.firstSeen > base;
+  const when = place.updatedSeen || place.firstSeen;
+  if (!base || !when) return false;
+  return when > base;
 }
 
 function store(key, value) {
@@ -1561,6 +1566,17 @@ function refreshForTab() {
   render();
 }
 
+/* 원본이 같은 관리번호를 두 번 주는 경우가 있다. 수집기에서 걸러내지만
+ * 이미 만들어져 있는 파일에도 남아 있으므로 화면에서 한 번 더 본다. */
+function dedupeById(places) {
+  const seenIds = new Set();
+  return places.filter(p => {
+    if (!p.id || seenIds.has(p.id)) return !p.id;
+    seenIds.add(p.id);
+    return true;
+  });
+}
+
 /** 탭을 연다. 이때 비로소 그 탭의 NEW 기준일이 갱신된다. */
 async function openTab(key) {
   activeTab = key;
@@ -1569,7 +1585,7 @@ async function openTab(key) {
     try {
       const res = await fetch(t.file);
       if (!res.ok) throw new Error(res.status);
-      t.places = (await res.json()).places || [];
+      t.places = dedupeById((await res.json()).places || []);
     } catch (e) {
       t.places = [];
       $("tabHint").textContent = "이 목록을 불러오지 못했습니다.";
@@ -1584,7 +1600,7 @@ async function openTab(key) {
 
 function init(data) {
   today = new Date().toLocaleDateString("sv-SE");  // 현지 시간 기준 YYYY-MM-DD
-  TABS.opened.places = data.places || data.cafes || [];
+  TABS.opened.places = dedupeById(data.places || data.cafes || []);
 
   if (data.period) {
     $("period").textContent = `최근 90일 · ${data.period.from} ~ ${data.period.to}`;

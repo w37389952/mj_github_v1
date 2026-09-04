@@ -254,10 +254,15 @@ TRACKED = {
 
 
 def stamp_history(items, seen, today):
-    """처음 등장한 날짜와, 지난 회차 이후 바뀐 항목을 표시한다.
+    """처음 등장한 날짜, 마지막으로 달라진 날짜, 바뀐 항목을 표시한다.
 
     상호가 바뀌었다는 것은 대개 그 자리에 다른 가게가 들어왔다는 뜻이라
     가장 눈여겨볼 신호다.
+
+    NEW 표시는 firstSeen이 아니라 updatedSeen으로 판단한다. 목록은 원본이
+    바뀐 날짜순으로 늘어놓는데, 이미 목록에 있던 건이 다시 수정되면 위로
+    올라오면서도 firstSeen은 예전 그대로다. 그러면 위쪽에 NEW 아닌 것이
+    섞여 순서와 어긋나 보인다.
     """
     for item in items:
         before = seen.get(item["id"])
@@ -273,11 +278,35 @@ def stamp_history(items, seen, today):
         if changes:
             item["changes"] = changes
 
+        if before is None:
+            item["updatedSeen"] = item["firstSeen"]
+        elif changes or before.get("modifiedDate") != item.get("modifiedDate"):
+            item["updatedSeen"] = today
+        else:
+            item["updatedSeen"] = before.get("updated") or item["firstSeen"]
+
+
+def dedupe(items):
+    """관리번호가 같은 건은 한 번만 남긴다."""
+    seen_ids = set()
+    out = []
+    for item in items:
+        if item["id"] in seen_ids:
+            continue
+        seen_ids.add(item["id"])
+        out.append(item)
+    return out
+
 
 def snapshot(items):
     """다음 회차에 견주어 볼 수 있도록 이번 값을 남긴다."""
     return {
-        p["id"]: {"first": p["firstSeen"], **{f: p.get(f) for f in TRACKED}}
+        p["id"]: {
+            "first": p["firstSeen"],
+            "updated": p["updatedSeen"],
+            "modifiedDate": p.get("modifiedDate"),
+            **{f: p.get(f) for f in TRACKED},
+        }
         for p in items
     }
 
@@ -326,6 +355,11 @@ def main():
                 continue
             bucket.append(item)
 
+    # 원본이 같은 관리번호를 두 번 주는 경우가 있다(푸드트럭에서 특히 잦다).
+    # 관리번호가 고유키이므로 그것으로 한 번만 남긴다.
+    opened = dedupe(opened)
+    changed = dedupe(changed)
+
     opened.sort(key=lambda p: (p["licenseDate"], p["name"]), reverse=True)
     changed.sort(key=lambda p: (p["modifiedDate"], p["name"]), reverse=True)
 
@@ -342,10 +376,12 @@ def main():
     }
 
     # '간판 교체' 목록은 탭을 눌렀을 때만 받아가도록 파일을 나눈다.
-    # 탭에 붙일 뱃지 숫자는 첫 등장일 집계만 있으면 계산할 수 있다.
+    # 탭에 붙일 뱃지 숫자는 날짜별 집계만 있으면 목록 없이도 셀 수 있다.
+    # 화면의 NEW 판정과 같은 기준(마지막으로 달라진 날)을 써야 숫자가 맞는다.
     first_seen_counts = {}
     for item in changed:
-        first_seen_counts[item["firstSeen"]] = first_seen_counts.get(item["firstSeen"], 0) + 1
+        day = item["updatedSeen"]
+        first_seen_counts[day] = first_seen_counts.get(day, 0) + 1
 
     write_json(DATA_DIR / "latest.json", {
         **meta,
