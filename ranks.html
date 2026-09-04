@@ -114,11 +114,18 @@
 
   <div class="note">
     막대는 날마다 잰 순위입니다. <b>높을수록 좋은 자리</b>이고, 회색은 30위 밖이라 못 찾은 날입니다.
-    글마다 <b>실험 · 대조</b>를 눌러 표시하면 그 둘만 견주어 줍니다. 표시는 이 브라우저에만 저장됩니다.
+  </div>
+
+  <div class="note" style="background:none;border:1px solid var(--line);color:var(--ink-soft)">
+    글마다 아래 단추로 표시해 주세요. 표시한 것끼리만 견줍니다.
+    <br><b>새 방식</b> — 제목에 ‘동네+업종’을 붙이고 2,500자를 넘긴 글
+    <br><b>예전 방식</b> — 늘 쓰던 대로 쓴 글. 비교 기준이 됩니다
+    <br><b>제외</b> — 협찬글·일상글처럼 성격이 달라 견주기 어려운 글
+    <br><span style="color:var(--ink-faint)">표시는 이 브라우저에만 저장되고, 안 눌러도 순위는 계속 쌓입니다.</span>
   </div>
 
   <div class="summary" id="summary" hidden>
-    <h2>실험 vs 대조</h2>
+    <h2>새 방식 vs 예전 방식</h2>
     <div id="summaryBody"></div>
   </div>
 
@@ -202,7 +209,7 @@ function render(data) {
 function markButtons(logNo, box) {
   const wrap = document.createElement("div");
   wrap.className = "marks";
-  [["exp", "실험"], ["ctl", "대조"], ["off", "제외"]].forEach(([key, label]) => {
+  [["exp", "새 방식"], ["ctl", "예전 방식"], ["off", "제외"]].forEach(([key, label]) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "mark";
@@ -214,7 +221,7 @@ function markButtons(logNo, box) {
       saveLabels();
       [...wrap.children].forEach(b =>
         b.setAttribute("aria-pressed",
-          String(LABELS[logNo] === {"실험": "exp", "대조": "ctl", "제외": "off"}[b.textContent])));
+          String(LABELS[logNo] === {"새 방식": "exp", "예전 방식": "ctl", "제외": "off"}[b.textContent])));
       box.classList.toggle("off", LABELS[logNo] === "off");
       renderSummary();
     });
@@ -251,15 +258,15 @@ function renderSummary() {
   $("summaryBody").innerHTML = `
     <table>
       <tr><th></th><th>글</th><th>검색어에 잡힘</th><th>30위 밖</th><th>평균 최고 순위</th></tr>
-      <tr><td>실험</td><td>${exp.posts}편</td><td>${exp.hit}개</td><td>${exp.missing}개</td>
+      <tr><td>새 방식</td><td>${exp.posts}편</td><td>${exp.hit}개</td><td>${exp.missing}개</td>
           <td class="num">${exp.avg ? exp.avg + "위" : "–"}</td></tr>
-      <tr><td>대조</td><td>${ctl.posts}편</td><td>${ctl.hit}개</td><td>${ctl.missing}개</td>
+      <tr><td>예전 방식</td><td>${ctl.posts}편</td><td>${ctl.hit}개</td><td>${ctl.missing}개</td>
           <td class="num">${ctl.avg ? ctl.avg + "위" : "–"}</td></tr>
     </table>
     <div class="hint">${
       exp.posts >= 3 && ctl.posts >= 3
         ? "각 3편 이상 모였습니다. 다만 편수가 적으면 우연일 수 있으니 5편씩은 쌓아 보세요."
-        : "실험과 대조를 각각 3편 이상 표시해야 견줄 만해집니다."
+        : "새 방식과 예전 방식을 각각 3편 이상 표시해야 견줄 만해집니다."
     }</div>`;
 }
 
