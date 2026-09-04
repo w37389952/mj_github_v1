@@ -84,6 +84,9 @@
 
   /* 블로그 탭 안에서만 나오는 하위 탭. 글쓰기는 별도 페이지라 데이터를 안 받는다. */
   .subtabs { display: flex; gap: 4px; margin-top: 12px; }
+  /* display를 지정하면 브라우저 기본 [hidden]{display:none}을 덮어써서
+     hidden을 붙여도 안 사라진다. 그래서 직접 다시 눌러 준다. */
+  .subtabs[hidden] { display: none; }
   .subtab {
     font-size: 13.5px; font-weight: 600; text-decoration: none;
     color: var(--ink-soft); background: var(--surface);
