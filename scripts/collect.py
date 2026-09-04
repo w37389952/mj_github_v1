@@ -278,9 +278,16 @@ def stamp_history(items, seen, today):
         if changes:
             item["changes"] = changes
 
+        prev_mod = (before or {}).get("modifiedDate")
         if before is None:
             item["updatedSeen"] = item["firstSeen"]
-        elif changes or before.get("modifiedDate") != item.get("modifiedDate"):
+        elif prev_mod is None:
+            # 이 값을 남기기 전부터 목록에 있던 건. 견줄 대상이 없으므로
+            # 원본 수정일을 그대로 쓴다. 목록을 그 날짜순으로 늘어놓으므로
+            # 이렇게 해야 첫 회차부터 순서와 어긋나지 않는다.
+            # 여기서 today를 넣으면 다음 방문 때 전부 NEW가 되어버린다.
+            item["updatedSeen"] = item.get("modifiedDate") or item["firstSeen"]
+        elif changes or prev_mod != item.get("modifiedDate"):
             item["updatedSeen"] = today
         else:
             item["updatedSeen"] = before.get("updated") or item["firstSeen"]
