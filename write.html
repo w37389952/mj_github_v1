@@ -423,8 +423,11 @@ fetch("data/keywords.json")
   .then(j => { KW = j; if ($("out").classList.contains("show")) renderCompetition(readForm()); })
   .catch(() => {});
 
-function grade(total) {
+/* 글이 적다고 다 좋은 자리는 아니다. 아무도 안 찾는 말일 수 있다.
+   그래서 공급(문서 수)과 수요(관심도)를 같이 보고 판정한다. */
+function grade(total, want) {
   if (total == null) return { cls: "unknown", label: "모름" };
+  if (want != null && want < 5) return { cls: "unknown", label: "찾는 사람 적음" };
   if (total < 3000) return { cls: "easy", label: "노려볼 만함" };
   if (total < 20000) return { cls: "", label: "보통" };
   return { cls: "", label: "어려움" };
@@ -451,13 +454,15 @@ function renderCompetition(v) {
 
   queries.forEach(q => {
     const total = KW.counts ? KW.counts[q] : undefined;
-    const g = grade(total == null ? null : total);
+    const want = KW.demand ? KW.demand[q] : undefined;
+    const g = grade(total == null ? null : total, want == null ? null : want);
     const el = document.createElement("div");
     el.className = "kw";
     const left = document.createElement("div");
-    left.innerHTML = `<div class="q">${q}</div><div class="n">${
-      total == null ? "아직 재지 않은 검색어입니다" : total.toLocaleString() + "건"
-    }</div>`;
+    const bits = [];
+    bits.push(total == null ? "문서 수 모름" : `글 ${total.toLocaleString()}건`);
+    if (want != null) bits.push(`관심도 ${want}`);
+    left.innerHTML = `<div class="q">${q}</div><div class="n">${bits.join(" · ")}</div>`;
     const badge = document.createElement("span");
     badge.className = `grade ${g.cls}`.trim();
     badge.textContent = g.label;
@@ -467,7 +472,8 @@ function renderCompetition(v) {
 
   const tip = document.createElement("div");
   tip.className = "note";
-  tip.textContent = "‘어려움’만 있으면 가게 이름과 메뉴를 제목 앞쪽에 두세요. "
+  tip.innerHTML = `관심도는 <b>${KW.anchor || "성수동 카페"}</b>를 100으로 놓은 상대값입니다. `
+    + "‘어려움’만 있으면 가게 이름과 메뉴를 제목 앞쪽에 두세요 — "
     + "경쟁자가 없는 고유명은 지수가 낮아도 1위를 먹습니다.";
   box.append(tip);
 }

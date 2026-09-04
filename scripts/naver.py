@@ -94,6 +94,58 @@ def total_count(kind, query, attempts=3):
     return None
 
 
+TREND_URL = "https://naverapihub.apigw.ntruss.com/search-trend/v1/search"
+
+
+def search_trend(keywords, start, end, time_unit="month", attempts=3):
+    """검색어별 관심도를 받는다. 한 번에 다섯 개까지.
+
+    2026-09-05 실제 호출로 확인한 사양이다. POST에 JSON 본문을 싣는다.
+    검색 API와 주소 체계가 다르다(search-trend, datalab 아님).
+
+    돌려주는 값은 절대 검색량이 아니라 **이번 요청 안에서의 상대값**이다.
+    같이 보낸 것들 중 가장 큰 것이 100이 된다. 그래서 여러 번 나눠 부르면
+    서로 견줄 수 없다. 부르는 쪽에서 기준 검색어를 매번 끼워 넣어야 한다.
+    """
+    body = json.dumps({
+        "startDate": start,
+        "endDate": end,
+        "timeUnit": time_unit,
+        "keywordGroups": [
+            {"groupName": k, "keywords": [k]} for k in keywords[:5]
+        ],
+    }).encode("utf-8")
+    headers = dict(HEADERS)
+    headers["Content-Type"] = "application/json"
+
+    delay = 2
+    for attempt in range(attempts):
+        try:
+            request = urllib.request.Request(
+                TREND_URL, data=body, headers=headers, method="POST")
+            with urllib.request.urlopen(request, timeout=20) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+            out = {}
+            for result in payload.get("results") or []:
+                points = result.get("data") or []
+                if not points:
+                    continue
+                # 마지막 달이 지금에 가장 가깝다. 그걸 관심도로 삼는다.
+                out[result.get("title")] = points[-1].get("ratio")
+            return out
+        except urllib.error.HTTPError as exc:
+            if exc.code in (400, 404):
+                return {}
+            if attempt == attempts - 1:
+                return {}
+        except Exception:
+            if attempt == attempts - 1:
+                return {}
+        time.sleep(delay)
+        delay *= 2
+    return {}
+
+
 def road_key(address):
     """주소를 견주기 좋게 다듬는다. 층·호수와 괄호 안은 떼어낸다.
 
