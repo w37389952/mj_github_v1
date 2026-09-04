@@ -212,6 +212,16 @@
     white-space: nowrap;
   }
   .card .map-link:hover { background: var(--accent-soft); }
+  .blog-card .blog-title {
+    display: block; color: var(--ink); text-decoration: none;
+  }
+  .blog-card .blog-title:hover { color: var(--accent); }
+  .blog-card .blog-desc {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hide-btn { font: inherit; cursor: pointer; background: var(--surface); }
+
   .card .actions {
     flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; align-items: stretch;
   }
@@ -230,6 +240,13 @@
     font: inherit; width: 100%; cursor: pointer; background: var(--surface);
     display: flex; justify-content: center; gap: 4px; align-items: center;
   }
+  /* 네이버에 등록된 확실한 계정. 추측 목록과 구분되게 진하게 둔다. */
+  .insta-official {
+    display: block; text-align: center;
+    background: var(--accent); color: var(--bg); border-color: var(--accent);
+    max-width: 150px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .insta-official:hover { background: var(--accent); opacity: .88; }
   .insta-panel {
     position: absolute; z-index: 30; right: 0; top: calc(100% + 6px);
     min-width: 240px; max-width: min(340px, 78vw);
@@ -308,6 +325,9 @@
     <button type="button" class="tab" id="tabChanged" role="tab" aria-selected="false">
       간판 교체 <span class="dot" id="dotChanged" hidden></span>
     </button>
+    <button type="button" class="tab" id="tabBlog" role="tab" aria-selected="false">
+      블로그 <span class="dot" id="dotBlog" hidden></span>
+    </button>
   </div>
   <div class="tab-hint" id="tabHint"></div>
 
@@ -384,6 +404,16 @@ const TABS = {
     hint: "인허가는 그 전이지만 최근 90일 안에 기록이 바뀐 곳입니다. " +
           "기존 허가를 넘겨받아 상호만 바뀐 경우가 여기 들어옵니다.",
     dateField: "modifiedDate", dateLabel: "정보 변경",
+    places: null, baseline: null, page: 1,
+  },
+  blog: {
+    kind: "blog",
+    file: "data/blog.json",
+    tabId: "tabBlog", dotId: "dotBlog",
+    baselineKey: "seoul-radar:baseline:blog", lastDayKey: "seoul-radar:lastDay:blog",
+    hint: "네이버 블로그에 최근 올라온 신상 가게 글입니다. " +
+          "인허가보다 빠른 대신 광고 글이 섞일 수 있습니다.",
+    dateField: "date", dateLabel: "블로그 글",
     places: null, baseline: null, page: 1,
   },
 };
@@ -1262,9 +1292,36 @@ function addChangeMarks(card, place) {
   });
 }
 
+/* 네이버 지역 검색에서 그 가게의 공식 링크를 찾았으면 그것을 먼저 보여준다.
+ * 철자를 추측한 후보보다 이쪽이 확실하다. */
+function officialLink(place) {
+  const url = place.naver && place.naver.link;
+  if (!url) return null;
+  const insta = /instagram\.com\/([A-Za-z0-9._]+)/.exec(url);
+  return {
+    url,
+    label: insta ? `@${insta[1]}` : url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0],
+    isInstagram: Boolean(insta),
+  };
+}
+
 function buildInstaMenu(card, place) {
   const btn = card.querySelector(".insta-btn");
   const panel = card.querySelector(".insta-panel");
+
+  // 확실한 링크가 있으면 버튼 자체를 그 링크로 바꾼다.
+  const official = officialLink(place);
+  if (official && official.isInstagram) {
+    const link = document.createElement("a");
+    link.className = "map-link insta-official";
+    link.href = official.url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = official.label;
+    link.title = "네이버 플레이스에 등록된 계정입니다";
+    btn.replaceWith(link);
+    return;
+  }
 
   btn.addEventListener("click", e => {
     e.stopPropagation();
@@ -1349,6 +1406,58 @@ function copyButton(text, extraClass = "") {
   return btn;
 }
 
+/* 이미 다녀왔거나 아는 곳을 감추는 목록. 인스타에 올린 곳을 자동으로 알아낼
+ * 방법이 없으므로(인스타는 남의 글을 읽는 길을 열어 두지 않는다) 사람이
+ * 한 번 눌러 감추면 그 브라우저에서 기억한다. */
+const HIDDEN_KEY = "seoul-radar:hiddenPosts";
+let hiddenPosts = new Set();
+try {
+  hiddenPosts = new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]"));
+} catch (e) { /* 저장이 막힌 환경 */ }
+
+function hidePost(link) {
+  hiddenPosts.add(link);
+  try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hiddenPosts])); }
+  catch (e) { /* 무시 */ }
+  render();
+}
+
+function blogCard(post) {
+  const card = document.createElement("article");
+  card.className = "card blog-card";
+  card.innerHTML = `
+    <div>
+      <a class="name blog-title" target="_blank" rel="noopener"></a>
+      <div class="addr blog-desc"></div>
+      <div class="meta">
+        <span class="badge plain blogger"></span>
+        <span class="badge plain area"></span>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="map-link" target="_blank" rel="noopener">글 보기 →</a>
+      <button type="button" class="map-link hide-btn">이미 아는 곳</button>
+    </div>`;
+  const title = card.querySelector(".blog-title");
+  title.textContent = post.title;
+  title.href = post.link;
+  card.querySelector(".blog-desc").textContent = post.description;
+  card.querySelector(".blogger").textContent = post.blogger;
+  card.querySelector(".area").textContent = post.area;
+  // 협찬 글도 버리지 않는다. 초대받아 가오픈 전에 다녀온 글일 수 있어서다.
+  // 대신 표시해 두어 가려 볼 수 있게 한다.
+  if (post.promo) {
+    const badge = document.createElement("span");
+    badge.className = "badge change";
+    badge.textContent = "협찬 언급";
+    badge.title = "협찬·체험단 문구가 있습니다. 초대받아 미리 다녀온 글일 수도 있습니다.";
+    card.querySelector(".meta").appendChild(badge);
+  }
+  card.querySelector(".map-link").href = post.link;
+  card.querySelector(".hide-btn").addEventListener("click", () => hidePost(post.link));
+  return card;
+}
+
 /* ---------- 렌더링 ---------- */
 
 function currentFilters() {
@@ -1360,7 +1469,20 @@ function currentFilters() {
   return { q, month, from, to, category };
 }
 
+/* 블로그 글은 가게 기록이 아니라 글이다. 지역·업종·구분 같은 조건이 없으므로
+ * 검색어와 날짜만 본다. */
+function matchesPost(post, f) {
+  const day = post.date || "";
+  if (hiddenPosts.has(post.link)) return false;
+  if (f.q && !(post.title + post.description).toLowerCase().includes(f.q)) return false;
+  if (f.month && !day.startsWith(f.month)) return false;
+  if (f.from && day < f.from) return false;
+  if (f.to && day > f.to) return false;
+  return true;
+}
+
 function matches(place, f, t) {
+  if (t.kind === "blog") return matchesPost(place, f);
   // 날짜 조건은 탭마다 기준이 다르다. 신규 오픈은 인허가일자,
   // 간판 교체는 기록이 바뀐 날짜로 걸러야 말이 된다.
   const day = place[t.dateField] || place.licenseDate;
@@ -1458,10 +1580,16 @@ function render() {
 
   const list = $("list");
   list.innerHTML = "";
+  const unit = t.kind === "blog" ? "건" : "곳";
   dates.forEach(date => {
     const group = document.createElement("section");
     group.className = "day-group";
-    group.innerHTML = `<h2>${fmtDate(date)} ${t.dateLabel} <span class="count">${byDate[date].length}곳</span></h2>`;
+    group.innerHTML = `<h2>${fmtDate(date)} ${t.dateLabel} <span class="count">${byDate[date].length}${unit}</span></h2>`;
+    if (t.kind === "blog") {
+      byDate[date].forEach(p => group.appendChild(blogCard(p)));
+      list.appendChild(group);
+      return;
+    }
     byDate[date].forEach(p => {
       const fresh = isNewToVisitor(p);
       const badgeClass = p.category === "휴게음식점" ? "rest" : "general";
@@ -1525,6 +1653,12 @@ function refreshForTab() {
   const places = t.places || [];
 
   $("tabHint").textContent = t.hint;
+
+  // 블로그 글에는 지역·업종·구분이 없다. 쓸 수 없는 조건은 감춘다.
+  const isBlog = t.kind === "blog";
+  [$("districtMulti"), $("bizTypeMulti"), $("categoryFilter")]
+    .forEach(el => { el.hidden = isBlog; });
+  if (isBlog) { selected.district.clear(); selected.bizType.clear(); }
   Object.entries(TABS).forEach(([key, other]) =>
     $(other.tabId).setAttribute("aria-selected", String(key === activeTab))
   );
@@ -1535,8 +1669,19 @@ function refreshForTab() {
   $("statNewLabel").textContent =
     freshCount > 0 ? `${t.baseline} 이후 새로 추가` : "새로 추가";
   $("statTotal").textContent = places.length.toLocaleString("ko-KR");
-  $("statDistricts").textContent = countBy(places, "district").size;
-  $("statBiz").textContent = countBy(places, "bizType").size;
+  if (isBlog) {
+    $("statTotal").nextElementSibling.textContent = "블로그 글";
+    $("statDistricts").textContent = countBy(places, "area").size;
+    $("statDistricts").nextElementSibling.textContent = "동네";
+    $("statBiz").textContent = countBy(places, "blogger").size;
+    $("statBiz").nextElementSibling.textContent = "블로거";
+  } else {
+    $("statTotal").nextElementSibling.textContent = "신규 음식점";
+    $("statDistricts").textContent = countBy(places, "district").size;
+    $("statDistricts").nextElementSibling.textContent = "지역(구)";
+    $("statBiz").textContent = countBy(places, "bizType").size;
+    $("statBiz").nextElementSibling.textContent = "업종";
+  }
 
   buildMulti(
     $("districtMulti"), "district", "전체 지역",
@@ -1585,7 +1730,11 @@ async function openTab(key) {
     try {
       const res = await fetch(t.file);
       if (!res.ok) throw new Error(res.status);
-      t.places = dedupeById((await res.json()).places || []);
+      const body = await res.json();
+      // 블로그 파일은 posts로 오고, 가게 목록은 places로 온다.
+      t.places = t.kind === "blog"
+        ? (body.posts || []).map(p => ({ ...p, id: p.link, firstSeen: p.date }))
+        : dedupeById(body.places || []);
     } catch (e) {
       t.places = [];
       $("tabHint").textContent = "이 목록을 불러오지 못했습니다.";

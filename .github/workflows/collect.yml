@@ -37,7 +37,23 @@ jobs:
           DISTRICTS: ${{ vars.DISTRICTS }}
           UPTAE: ${{ vars.UPTAE }}
           EXCLUDE: ${{ vars.EXCLUDE }}
+          NAVER_API_KEY_ID: ${{ secrets.NAVER_API_KEY_ID }}
+          NAVER_API_KEY: ${{ secrets.NAVER_API_KEY }}
+          NAVER_LOOKUP_BUDGET: ${{ vars.NAVER_LOOKUP_BUDGET || '300' }}
         run: python scripts/collect.py
+
+      - name: 블로그 수집
+        env:
+          NAVER_API_KEY_ID: ${{ secrets.NAVER_API_KEY_ID }}
+          NAVER_API_KEY: ${{ secrets.NAVER_API_KEY }}
+          MY_BLOG_IDS: ${{ vars.MY_BLOG_IDS || 'haranalice' }}
+          BLOG_WINDOW_DAYS: ${{ vars.BLOG_WINDOW_DAYS || '14' }}
+        run: |
+          if [ -z "$NAVER_API_KEY_ID" ]; then
+            echo "네이버 인증키 미설정 — 블로그 수집을 건너뜁니다."
+            exit 0
+          fi
+          python scripts/collect_blog.py
 
       - name: 결과 커밋
         run: |

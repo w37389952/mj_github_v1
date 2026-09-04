@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-09-04T18:00:00+09:00",
+  "period": { "from": "2026-08-21", "to": "2026-09-04" },
+  "note": "첫 수집 전 자리표시입니다. 오늘 밤 수집이 돌면 실제 글로 채워집니다.",
+  "posts": [
+    {
+      "title": "연남동 브런치카페 '오드아뜰리에', 포토존 가득한 신상카페",
+      "description": "브런치 메뉴부터 커피까지 한 공간에서 즐길 수 있고, 공간마다 분위기가 조금씩 달라 구경하는 재미도 있었던 연남동 신상 브런치카페",
+      "link": "https://blog.naver.com/ss0ley_/224401068380",
+      "blogger": "2DDUYO_LOG",
+      "bloggerLink": "https://blog.naver.com/ss0ley_",
+      "date": "2026-09-04",
+      "area": "연남동"
+    },
+    {
+      "title": "성산동 신상카페 소리사람물 잔잔한 감성의 또 오고싶은 곳",
+      "description": "망원동과 연남동 사이에 위치한 빈티지한 가구들과 분위기가 감성있는 성산동 신상카페",
+      "link": "https://blog.naver.com/janeen91/224400428217",
+      "blogger": "밍듀님의 블로그",
+      "bloggerLink": "https://blog.naver.com/janeen91",
+      "date": "2026-09-04",
+      "area": "망원동"
+    },
+    {
+      "title": "[연남동 신상카페] 명상하기 좋은 '모닝캄커피랩' 방문기",
+      "description": "오늘은 연남동 카페 '모닝캄커피랩' 에 다녀왔어요. 가게는 1층과 지하 1층으로 나눠져 있었는데",
+      "link": "https://blog.naver.com/8reer8/224399696499",
+      "blogger": "초록색 파도",
+      "bloggerLink": "https://blog.naver.com/8reer8",
+      "date": "2026-09-03",
+      "area": "연남동"
+    }
+  ]
+}

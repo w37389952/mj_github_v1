@@ -20,6 +20,9 @@ import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import naver  # noqa: E402  (같은 폴더의 공통 모듈)
+
 API_KEY = os.environ.get("SEOUL_API_KEY", "sample")
 BASE = "http://openapi.seoul.go.kr:8088"
 PAGE = 5 if API_KEY == "sample" else 1000
@@ -293,6 +296,35 @@ def stamp_history(items, seen, today):
             item["updatedSeen"] = before.get("updated") or item["firstSeen"]
 
 
+def attach_naver_links(items, seen, budget):
+    """네이버 지역 검색에서 그 가게의 공식 링크를 찾아 붙인다.
+
+    인스타 아이디를 철자로 추측하던 것을 대신한다. 네이버 플레이스에 등록된
+    가게는 대개 인스타 주소를 link로 달아 두기 때문이다.
+
+    한 번에 다 부르면 오래 걸리므로 아직 안 찾아본 건만 budget만큼 본다.
+    한 번 찾은 결과는 seen에 남겨 다음 회차에 다시 부르지 않는다.
+    """
+    if not naver.enabled():
+        return 0
+
+    looked = 0
+    for item in items:
+        cached = (seen.get(item["id"]) or {}).get("naver")
+        if cached is not None:
+            # 빈 dict는 '찾아봤지만 없었다'는 뜻이다. 다시 부르지 않는다.
+            if cached:
+                item["naver"] = cached
+            continue
+        if looked >= budget:
+            continue
+        looked += 1
+        found = naver.find_place(item["name"], item["address"])
+        item["naver"] = found or {}
+        time.sleep(0.05)
+    return looked
+
+
 def dedupe(items):
     """관리번호가 같은 건은 한 번만 남긴다."""
     seen_ids = set()
@@ -312,6 +344,8 @@ def snapshot(items):
             "first": p["firstSeen"],
             "updated": p["updatedSeen"],
             "modifiedDate": p.get("modifiedDate"),
+            # 찾아본 결과를 남긴다. 빈 dict는 '없었다'는 뜻이라 다시 안 부른다.
+            **({"naver": p["naver"]} if "naver" in p else {}),
             **{f: p.get(f) for f in TRACKED},
         }
         for p in items
@@ -375,6 +409,15 @@ def main():
     seen_changed = load_seen(DATA_DIR / "seen-changed.json")
     stamp_history(opened, seen_opened, today.isoformat())
     stamp_history(changed, seen_changed, today.isoformat())
+
+    # 네이버 지역 검색으로 공식 링크를 채운다. 목록이 최신순이라 앞쪽부터
+    # 채워지고, 나머지는 다음 회차에 이어서 본다.
+    budget = int(os.environ.get("NAVER_LOOKUP_BUDGET", "300"))
+    looked = attach_naver_links(opened, seen_opened, budget)
+    looked += attach_naver_links(changed, seen_changed, max(0, budget - looked))
+    if naver.enabled():
+        found = sum(1 for p in opened + changed if p.get("naver"))
+        print(f"네이버 지역 조회 {looked}건 / 링크 확보 누적 {found}곳", file=sys.stderr)
 
     meta = {
         "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
