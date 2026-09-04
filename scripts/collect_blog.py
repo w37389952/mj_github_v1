@@ -64,6 +64,11 @@ TOO_COMMON = {
     "비가", "종묘", "운치", "프로젝트", "익스프레스", "하우스", "가든",
     "스튜디오", "로스터리", "공장", "클럽", "라운지", "테라스", "정원",
     "다방", "골목", "시장", "광장", "공원", "거리", "역시", "그날", "오늘",
+    # 음식·메뉴 이름. 홀로 쓰면 남의 글까지 지운다.
+    "바베큐", "오마카세", "파스타", "피자", "케이크", "빙수", "젤라또",
+    "와인", "위스키", "칵테일", "브런치", "샐러드", "스테이크", "라멘",
+    "국수", "냉면", "김밥", "떡볶이", "치킨", "삼겹살", "곱창", "회",
+    "커피", "라떼", "에스프레소", "핸드드립", "원두", "디저트", "빵",
 }
 
 
@@ -85,15 +90,27 @@ def shop_names_from_rss(blog_ids):
             continue
 
         titles = re.findall(r"<title><!\[CDATA\[(.*?)\]\]></title>", xml, re.S)
-        for title in titles[1:]:  # 첫 항목은 블로그 이름이다
+        if not titles:
+            continue
+        # 맨 앞은 블로그 이름이고, 그 이름이 채널과 이미지에 두 번 실려 온다.
+        # 개수를 세어 자르면 판이 바뀔 때 또 새므로, 이름과 같은 제목을 지운다.
+        channel = titles[0].strip()
+        for title in titles[1:]:
+            if title.strip() == channel:
+                continue
             text = re.sub(r"\([^)]*\)", " ", title)
             text = re.sub(r"[^\w가-힣A-Za-z0-9 ]", " ", text)
             words = [w for w in text.split() if w]
             if not words:
                 continue
             # 끝에서부터 일반 낱말을 걷어낸다
-            while words and words[-1] in GENERIC_TAIL:
-                words.pop()
+            while words:
+                # '경동시장점'처럼 지점 표시가 낱말에 붙어 오는 경우가 있다.
+                words[-1] = re.sub(r"(\d*호)?점$", "", words[-1]) or words[-1]
+                if words[-1] in GENERIC_TAIL:
+                    words.pop()
+                else:
+                    break
             if not words:
                 continue
             two = f"{words[-2]} {words[-1]}" if len(words) >= 2 else ""
@@ -163,9 +180,16 @@ def main():
                 dropped_spam += 1
                 continue
 
-            # 내가 이미 다녀온 가게 이야기면 뺀다. 제목에서만 찾는다.
-            # 본문은 긴 산문이라 가게 이름이 우연히 스치기 쉽다.
-            hit = next((n for n in known if n in title), None)
+            # 내가 이미 다녀온 가게 이야기면 뺀다.
+            #
+            # 짧은 이름은 제목에서만 찾는다. 본문은 긴 산문이라 '소로'나 '미유'
+            # 같은 두세 글자가 우연히 스치기 쉽다. 반대로 '소리사람물'처럼 긴
+            # 이름은 우연히 겹칠 일이 없으므로 본문까지 본다.
+            hit = next(
+                (n for n in known
+                 if n in title or (len(n) >= 5 and n in desc)),
+                None,
+            )
             if hit:
                 dropped_known[hit] = dropped_known.get(hit, 0) + 1
                 continue
