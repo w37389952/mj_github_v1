@@ -1,0 +1,25 @@
+name: 상위 블로거 키워드 비교 (수동 실행)
+
+# 잘 나오는 사람들이 '경쟁이 센 말'로 이기는지, '얕은 말'을 골라 이기는지 잰다.
+# 답에 따라 전략이 갈리므로, 한 번 돌려 보고 로그를 읽는다.
+#
+# GitHub 저장소 > Actions > 이 워크플로 > Run workflow 로 실행한다.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 비교 분석
+        env:
+          NAVER_API_KEY_ID: ${{ secrets.NAVER_API_KEY_ID }}
+          NAVER_API_KEY: ${{ secrets.NAVER_API_KEY }}
+        run: python scripts/analyze_rivals.py
