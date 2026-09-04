@@ -66,6 +66,34 @@ def search(kind, query, display=10, sort=None, attempts=3):
     return []
 
 
+def total_count(kind, query, attempts=3):
+    """그 검색어에 걸리는 문서가 몇 건인지만 본다.
+
+    경쟁도를 재는 데 쓴다. 문서가 많을수록 상위에 오르기 어렵다.
+    실패하면 None을 준다. 0과 구별해야 해서 0을 쓰지 않는다.
+    """
+    params = {"query": query, "display": 1, "format": "json"}
+    url = f"{BASE}/{kind}?" + urllib.parse.urlencode(params)
+
+    delay = 2
+    for attempt in range(attempts):
+        try:
+            request = urllib.request.Request(url, headers=HEADERS)
+            with urllib.request.urlopen(request, timeout=20) as resp:
+                return json.loads(resp.read().decode("utf-8")).get("total")
+        except urllib.error.HTTPError as exc:
+            if exc.code in (400, 404):
+                return None
+            if attempt == attempts - 1:
+                return None
+        except Exception:
+            if attempt == attempts - 1:
+                return None
+        time.sleep(delay)
+        delay *= 2
+    return None
+
+
 def road_key(address):
     """주소를 견주기 좋게 다듬는다. 층·호수와 괄호 안은 떼어낸다.
 

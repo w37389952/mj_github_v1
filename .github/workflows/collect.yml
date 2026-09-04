@@ -55,6 +55,18 @@ jobs:
           fi
           python scripts/collect_blog.py
 
+      - name: 키워드 경쟁도 수집
+        env:
+          NAVER_API_KEY_ID: ${{ secrets.NAVER_API_KEY_ID }}
+          NAVER_API_KEY: ${{ secrets.NAVER_API_KEY }}
+          KEYWORD_LIMIT: ${{ vars.KEYWORD_LIMIT || '900' }}
+        run: |
+          if [ -z "$NAVER_API_KEY_ID" ]; then
+            echo "네이버 인증키 미설정 — 키워드 수집을 건너뜁니다."
+            exit 0
+          fi
+          python scripts/collect_keywords.py
+
       - name: 결과 커밋
         run: |
           git config user.name "github-actions[bot]"
