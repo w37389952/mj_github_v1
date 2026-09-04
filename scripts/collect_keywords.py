@@ -34,6 +34,18 @@ TYPES = ["카페", "맛집", "베이커리", "브런치", "디저트", "술집"]
 # 뒤에 붙이면 경쟁이 훅 줄어드는 말들. 이걸로 틈새를 찾는다.
 MODIFIERS = ["", "추천", "신상"]
 
+# 지역과 무관한 '요즘 무엇이 뜨나'를 보는 말들. 글감과 제목을 정할 때 쓴다.
+# 지역×업종 격자와 달리 주제 자체의 유행을 본다.
+THEMES = [
+    "오마카세", "야장", "노포", "루프탑", "빵지순례", "웨이팅 맛집",
+    "혼밥", "혼술", "브런치", "디저트 맛집", "베이글", "소금빵",
+    "크로플", "약과", "말차", "핸드드립", "스페셜티 커피", "로스터리",
+    "무인카페", "북카페", "LP카페", "감성카페", "대형카페", "루프탑 카페",
+    "반려동물 동반", "노키즈존", "포토존", "뷰맛집", "한강뷰", "야경",
+    "데이트 코스", "가볼만한곳", "팝업스토어", "성수동", "연남동", "익선동",
+    "을지로", "한남동", "서촌", "망원동", "신상카페", "가오픈",
+]
+
 
 # 관심도는 요청 안에서의 상대값이라, 매번 같이 넣는 기준이 있어야 여러 번
 # 나눠 부른 결과를 견줄 수 있다. 검색량이 큰 편이고 오르내림이 적은 말로 고른다.
@@ -113,6 +125,15 @@ def main():
     demand, trend = collect_demand(sorted(entries))
     print(f"관심도를 잰 검색어 {len(demand)}개 (기준: {ANCHOR} = 100)")
 
+    # 주제어는 지역과 무관하게 '요즘 무엇이 뜨나'를 본다.
+    theme_demand, theme_trend = collect_demand(THEMES)
+    themes = sorted(
+        ({"word": w, "demand": theme_demand[w], "trend": theme_trend.get(w)}
+         for w in theme_demand),
+        key=lambda x: -(x["trend"] or 0),
+    )
+    print(f"주제어 {len(themes)}개를 쟀습니다")
+
     DATA_DIR.mkdir(exist_ok=True)
     (DATA_DIR / "keywords.json").write_text(
         json.dumps({
@@ -126,6 +147,7 @@ def main():
             "counts": entries,
             "demand": demand,
             "trend": trend,
+            "themes": themes,
         }, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
@@ -162,6 +184,17 @@ def main():
     else:
         print()
         print("  뜨는 중인 검색어는 이번엔 없습니다.")
+
+    if themes:
+        print()
+        print("  요즘 뜨는 주제어 (석 달 흐름 순):")
+        for t in themes[:10]:
+            flow = f"{t['trend']:.2f}배" if t["trend"] else "–"
+            print(f"    {flow:>7}  관심도 {t['demand']:>6.1f}  {t['word']}")
+        print("  가라앉는 쪽:")
+        for t in themes[-5:]:
+            flow = f"{t['trend']:.2f}배" if t["trend"] else "–"
+            print(f"    {flow:>7}  관심도 {t['demand']:>6.1f}  {t['word']}")
 
 
 if __name__ == "__main__":
