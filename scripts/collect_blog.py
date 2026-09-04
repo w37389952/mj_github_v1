@@ -7,8 +7,10 @@
 
 import json
 import os
+import re
 import sys
 import time
+import urllib.request
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -50,6 +52,60 @@ PROMO =["체험단", "협찬", "원고료", "소정의", "제공받", "무료로
 SPAM = ["공동구매", "쿠폰", "할인코드", "적립금", "부업", "재테크", "대출"]
 
 
+# 제목 끝에 붙는 일반 낱말. 이건 가게 이름이 아니다.
+GENERIC_TAIL = {
+    "본점", "지점", "점", "카페", "북카페", "커피", "맛집", "바", "집", "식당",
+    "베이커리", "디저트", "브런치", "술집", "펍", "가게", "공간", "후기", "방문",
+}
+
+
+# 가게 이름이지만 일상어로도 흔히 쓰이는 말. 홀로 쓰면 오탐이 난다.
+TOO_COMMON = {
+    "비가", "종묘", "운치", "프로젝트", "익스프레스", "하우스", "가든",
+    "스튜디오", "로스터리", "공장", "클럽", "라운지", "테라스", "정원",
+    "다방", "골목", "시장", "광장", "공원", "거리", "역시", "그날", "오늘",
+}
+
+
+def shop_names_from_rss(blog_ids):
+    """내 블로그 RSS에서 이미 다녀온 가게 이름을 뽑는다.
+
+    제목이 '[동네] [수식어] 카페 [가게이름]' 꼴이라 맨 뒤가 가게 이름이다.
+    한 낱말짜리와 두 낱말짜리를 모두 후보로 둔다. '프랙티스 프로젝트'처럼
+    두 낱말인 이름도 있기 때문이다.
+    """
+    names = set()
+    for blog_id in blog_ids:
+        url = f"https://rss.blog.naver.com/{blog_id}.xml"
+        try:
+            with urllib.request.urlopen(url, timeout=20) as resp:
+                xml = resp.read().decode("utf-8", "replace")
+        except Exception as exc:
+            print(f"  RSS를 읽지 못했습니다({blog_id}): {exc}", file=sys.stderr)
+            continue
+
+        titles = re.findall(r"<title><!\[CDATA\[(.*?)\]\]></title>", xml, re.S)
+        for title in titles[1:]:  # 첫 항목은 블로그 이름이다
+            text = re.sub(r"\([^)]*\)", " ", title)
+            text = re.sub(r"[^\w가-힣A-Za-z0-9 ]", " ", text)
+            words = [w for w in text.split() if w]
+            if not words:
+                continue
+            # 끝에서부터 일반 낱말을 걷어낸다
+            while words and words[-1] in GENERIC_TAIL:
+                words.pop()
+            if not words:
+                continue
+            two = f"{words[-2]} {words[-1]}" if len(words) >= 2 else ""
+            if two and words[-2] not in GENERIC_TAIL:
+                names.add(two)
+            # 흔한 낱말은 홀로 쓰면 엉뚱한 글까지 지운다. '비가'가 '비가 온다'에
+            # 걸리는 식이다. 그런 이름은 두 낱말 꼴로만 쓴다.
+            if len(words[-1]) >= 2 and words[-1] not in TOO_COMMON:
+                names.add(words[-1])
+    return names
+
+
 def is_promo(text):
     return any(word in text for word in PROMO)
 
@@ -73,8 +129,14 @@ def main():
         sys.exit(1)
 
     cutoff = date.today() - timedelta(days=WINDOW_DAYS)
+
+    # 내가 이미 글로 쓴 가게는 아는 곳이다. 다른 사람이 쓴 글이라도 뺀다.
+    known = shop_names_from_rss(MY_BLOGS)
+    print(f"내 블로그에서 가게 이름 {len(known)}개를 읽었습니다.")
+
     posts = {}
     dropped_mine = dropped_spam = dropped_old = 0
+    dropped_known = {}
 
     queries = [f"{area} {topic}" for area in AREAS for topic in TOPICS]
     queries += WIDE_TOPICS
@@ -99,6 +161,13 @@ def main():
             desc = naver.clean_text(item.get("description"))
             if is_spam(title + desc):
                 dropped_spam += 1
+                continue
+
+            # 내가 이미 다녀온 가게 이야기면 뺀다. 제목에서만 찾는다.
+            # 본문은 긴 산문이라 가게 이름이 우연히 스치기 쉽다.
+            hit = next((n for n in known if n in title), None)
+            if hit:
+                dropped_known[hit] = dropped_known.get(hit, 0) + 1
                 continue
 
             post = {
@@ -130,6 +199,14 @@ def main():
     promo = sum(1 for p in items if p.get("promo"))
     print(f"검색어 {len(queries)}개 → 글 {len(items)}건 (그중 협찬 표시 {promo}건)")
     print(f"  내 글 제외 {dropped_mine} / 장사글 제외 {dropped_spam} / 기간 밖 {dropped_old}")
+
+    # 어떤 이름으로 얼마나 빠졌는지 남긴다. 흔한 낱말이 섞여 엉뚱한 글까지
+    # 지우고 있지 않은지 여기서 알아볼 수 있다.
+    if dropped_known:
+        total = sum(dropped_known.values())
+        print(f"  이미 다녀온 곳 제외 {total}건")
+        for name, count in sorted(dropped_known.items(), key=lambda x: -x[1])[:15]:
+            print(f"    {name}: {count}")
 
 
 if __name__ == "__main__":
