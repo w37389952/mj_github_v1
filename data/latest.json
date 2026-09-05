@@ -1,11 +1,150 @@
 {
-  "generatedAt": "2026-09-04T15:06:57+00:00",
+  "generatedAt": "2026-09-05T15:04:26+00:00",
   "period": {
-    "from": "2026-06-06",
-    "to": "2026-09-04"
+    "from": "2026-06-07",
+    "to": "2026-09-05"
   },
   "source": "seoul-opendata",
   "places": [
+    {
+      "id": "3050000-101-2026-00307",
+      "name": "이비인후안 문화회관",
+      "address": "서울특별시 동대문구 왕산로35길 38, 3층 (제기동)",
+      "district": "동대문구",
+      "licenseDate": "2026-09-04",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "85.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3020000-104-2026-00191",
+      "name": "(주)미르에프엔비",
+      "address": "서울특별시 용산구 한강대로23길 55, 용산아이파크몰 7층 (한강로3가)",
+      "district": "용산구",
+      "licenseDate": "2026-09-04",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-104-2026-00636",
+      "name": "홍천 섬섬이네(한시적)",
+      "address": "서울특별시 강남구 테헤란로 517, 현대백화점 (삼성동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-101-2026-00869",
+      "name": "헤즈업 강남점",
+      "address": "서울특별시 강남구 강남대로98길 8, 2,3층 (역삼동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "33.06",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3230000-104-2026-00392",
+      "name": "한정선",
+      "address": "서울특별시 송파구 올림픽로 240, 롯데백화점 잠실점 지하1층 (잠실동)",
+      "district": "송파구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "떡카페",
+      "phone": "",
+      "area": "25.83",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3230000-101-2026-00557",
+      "name": "한남대교",
+      "address": "서울특별시 송파구 올림픽로32길 18-11, 1층 103,104호 (방이동)",
+      "district": "송파구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "105.50",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {
+        "link": "",
+        "category": "술집>요리주점",
+        "naverName": "한남대교"
+      }
+    },
+    {
+      "id": "3130000-104-2026-00219",
+      "name": "한나베이커리_큐푸드컴퍼니",
+      "address": "서울특별시 마포구 증산로 87, 문화비축기지 (성산동)",
+      "district": "마포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3210000-104-2026-00372",
+      "name": "한가닭",
+      "address": "서울특별시 서초구 강남대로 27, AT센터 1층 (양재동)",
+      "district": "서초구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "푸드트럭",
+      "phone": "",
+      "area": "5.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3100000-101-2026-00316",
+      "name": "피자와일즈 상계역점",
+      "address": "서울특별시 노원구 덕릉로 753, 상가101동 1층 1-15호 (상계동, 노원 롯데캐슬 시그니처)",
+      "district": "노원구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "경양식",
+      "phone": "",
+      "area": "22.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
     {
       "id": "3170000-101-2026-00180",
       "name": "피자다오 금천점",
@@ -18,7 +157,1050 @@
       "phone": "",
       "area": "33.24",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
+      "updatedSeen": "2026-09-04"
+    },
+    {
+      "id": "3000000-104-2026-00108",
+      "name": "프리미엄PC방",
+      "address": "서울특별시 종로구 대명길 9, 지하1층 (명륜4가)",
+      "district": "종로구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "20.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {
+        "link": "",
+        "category": "스포츠,오락>PC방",
+        "naverName": "프리미엄PC방"
+      }
+    },
+    {
+      "id": "3140000-101-2026-00278",
+      "name": "프랑스구르메",
+      "address": "서울특별시 양천구 목동동로 363, 파리공원 (목동)",
+      "district": "양천구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3130000-104-2026-00221",
+      "name": "티무드(Tea Mood)",
+      "address": "서울특별시 마포구 동교로38길 27-4, 2층 (연남동)",
+      "district": "마포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "24.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3130000-101-2026-00651",
+      "name": "텍사스독스에프앤비",
+      "address": "서울특별시 마포구 증산로 87, 문화비축기지 일부 (성산동)",
+      "district": "마포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3070000-101-2026-00272",
+      "name": "타이하우스",
+      "address": "서울특별시 성북구 정릉로23길 52, 상덕리츠빌 1층 (정릉동)",
+      "district": "성북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "외국음식전문점(인도,태국등)",
+      "phone": "",
+      "area": "77.19",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-104-2026-00637",
+      "name": "커피크루(한시적)",
+      "address": "서울특별시 강남구 남부순환로 3104, 세텍 전시장 제1,2 전시실 (대치동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "커피숍",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3190000-104-2026-00079",
+      "name": "커스텀커피(동작구청점)",
+      "address": "서울특별시 동작구 상도로 195, 상가동 지하1층 128호, 129호 (노량진동, 힐스테이트 장승배기역)",
+      "district": "동작구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "커피숍",
+      "phone": "",
+      "area": "53.14",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3130000-104-2026-00220",
+      "name": "치히로과자점 연남",
+      "address": "서울특별시 마포구 연희로 29, 1층, 지1층 (동교동)",
+      "district": "마포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "68.24",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3210000-104-2026-00371",
+      "name": "차군푸드",
+      "address": "서울특별시 서초구 올림픽대로 2085-14, 잠수교남단 (반포동)",
+      "district": "서초구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "푸드트럭",
+      "phone": "",
+      "area": "10.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3240000-101-2026-00294",
+      "name": "지지고 길동역점",
+      "address": "서울특별시 강동구 양재대로111길 8, 1층 (길동)",
+      "district": "강동구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "02-815-2225",
+      "area": "84.37",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-104-2026-00635",
+      "name": "주식회사 토담(한시적)",
+      "address": "서울특별시 강남구 압구정로 165, 현대백화점본점 지하 1층 일부호 (압구정동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3230000-104-2026-00391",
+      "name": "주바른",
+      "address": "서울특별시 송파구 올림픽로 240, 롯데백화점 잠실점 지하1층 식품행사장 (잠실동)",
+      "district": "송파구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-101-2026-00246",
+      "name": "일윤네분식",
+      "address": "서울특별시 강북구 수유동 647-2 일대",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": ".00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-101-2026-00873",
+      "name": "월하",
+      "address": "서울특별시 강남구 강남대로112길 29, 지상1층 (논현동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "127.60",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3190000-101-2026-00172",
+      "name": "우픽 떡볶이 상도본점",
+      "address": "서울특별시 동작구 상도로47길 4, 이화빌딩 1층 105호 (상도동)",
+      "district": "동작구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "분식",
+      "phone": "",
+      "area": "35.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3040000-104-2026-00132",
+      "name": "우아치",
+      "address": "서울특별시 광진구 천호대로 697, 1층 (구의동)",
+      "district": "광진구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "커피숍",
+      "phone": "",
+      "area": "49.50",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3130000-101-2026-00653",
+      "name": "우대포 공덕점",
+      "address": "서울특별시 마포구 삼개로 16, 근신빌딩 주차장 (도화동)",
+      "district": "마포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-104-2026-00091",
+      "name": "왓어브레드 용산점",
+      "address": "서울특별시 강북구 도봉로 62, 롯데백화점 미아점 지하2층 (미아동)",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3140000-104-2026-00195",
+      "name": "온누리농특산",
+      "address": "서울특별시 양천구 목동동로 257, 지하2층 (목동, 현대하이페리온)",
+      "district": "양천구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3190000-101-2026-00171",
+      "name": "오테라(Otera)",
+      "address": "서울특별시 동작구 보라매로5길 43, 상가 지하1층 105호 (신대방동, 보라매삼성쉐르빌)",
+      "district": "동작구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "112.12",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3170000-104-2026-00075",
+      "name": "오늘한상",
+      "address": "서울특별시 금천구 디지털로10길 9, 현대시티아울렛 가산점 6층 (가산동)",
+      "district": "금천구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-101-2026-00870",
+      "name": "영영샐러드 도곡점",
+      "address": "서울특별시 강남구 남부순환로361길 6, 1층 4호 (도곡동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "10.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {
+        "link": "",
+        "category": "도시락,컵밥>다이어트,샐러드",
+        "naverName": "영영샐러드 도곡점"
+      }
+    },
+    {
+      "id": "3140000-101-2026-00276",
+      "name": "영계소문옛날통닭 등촌역점",
+      "address": "서울특별시 양천구 목동중앙북로7가길 4, 정목빌딩2 1층 5호 (목동)",
+      "district": "양천구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "23.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-101-2026-00871",
+      "name": "에즈웰테이블",
+      "address": "서울특별시 강남구 논현로134길 10, 에즈웰플러스빌딩 7층 (논현동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "89.02",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-101-2026-00867",
+      "name": "야화 혼술바 압구정로데오점",
+      "address": "서울특별시 강남구 선릉로157길 29, 지하 1층 (신사동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "63.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3070000-101-2026-00273",
+      "name": "아담만두 종암점",
+      "address": "서울특별시 성북구 종암로 132, 1층 112호 (종암동, 종암우림카이저팰리스)",
+      "district": "성북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "44.46",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-104-2026-00638",
+      "name": "씨유강남소망점",
+      "address": "서울특별시 강남구 언주로159길 10, 1층 102호 (신사동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "3.30",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {
+        "link": "https://cu.bgfretail.com/",
+        "category": "생활,편의>편의점",
+        "naverName": "CU 강남소망점"
+      }
+    },
+    {
+      "id": "3030000-101-2026-00299",
+      "name": "썸엘스(sumelse)",
+      "address": "서울특별시 성동구 독서당로39길 42, 지1층 (옥수동)",
+      "district": "성동구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "경양식",
+      "phone": "",
+      "area": "96.20",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3160000-101-2026-00269",
+      "name": "실크로드 푸드(SKILK ROAD FOOD)",
+      "address": "서울특별시 구로구 안양천동자전거길 701 (구로동)",
+      "district": "구로구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "외국음식전문점(인도,태국등)",
+      "phone": "",
+      "area": "9.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3190000-101-2026-00170",
+      "name": "신세계식당",
+      "address": "서울특별시 동작구 동작대로23길 23, 에이동 1층 101호, 102호 (사당동)",
+      "district": "동작구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "40.46",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-104-2026-00090",
+      "name": "시프트(SHIFT)PC 수유점",
+      "address": "서울특별시 강북구 도봉로 315, 2층 206호 (수유동, 에피소드 수유 838)",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "20.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3240000-101-2026-00296",
+      "name": "스시펫",
+      "address": "서울특별시 강동구 구천면로 212, 3층 (천호동)",
+      "district": "강동구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "일식",
+      "phone": "",
+      "area": "89.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-101-2026-00249",
+      "name": "수유로",
+      "address": "서울특별시 강북구 노해로8길 29, 현대크리스탈 6층 602호 (수유동)",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "호프/통닭",
+      "phone": "",
+      "area": "86.86",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3140000-101-2026-00277",
+      "name": "소세지대장간",
+      "address": "서울특별시 양천구 목동동로 363, 파리공원 (목동)",
+      "district": "양천구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-101-2026-00245",
+      "name": "소문난",
+      "address": "서울특별시 강북구 수유동 647-2 일대",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": ".00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3130000-101-2026-00652",
+      "name": "서울푸드",
+      "address": "서울특별시 마포구 증산로 87, 문화비축기지 문화마당 (성산동)",
+      "district": "마포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {
+        "link": "",
+        "category": "음식점>한식",
+        "naverName": "서울푸드"
+      }
+    },
+    {
+      "id": "3200000-101-2026-00391",
+      "name": "살리고 카레야",
+      "address": "서울특별시 관악구 봉천로 597, 1층 (봉천동)",
+      "district": "관악구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "일식",
+      "phone": "",
+      "area": "25.41",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3230000-101-2026-00558",
+      "name": "사과나무 테이블",
+      "address": "서울특별시 송파구 중대로20길 14-1, 1층 101호 (가락동)",
+      "district": "송파구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "경양식",
+      "phone": "",
+      "area": "60.20",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-101-2026-00244",
+      "name": "뿐이네 곱창",
+      "address": "서울특별시 강북구 수유동 647-2 일대",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": ".00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3210000-101-2026-00415",
+      "name": "비비큐(BBQ) 양재역점",
+      "address": "서울특별시 서초구 강남대로37길 56-5, 1층 (서초동)",
+      "district": "서초구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "호프/통닭",
+      "phone": "",
+      "area": "76.19",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-101-2026-00250",
+      "name": "부웍(boowok)",
+      "address": "서울특별시 강북구 수유동 141 일대",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": ".00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3040000-104-2026-00133",
+      "name": "버거킹 구의역점",
+      "address": "서울특별시 광진구 아차산로 361, 1층 (자양동)",
+      "district": "광진구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "패스트푸드",
+      "phone": "",
+      "area": "263.50",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3180000-101-2026-00639",
+      "name": "버거리 당산역점",
+      "address": "서울특별시 영등포구 양평로 8, 101호 일부호 (당산동6가)",
+      "district": "영등포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "61.24",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-101-2026-00872",
+      "name": "백억커피 강남대치점",
+      "address": "서울특별시 강남구 삼성로 325, 지상1층 (대치동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "분식",
+      "phone": "",
+      "area": "114.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3180000-101-2026-00638",
+      "name": "방배동 구름떡",
+      "address": "서울특별시 영등포구 여의대로 108, 더현대서울 식품관 지하1층 (여의도동)",
+      "district": "영등포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "3.30",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3230000-104-2026-00393",
+      "name": "바비",
+      "address": "서울특별시 송파구 올림픽로 300, 롯데월드타워앤드롯데월드몰 지하1층 (신천동)",
+      "district": "송파구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3050000-101-2026-00305",
+      "name": "무무란",
+      "address": "서울특별시 동대문구 왕산로33길 38, 1층 101호 (제기동)",
+      "district": "동대문구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "17.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {
+        "link": "",
+        "category": "음식점>태국음식",
+        "naverName": "무무란"
+      }
+    },
+    {
+      "id": "3120000-101-2026-00300",
+      "name": "마이엉클 KF(MYUNCLE KOREAN FOOD)",
+      "address": "서울특별시 서대문구 신촌로 125, 1층 일부호 (창천동)",
+      "district": "서대문구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "분식",
+      "phone": "",
+      "area": "30.45",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3240000-104-2026-00201",
+      "name": "론다베이크샵 한시적영업",
+      "address": "서울특별시 강동구 천호대로 1005, 현대백화점 지하2층 (천호동)",
+      "district": "강동구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "백화점",
+      "phone": "",
+      "area": ".00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3170000-101-2026-00182",
+      "name": "로사천마라탕 앤 미객쌀국수",
+      "address": "서울특별시 금천구 독산로85길 36, 1층 120호 (독산동, 독산 오르페움타워)",
+      "district": "금천구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "중국식",
+      "phone": "",
+      "area": "41.76",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3000000-104-2026-00109",
+      "name": "레벨업PC방",
+      "address": "서울특별시 종로구 수표로 105, 육의전빌딩 2층 (종로2가)",
+      "district": "종로구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "25.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {
+        "link": "",
+        "category": "스포츠,오락>PC방",
+        "naverName": "레벨업 PC방 종로점"
+      }
+    },
+    {
+      "id": "3050000-104-2026-00133",
+      "name": "레레르(RERER)",
+      "address": "서울특별시 동대문구 답십리로40길 3, 1층 (답십리동)",
+      "district": "동대문구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "커피숍",
+      "phone": "",
+      "area": "53.39",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3240000-101-2026-00295",
+      "name": "라쿤피자 고덕점",
+      "address": "서울특별시 강동구 동남로82길 123, 2층 (고덕동)",
+      "district": "강동구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "패밀리레스트랑",
+      "phone": "",
+      "area": "88.44",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3150000-104-2026-00200",
+      "name": "라운지엑스 원그로브점",
+      "address": "서울특별시 강서구 공항대로 165, 원그로브 D동 2층 W209호 (마곡동)",
+      "district": "강서구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "커피숍",
+      "phone": "",
+      "area": "52.23",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3150000-101-2026-00498",
+      "name": "디저트팩토리",
+      "address": "서울특별시 강서구 공항대로 165, 지하2층 (마곡동)",
+      "district": "강서구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3030000-101-2026-00300",
+      "name": "더웨이브 라운지 성수점",
+      "address": "서울특별시 성동구 뚝섬로 393, 3층 (성수동2가)",
+      "district": "성동구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "76.44",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3180000-101-2026-00637",
+      "name": "대수부훠궈 대림점",
+      "address": "서울특별시 영등포구 도림로 160, 타워 오피스텔 2층 (대림동)",
+      "district": "영등포구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "중국식",
+      "phone": "",
+      "area": "90.10",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3230000-101-2026-00556",
+      "name": "다래분식",
+      "address": "서울특별시 송파구 충민로 66, 현대아울렛 가든파이브점 지하1층 식품관 (문정동)",
+      "district": "송파구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3150000-104-2026-00199",
+      "name": "노배드바이브스",
+      "address": "서울특별시 강서구 강서로56길 17, NC 강서점 지하1층 (등촌동)",
+      "district": "강서구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-101-2026-00247",
+      "name": "내고향음식점",
+      "address": "서울특별시 강북구 수유동 141 일대",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": ".00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3110000-101-2026-00271",
+      "name": "기안다 커피",
+      "address": "서울특별시 은평구 갈현로1길 16-1, 1층 (신사동)",
+      "district": "은평구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": "184.64",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3050000-101-2026-00306",
+      "name": "금만족발",
+      "address": "서울특별시 동대문구 전농로 71 (답십리동)",
+      "district": "동대문구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "75.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3140000-104-2026-00194",
+      "name": "글라쇼 목동점",
+      "address": "서울특별시 양천구 목동동로 363, 파리공원 (목동)",
+      "district": "양천구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "",
+      "area": "",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3220000-101-2026-00868",
+      "name": "강남포차",
+      "address": "서울특별시 강남구 강남대로84길 15, 지하1층 109호 (역삼동)",
+      "district": "강남구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "8.84",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3030000-101-2026-00298",
+      "name": "knot(낫)",
+      "address": "서울특별시 성동구 성수일로1길 12-12, 지하1층 (성수동1가)",
+      "district": "성동구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "경양식",
+      "phone": "",
+      "area": "49.20",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3080000-101-2026-00248",
+      "name": "4.19 국수, 김밥",
+      "address": "서울특별시 강북구 수유동 141 일대",
+      "district": "강북구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "기타",
+      "phone": "",
+      "area": ".00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3240000-104-2026-00202",
+      "name": "(주)보해명가",
+      "address": "서울특별시 강동구 고덕로 133, 강동롯데캐슬퍼스트아파트 상가동 지하1층 (암사동)",
+      "district": "강동구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "기타 휴게음식점",
+      "phone": "031-514-2225",
+      "area": "33.00",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
+      "naver": {}
+    },
+    {
+      "id": "3190000-104-2026-00078",
+      "name": "(주)보해명가",
+      "address": "서울특별시 동작구 상도로30길 40, 1층 일부호 (상도동, 상도2차두산위브트레지움아파트)",
+      "district": "동작구",
+      "licenseDate": "2026-09-03",
+      "modifiedDate": "2026-09-03",
+      "category": "휴게음식점",
+      "bizType": "일반조리판매",
+      "phone": "02-817-4026",
+      "area": "16.52",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
       "naver": {}
     },
     {
@@ -33,8 +1215,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3150000-101-2026-00496",
@@ -67,8 +1248,7 @@
       "phone": "",
       "area": "30.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3200000-101-2026-00387",
@@ -82,8 +1262,7 @@
       "phone": "",
       "area": "129.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3200000-101-2026-00389",
@@ -97,8 +1276,7 @@
       "phone": "",
       "area": "23.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3040000-101-2026-00314",
@@ -112,8 +1290,7 @@
       "phone": "",
       "area": "30.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3050000-101-2026-00303",
@@ -127,8 +1304,7 @@
       "phone": "",
       "area": "41.36",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3110000-101-2026-00270",
@@ -142,8 +1318,7 @@
       "phone": "",
       "area": "23.14",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3220000-101-2026-00859",
@@ -157,8 +1332,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3130000-101-2026-00649",
@@ -172,8 +1346,7 @@
       "phone": "",
       "area": "19.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3220000-104-2026-00634",
@@ -187,8 +1360,7 @@
       "phone": "",
       "area": "48.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3230000-101-2026-00555",
@@ -221,8 +1393,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3120000-104-2026-00151",
@@ -236,8 +1407,7 @@
       "phone": "",
       "area": "15.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3180000-104-2026-00479",
@@ -251,8 +1421,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3220000-101-2026-00863",
@@ -266,8 +1435,7 @@
       "phone": "",
       "area": "95.92",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3080000-104-2026-00089",
@@ -281,8 +1449,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3200000-101-2026-00388",
@@ -296,8 +1463,7 @@
       "phone": "",
       "area": "26.44",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3030000-101-2026-00297",
@@ -311,8 +1477,7 @@
       "phone": "",
       "area": "56.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3110000-101-2026-00268",
@@ -326,8 +1491,7 @@
       "phone": "",
       "area": "36.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3100000-104-2026-00194",
@@ -360,8 +1524,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3220000-101-2026-00864",
@@ -375,8 +1538,7 @@
       "phone": "",
       "area": "15.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3180000-104-2026-00478",
@@ -390,8 +1552,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3220000-101-2026-00866",
@@ -405,8 +1566,7 @@
       "phone": "",
       "area": "100.84",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3030000-101-2026-00296",
@@ -420,8 +1580,7 @@
       "phone": "",
       "area": "87.95",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3240000-101-2026-00293",
@@ -435,8 +1594,7 @@
       "phone": "",
       "area": "34.32",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3110000-101-2026-00267",
@@ -450,8 +1608,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3180000-101-2026-00634",
@@ -465,8 +1622,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3160000-104-2026-00105",
@@ -480,8 +1636,7 @@
       "phone": "",
       "area": "32.76",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3190000-104-2026-00077",
@@ -495,8 +1650,7 @@
       "phone": "",
       "area": "54.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3220000-101-2026-00861",
@@ -510,8 +1664,7 @@
       "phone": "",
       "area": "192.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3240000-101-2026-00292",
@@ -525,8 +1678,7 @@
       "phone": "",
       "area": "50.72",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3160000-101-2026-00267",
@@ -540,8 +1692,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3080000-101-2026-00240",
@@ -555,8 +1706,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3180000-104-2026-00477",
@@ -570,8 +1720,7 @@
       "phone": "",
       "area": "48.07",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3040000-101-2026-00315",
@@ -585,8 +1734,7 @@
       "phone": "",
       "area": "13.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3020000-104-2026-00190",
@@ -600,8 +1748,7 @@
       "phone": "",
       "area": "31.31",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3020000-101-2026-00353",
@@ -615,8 +1762,7 @@
       "phone": "",
       "area": "50.91",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3200000-101-2026-00390",
@@ -630,8 +1776,7 @@
       "phone": "",
       "area": "21.17",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3220000-101-2026-00860",
@@ -645,8 +1790,7 @@
       "phone": "",
       "area": "92.56",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3160000-101-2026-00268",
@@ -660,8 +1804,7 @@
       "phone": "",
       "area": "86.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3120000-101-2026-00299",
@@ -694,8 +1837,7 @@
       "phone": "",
       "area": "27.70",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3100000-101-2026-00315",
@@ -709,8 +1851,7 @@
       "phone": "",
       "area": "97.58",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3140000-101-2026-00275",
@@ -743,8 +1884,7 @@
       "phone": "",
       "area": "70.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3030000-101-2026-00295",
@@ -777,8 +1917,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3080000-101-2026-00241",
@@ -792,8 +1931,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3110000-101-2026-00269",
@@ -807,8 +1945,7 @@
       "phone": "",
       "area": "22.50",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3020000-104-2026-00188",
@@ -822,8 +1959,7 @@
       "phone": "",
       "area": "75.57",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3080000-101-2026-00243",
@@ -837,8 +1973,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3230000-104-2026-00389",
@@ -852,8 +1987,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3100000-104-2026-00195",
@@ -867,7 +2001,21 @@
       "phone": "",
       "area": "19.80",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
+      "updatedSeen": "2026-09-04"
+    },
+    {
+      "id": "3230000-101-2026-00554",
+      "name": "면 24 경찰병원역점",
+      "address": "서울특별시 송파구 중대로 150, 2층 201호 (가락동)",
+      "district": "송파구",
+      "licenseDate": "2026-09-02",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "한식",
+      "phone": "",
+      "area": "81.50",
+      "firstSeen": "2026-09-05",
+      "updatedSeen": "2026-09-05",
       "naver": {}
     },
     {
@@ -882,8 +2030,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3080000-101-2026-00239",
@@ -897,8 +2044,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3150000-101-2026-00497",
@@ -912,8 +2058,7 @@
       "phone": "",
       "area": "26.79",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3140000-101-2026-00274",
@@ -927,8 +2072,7 @@
       "phone": "",
       "area": "33.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3080000-101-2026-00242",
@@ -942,8 +2086,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3150000-101-2026-00494",
@@ -957,8 +2100,7 @@
       "phone": "",
       "area": "23.20",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3170000-101-2026-00178",
@@ -972,8 +2114,7 @@
       "phone": "",
       "area": "228.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3210000-101-2026-00414",
@@ -987,8 +2128,7 @@
       "phone": "",
       "area": "76.95",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3010000-101-2026-00516",
@@ -1002,8 +2142,7 @@
       "phone": "070-8241-2939",
       "area": "3.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3050000-101-2026-00304",
@@ -1017,8 +2156,7 @@
       "phone": "",
       "area": "71.35",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3210000-101-2026-00413",
@@ -1032,8 +2170,7 @@
       "phone": "",
       "area": "66.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3210000-104-2026-00370",
@@ -1047,8 +2184,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3100000-101-2026-00314",
@@ -1062,8 +2198,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3100000-101-2026-00312",
@@ -1077,8 +2212,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3100000-101-2026-00311",
@@ -1092,8 +2226,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3180000-101-2026-00633",
@@ -1107,8 +2240,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3080000-101-2026-00238",
@@ -1122,8 +2254,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3180000-101-2026-00636",
@@ -1137,8 +2268,7 @@
       "phone": "",
       "area": "99.74",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3180000-101-2026-00635",
@@ -1152,8 +2282,7 @@
       "phone": "",
       "area": "97.52",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3150000-101-2026-00495",
@@ -1167,8 +2296,7 @@
       "phone": "",
       "area": "41.17",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3220000-101-2026-00862",
@@ -1182,8 +2310,7 @@
       "phone": "",
       "area": "54.00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3200000-104-2026-00129",
@@ -1197,8 +2324,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3160000-101-2026-00266",
@@ -1231,8 +2357,7 @@
       "phone": "",
       "area": "90.91",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3030000-101-2026-00291",
@@ -1246,8 +2371,7 @@
       "phone": "",
       "area": "43.50",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00262",
@@ -1261,8 +2385,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3030000-101-2026-00290",
@@ -1276,8 +2399,7 @@
       "phone": "",
       "area": "35.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00259",
@@ -1291,8 +2413,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3150000-101-2026-00493",
@@ -1325,8 +2446,7 @@
       "phone": "",
       "area": "18.88",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3180000-101-2026-00630",
@@ -1340,8 +2460,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3180000-101-2026-00628",
@@ -1355,8 +2474,7 @@
       "phone": "",
       "area": "40.93",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00265",
@@ -1370,8 +2488,7 @@
       "phone": "",
       "area": "90.07",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3020000-101-2026-00351",
@@ -1385,23 +2502,7 @@
       "phone": "",
       "area": "33.60",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
-    },
-    {
-      "id": "3040000-101-2026-00312",
-      "name": "카페플로르",
-      "address": "서울특별시 광진구 능동로13길 65, 2층 (화양동)",
-      "district": "광진구",
-      "licenseDate": "2026-09-01",
-      "modifiedDate": "2026-09-01",
-      "category": "일반음식점",
-      "bizType": "경양식",
-      "phone": "",
-      "area": "96.26",
-      "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00264",
@@ -1415,8 +2516,7 @@
       "phone": "",
       "area": "22.35",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3230000-104-2026-00385",
@@ -1430,8 +2530,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3030000-101-2026-00288",
@@ -1445,8 +2544,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3240000-101-2026-00291",
@@ -1460,8 +2558,7 @@
       "phone": "",
       "area": "15.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3220000-104-2026-00633",
@@ -1475,8 +2572,7 @@
       "phone": "02-3449-5815",
       "area": "12.23",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3080000-101-2026-00237",
@@ -1490,8 +2586,7 @@
       "phone": "02-3491-2237",
       "area": ".00",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3130000-104-2026-00217",
@@ -1505,8 +2600,7 @@
       "phone": "",
       "area": "3.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3220000-101-2026-00855",
@@ -1520,8 +2614,7 @@
       "phone": "",
       "area": "198.12",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-104-2026-00111",
@@ -1535,8 +2628,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00257",
@@ -1550,8 +2642,7 @@
       "phone": "",
       "area": "43.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3120000-101-2026-00297",
@@ -1565,8 +2656,7 @@
       "phone": "",
       "area": "137.82",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3140000-104-2026-00192",
@@ -1580,8 +2670,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3190000-104-2026-00076",
@@ -1595,8 +2684,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3040000-104-2026-00131",
@@ -1610,8 +2698,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00261",
@@ -1625,8 +2712,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3050000-101-2026-00300",
@@ -1640,8 +2726,7 @@
       "phone": "",
       "area": "99.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3130000-101-2026-00646",
@@ -1655,8 +2740,7 @@
       "phone": "",
       "area": "38.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3120000-101-2026-00298",
@@ -1670,8 +2754,7 @@
       "phone": "",
       "area": "65.45",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3080000-101-2026-00234",
@@ -1685,8 +2768,28 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
+    },
+    {
+      "id": "3040000-101-2026-00312",
+      "name": "에틱베이커리",
+      "address": "서울특별시 광진구 능동로13길 65, 2층 (화양동)",
+      "district": "광진구",
+      "licenseDate": "2026-09-01",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "경양식",
+      "phone": "",
+      "area": "96.26",
+      "firstSeen": "2026-09-03",
+      "changes": [
+        {
+          "field": "name",
+          "label": "상호",
+          "before": "카페플로르"
+        }
+      ],
+      "updatedSeen": "2026-09-05"
     },
     {
       "id": "3220000-101-2026-00858",
@@ -1700,8 +2803,7 @@
       "phone": "",
       "area": "91.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3080000-101-2026-00236",
@@ -1715,8 +2817,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-104-2026-00114",
@@ -1749,8 +2850,7 @@
       "phone": "02-797-5037",
       "area": "79.54",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3080000-101-2026-00235",
@@ -1764,8 +2864,7 @@
       "phone": "",
       "area": "56.92",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3240000-101-2026-00290",
@@ -1779,8 +2878,7 @@
       "phone": "",
       "area": "15.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3140000-104-2026-00193",
@@ -1794,8 +2892,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3210000-104-2026-00367",
@@ -1809,8 +2906,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00266",
@@ -1824,8 +2920,7 @@
       "phone": "",
       "area": "73.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3010000-101-2026-00515",
@@ -1839,8 +2934,7 @@
       "phone": "",
       "area": "92.86",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3060000-101-2026-00244",
@@ -1854,8 +2948,7 @@
       "phone": "",
       "area": "90.84",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3200000-104-2026-00128",
@@ -1869,8 +2962,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3010000-104-2026-00276",
@@ -1884,8 +2976,7 @@
       "phone": "070-4129-0588",
       "area": "72.60",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3120000-101-2026-00296",
@@ -1899,8 +2990,7 @@
       "phone": "",
       "area": "70.41",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3180000-101-2026-00631",
@@ -1914,23 +3004,7 @@
       "phone": "02-2677-0778",
       "area": "76.60",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
-    },
-    {
-      "id": "3220000-101-2026-00857",
-      "name": "바샤커피 청담점",
-      "address": "서울특별시 강남구 도산대로45길 20, 도산공원 (신사동)",
-      "district": "강남구",
-      "licenseDate": "2026-09-01",
-      "modifiedDate": "2026-09-01",
-      "category": "일반음식점",
-      "bizType": "경양식",
-      "phone": "02-511-1910",
-      "area": "",
-      "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3030000-101-2026-00289",
@@ -1944,8 +3018,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3180000-101-2026-00629",
@@ -1959,8 +3032,7 @@
       "phone": "",
       "area": "125.26",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3020000-104-2026-00186",
@@ -1974,8 +3046,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3150000-101-2026-00492",
@@ -1989,8 +3060,7 @@
       "phone": "",
       "area": "82.68",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3000000-101-2026-00251",
@@ -2004,8 +3074,7 @@
       "phone": "",
       "area": "26.97",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3210000-101-2026-00412",
@@ -2019,8 +3088,7 @@
       "phone": "",
       "area": "104.83",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3020000-101-2026-00352",
@@ -2053,8 +3121,7 @@
       "phone": "",
       "area": "110.16",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3180000-101-2026-00632",
@@ -2068,8 +3135,7 @@
       "phone": "",
       "area": "247.94",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-104-2026-00110",
@@ -2083,8 +3149,7 @@
       "phone": "",
       "area": "30.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-104-2026-00112",
@@ -2098,8 +3163,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3150000-101-2026-00490",
@@ -2113,8 +3177,7 @@
       "phone": "",
       "area": "75.76",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3220000-101-2026-00854",
@@ -2128,8 +3191,7 @@
       "phone": "",
       "area": "121.46",
       "firstSeen": "2026-09-04",
-      "updatedSeen": "2026-09-04",
-      "naver": {}
+      "updatedSeen": "2026-09-04"
     },
     {
       "id": "3020000-104-2026-00187",
@@ -2162,8 +3224,7 @@
       "phone": "02-3663-6141",
       "area": "87.20",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3130000-104-2026-00216",
@@ -2177,8 +3238,7 @@
       "phone": "",
       "area": "47.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00263",
@@ -2192,8 +3252,7 @@
       "phone": "",
       "area": "19.80",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3200000-101-2026-00386",
@@ -2207,8 +3266,7 @@
       "phone": "",
       "area": "21.92",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3130000-101-2026-00648",
@@ -2222,8 +3280,7 @@
       "phone": "",
       "area": "81.37",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3210000-101-2026-00411",
@@ -2237,8 +3294,7 @@
       "phone": "",
       "area": "145.56",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3210000-104-2026-00368",
@@ -2252,8 +3308,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3030000-101-2026-00293",
@@ -2267,8 +3322,7 @@
       "phone": "",
       "area": "41.40",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3100000-101-2026-00309",
@@ -2282,8 +3336,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3010000-104-2026-00275",
@@ -2297,8 +3350,7 @@
       "phone": "",
       "area": "84.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3100000-101-2026-00310",
@@ -2312,8 +3364,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3030000-101-2026-00292",
@@ -2327,8 +3378,7 @@
       "phone": "",
       "area": "107.57",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3170000-101-2026-00177",
@@ -2342,8 +3392,7 @@
       "phone": "",
       "area": "131.00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3040000-101-2026-00313",
@@ -2357,8 +3406,7 @@
       "phone": "",
       "area": "14.85",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-104-2026-00113",
@@ -2372,8 +3420,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00256",
@@ -2387,8 +3434,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3230000-101-2026-00553",
@@ -2402,8 +3448,7 @@
       "phone": "",
       "area": "55.68",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3110000-101-2026-00260",
@@ -2417,8 +3462,7 @@
       "phone": "",
       "area": "87.52",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3230000-104-2026-00387",
@@ -2432,8 +3476,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3230000-104-2026-00386",
@@ -2447,8 +3490,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3010000-104-2026-00277",
@@ -2462,8 +3504,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3130000-104-2026-00218",
@@ -2477,8 +3518,7 @@
       "phone": "",
       "area": "6.40",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3230000-104-2026-00388",
@@ -2492,8 +3532,7 @@
       "phone": "",
       "area": "33.85",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3050000-101-2026-00299",
@@ -2507,8 +3546,7 @@
       "phone": "",
       "area": "54.12",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-101-2026-00228",
@@ -2522,8 +3560,7 @@
       "phone": "070-4286-9193",
       "area": ".00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3100000-101-2026-00305",
@@ -2537,8 +3574,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3100000-101-2026-00303",
@@ -2571,8 +3607,7 @@
       "phone": "",
       "area": "30.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3240000-101-2026-00288",
@@ -2586,8 +3621,7 @@
       "phone": "",
       "area": "44.63",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3030000-101-2026-00283",
@@ -2601,8 +3635,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-101-2026-00625",
@@ -2616,8 +3649,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-101-2026-00626",
@@ -2631,8 +3663,7 @@
       "phone": "",
       "area": "112.64",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3070000-104-2026-00163",
@@ -2646,8 +3677,7 @@
       "phone": "",
       "area": "18.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3200000-101-2026-00385",
@@ -2661,8 +3691,7 @@
       "phone": "",
       "area": "15.85",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3130000-101-2026-00645",
@@ -2676,8 +3705,7 @@
       "phone": "",
       "area": "98.03",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3010000-101-2026-00511",
@@ -2691,8 +3719,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3130000-101-2026-00641",
@@ -2706,8 +3733,7 @@
       "phone": "",
       "area": "293.59",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3120000-101-2026-00295",
@@ -2721,8 +3747,7 @@
       "phone": "",
       "area": "54.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3240000-101-2026-00287",
@@ -2736,8 +3761,7 @@
       "phone": "",
       "area": "33.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3130000-101-2026-00647",
@@ -2751,8 +3775,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-03",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3080000-101-2026-00232",
@@ -2766,8 +3789,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3130000-101-2026-00644",
@@ -2781,8 +3803,7 @@
       "phone": "",
       "area": "36.40",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-101-2026-00624",
@@ -2796,8 +3817,7 @@
       "phone": "",
       "area": "80.76",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-104-2026-00088",
@@ -2811,8 +3831,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3220000-104-2026-00632",
@@ -2826,8 +3845,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3020000-104-2026-00184",
@@ -2841,8 +3859,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3160000-104-2026-00104",
@@ -2856,8 +3873,7 @@
       "phone": "070-8659-8787",
       "area": "36.41",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3070000-104-2026-00164",
@@ -2928,8 +3944,7 @@
       "phone": "",
       "area": "9.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3230000-104-2026-00382",
@@ -2943,8 +3958,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-101-2026-00229",
@@ -2958,8 +3972,7 @@
       "phone": "070-8241-2939",
       "area": ".00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3060000-101-2026-00243",
@@ -2973,8 +3986,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3100000-101-2026-00307",
@@ -2988,8 +4000,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3010000-101-2026-00512",
@@ -3022,8 +4033,7 @@
       "phone": "",
       "area": "28.05",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3210000-101-2026-00408",
@@ -3037,8 +4047,7 @@
       "phone": "",
       "area": "23.78",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3210000-101-2026-00410",
@@ -3071,8 +4080,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3230000-104-2026-00383",
@@ -3086,8 +4094,7 @@
       "phone": "",
       "area": "18.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3010000-101-2026-00514",
@@ -3101,8 +4108,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3010000-101-2026-00513",
@@ -3116,8 +4122,7 @@
       "phone": "070-8866-6681",
       "area": "3.30",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3040000-101-2026-00311",
@@ -3131,8 +4136,7 @@
       "phone": "",
       "area": "120.04",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3020000-101-2026-00350",
@@ -3146,8 +4150,7 @@
       "phone": "",
       "area": "56.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3020000-104-2026-00185",
@@ -3161,8 +4164,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3030000-104-2026-00118",
@@ -3176,8 +4178,7 @@
       "phone": "",
       "area": "16.50",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3140000-101-2026-00272",
@@ -3191,8 +4192,7 @@
       "phone": "",
       "area": "18.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3060000-104-2026-00082",
@@ -3206,8 +4206,7 @@
       "phone": "",
       "area": "33.86",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3070000-101-2026-00270",
@@ -3221,8 +4220,7 @@
       "phone": "",
       "area": "31.88",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-101-2026-00627",
@@ -3255,8 +4253,7 @@
       "phone": "",
       "area": "39.70",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3130000-101-2026-00643",
@@ -3270,8 +4267,7 @@
       "phone": "",
       "area": "106.20",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-104-2026-00087",
@@ -3285,8 +4281,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3130000-101-2026-00642",
@@ -3300,8 +4295,7 @@
       "phone": "",
       "area": "56.27",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3240000-101-2026-00286",
@@ -3315,8 +4309,7 @@
       "phone": "",
       "area": "38.16",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3130000-101-2026-00640",
@@ -3330,8 +4323,7 @@
       "phone": "",
       "area": "23.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-101-2026-00230",
@@ -3345,8 +4337,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3110000-101-2026-00255",
@@ -3360,8 +4351,7 @@
       "phone": "",
       "area": "4.80",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3240000-101-2026-00289",
@@ -3375,8 +4365,7 @@
       "phone": "",
       "area": "49.50",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3070000-101-2026-00271",
@@ -3390,8 +4379,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3230000-104-2026-00381",
@@ -3405,8 +4393,7 @@
       "phone": "",
       "area": "36.04",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-101-2026-00226",
@@ -3420,8 +4407,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3100000-101-2026-00304",
@@ -3435,8 +4421,7 @@
       "phone": "",
       "area": "88.93",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3030000-101-2026-00286",
@@ -3450,8 +4435,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3230000-104-2026-00384",
@@ -3465,8 +4449,7 @@
       "phone": "",
       "area": "18.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3060000-104-2026-00080",
@@ -3480,8 +4463,7 @@
       "phone": "",
       "area": "24.42",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3030000-101-2026-00285",
@@ -3495,8 +4477,7 @@
       "phone": "",
       "area": "84.42",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3100000-101-2026-00308",
@@ -3510,8 +4491,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-101-2026-00227",
@@ -3525,8 +4505,7 @@
       "phone": "",
       "area": "49.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-101-2026-00621",
@@ -3540,8 +4519,7 @@
       "phone": "",
       "area": "61.69",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3090000-101-2026-00121",
@@ -3555,8 +4533,7 @@
       "phone": "02-907-9860",
       "area": "46.71",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-101-2026-00225",
@@ -3570,8 +4547,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3200000-101-2026-00384",
@@ -3585,8 +4561,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3150000-101-2026-00489",
@@ -3600,8 +4575,7 @@
       "phone": "",
       "area": "72.90",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-104-2026-00475",
@@ -3615,8 +4589,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-104-2026-00474",
@@ -3630,8 +4603,7 @@
       "phone": "",
       "area": "23.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3220000-101-2026-00853",
@@ -3645,8 +4617,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3210000-101-2026-00409",
@@ -3660,8 +4631,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3120000-104-2026-00150",
@@ -3675,8 +4645,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3060000-104-2026-00081",
@@ -3690,8 +4659,7 @@
       "phone": "",
       "area": "4.96",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-101-2026-00623",
@@ -3705,8 +4673,7 @@
       "phone": "",
       "area": "58.99",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3030000-101-2026-00287",
@@ -3720,23 +4687,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
-    },
-    {
-      "id": "3100000-104-2026-00193",
-      "name": "농업회사법인(주)대향홀프레쉬",
-      "address": "서울특별시 노원구 한글비석로 57, 세이브존 B1층 (하계동)",
-      "district": "노원구",
-      "licenseDate": "2026-08-31",
-      "modifiedDate": "2026-08-31",
-      "category": "휴게음식점",
-      "bizType": "기타 휴게음식점",
-      "phone": "",
-      "area": "3.30",
-      "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3220000-101-2026-00850",
@@ -3750,8 +4701,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3090000-101-2026-00122",
@@ -3784,8 +4734,7 @@
       "phone": "",
       "area": "43.12",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3230000-104-2026-00380",
@@ -3799,8 +4748,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3030000-101-2026-00284",
@@ -3814,8 +4762,7 @@
       "phone": "",
       "area": "49.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3140000-104-2026-00189",
@@ -3829,8 +4776,7 @@
       "phone": "",
       "area": "21.29",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3090000-104-2026-00062",
@@ -3844,8 +4790,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3140000-101-2026-00273",
@@ -3859,8 +4804,7 @@
       "phone": "",
       "area": "9.90",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3180000-101-2026-00622",
@@ -3874,8 +4818,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3220000-101-2026-00852",
@@ -3889,8 +4832,7 @@
       "phone": "",
       "area": "81.00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3100000-101-2026-00306",
@@ -3904,8 +4846,7 @@
       "phone": "055-643-7758",
       "area": "",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-101-2026-00233",
@@ -3919,8 +4860,7 @@
       "phone": "055-643-7758",
       "area": ".00",
       "firstSeen": "2026-09-02",
-      "updatedSeen": "2026-08-31",
-      "naver": {}
+      "updatedSeen": "2026-08-31"
     },
     {
       "id": "3080000-101-2026-00222",
@@ -3934,8 +4874,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3160000-101-2026-00265",
@@ -3949,8 +4888,7 @@
       "phone": "",
       "area": "30.60",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3100000-104-2026-00192",
@@ -3964,8 +4902,7 @@
       "phone": "070-7762-5351",
       "area": "29.60",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3130000-101-2026-00639",
@@ -3979,8 +4916,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3180000-101-2026-00620",
@@ -3994,8 +4930,7 @@
       "phone": "",
       "area": "40.25",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3150000-101-2026-00487",
@@ -4009,8 +4944,7 @@
       "phone": "",
       "area": "29.48",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-09-01",
-      "naver": {}
+      "updatedSeen": "2026-09-01"
     },
     {
       "id": "3100000-101-2026-00300",
@@ -4024,8 +4958,7 @@
       "phone": "02-307-1057",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3080000-101-2026-00223",
@@ -4039,8 +4972,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3150000-101-2026-00485",
@@ -4054,8 +4986,7 @@
       "phone": "",
       "area": "50.56",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3070000-101-2026-00267",
@@ -4069,8 +5000,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3100000-101-2026-00296",
@@ -4084,8 +5014,7 @@
       "phone": "032-766-0705",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3160000-104-2026-00103",
@@ -4099,8 +5028,7 @@
       "phone": "",
       "area": "33.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3140000-104-2026-00186",
@@ -4152,8 +5080,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3160000-104-2026-00102",
@@ -4167,8 +5094,7 @@
       "phone": "",
       "area": "29.75",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3110000-104-2026-00109",
@@ -4201,8 +5127,7 @@
       "phone": "",
       "area": "43.05",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3070000-101-2026-00268",
@@ -4216,8 +5141,7 @@
       "phone": "",
       "area": "187.75",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3180000-104-2026-00473",
@@ -4231,8 +5155,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3230000-104-2026-00379",
@@ -4284,8 +5207,7 @@
       "phone": "",
       "area": "216.79",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3080000-101-2026-00220",
@@ -4299,8 +5221,7 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3180000-101-2026-00618",
@@ -4314,8 +5235,7 @@
       "phone": "",
       "area": "89.14",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3190000-101-2026-00169",
@@ -4348,8 +5268,7 @@
       "phone": "",
       "area": "64.80",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3170000-104-2026-00074",
@@ -4382,8 +5301,7 @@
       "phone": "",
       "area": "41.02",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3220000-104-2026-00629",
@@ -4435,8 +5353,7 @@
       "phone": "",
       "area": "52.00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3220000-104-2026-00630",
@@ -4488,8 +5405,7 @@
       "phone": "02-3672-6004",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3010000-101-2026-00509",
@@ -4503,8 +5419,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3220000-101-2026-00847",
@@ -4518,8 +5433,7 @@
       "phone": "",
       "area": "23.10",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3070000-101-2026-00269",
@@ -4533,8 +5447,7 @@
       "phone": "",
       "area": "60.20",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3110000-101-2026-00254",
@@ -4548,8 +5461,7 @@
       "phone": "",
       "area": "65.98",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3130000-101-2026-00638",
@@ -4563,8 +5475,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3050000-104-2026-00132",
@@ -4578,8 +5489,7 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3220000-101-2026-00846",
@@ -4612,8 +5522,7 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28",
-      "naver": {}
+      "updatedSeen": "2026-08-28"
     },
     {
       "id": "3140000-104-2026-00187",
@@ -4646,7 +5555,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00297",
@@ -4660,7 +5570,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3080000-101-2026-00221",
@@ -4674,7 +5585,8 @@
       "phone": "031-595-5589",
       "area": ".00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3020000-101-2026-00349",
@@ -4688,7 +5600,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3080000-101-2026-00219",
@@ -4702,7 +5615,8 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3080000-104-2026-00086",
@@ -4716,7 +5630,8 @@
       "phone": "",
       "area": "26.40",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00848",
@@ -4730,7 +5645,8 @@
       "phone": "",
       "area": "82.64",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3130000-104-2026-00215",
@@ -4744,7 +5660,8 @@
       "phone": "",
       "area": "21.77",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-09-01"
+      "updatedSeen": "2026-09-01",
+      "naver": {}
     },
     {
       "id": "3100000-104-2026-00191",
@@ -4758,7 +5675,8 @@
       "phone": "",
       "area": "30.00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3140000-104-2026-00188",
@@ -4772,7 +5690,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00619",
@@ -4786,7 +5705,12 @@
       "phone": "",
       "area": "100.00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {
+        "link": "",
+        "category": "음식점>한식",
+        "naverName": "여의도 마루"
+      }
     },
     {
       "id": "3200000-101-2026-00383",
@@ -4800,7 +5724,8 @@
       "phone": "",
       "area": "36.53",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3110000-101-2026-00253",
@@ -4814,7 +5739,8 @@
       "phone": "",
       "area": "39.00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3150000-104-2026-00197",
@@ -4828,7 +5754,8 @@
       "phone": "",
       "area": "55.89",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3180000-104-2026-00472",
@@ -4842,7 +5769,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00849",
@@ -4856,7 +5784,12 @@
       "phone": "",
       "area": "123.43",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {
+        "link": "",
+        "category": "스포츠,오락>보드카페",
+        "naverName": "도파민보드카페"
+      }
     },
     {
       "id": "3010000-101-2026-00507",
@@ -4870,7 +5803,8 @@
       "phone": "",
       "area": "16.03",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3180000-104-2026-00469",
@@ -4884,7 +5818,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00301",
@@ -4898,7 +5833,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00505",
@@ -4912,7 +5848,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00508",
@@ -4926,7 +5863,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3210000-101-2026-00407",
@@ -4940,7 +5878,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00295",
@@ -4954,7 +5893,8 @@
       "phone": "",
       "area": "25.52",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3080000-101-2026-00224",
@@ -4968,7 +5908,8 @@
       "phone": "",
       "area": "33.65",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3050000-104-2026-00131",
@@ -4982,7 +5923,8 @@
       "phone": "",
       "area": "21.30",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00636",
@@ -4996,7 +5938,8 @@
       "phone": "",
       "area": "31.00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00299",
@@ -5010,7 +5953,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3210000-104-2026-00365",
@@ -5024,7 +5968,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3230000-101-2026-00552",
@@ -5038,7 +5983,8 @@
       "phone": "",
       "area": "23.00",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3040000-101-2026-00309",
@@ -5052,7 +5998,8 @@
       "phone": "",
       "area": "62.64",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00298",
@@ -5066,7 +6013,8 @@
       "phone": "02-792-7338",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3140000-104-2026-00185",
@@ -5080,7 +6028,12 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {
+        "link": "",
+        "category": "전통식품>떡,한과",
+        "naverName": "참살이유통 현대백화점 목동점"
+      }
     },
     {
       "id": "3120000-104-2026-00149",
@@ -5094,7 +6047,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00291",
@@ -5108,7 +6062,8 @@
       "phone": "033-333-1201",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3150000-101-2026-00484",
@@ -5122,7 +6077,8 @@
       "phone": "070-7543-5034",
       "area": "74.51",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3170000-104-2026-00073",
@@ -5136,7 +6092,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00288",
@@ -5150,7 +6107,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3140000-101-2026-00271",
@@ -5164,7 +6122,8 @@
       "phone": "",
       "area": "65.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00614",
@@ -5178,7 +6137,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00286",
@@ -5192,7 +6152,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3230000-101-2026-00550",
@@ -5206,7 +6167,8 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00635",
@@ -5220,7 +6182,8 @@
       "phone": "",
       "area": "82.50",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00839",
@@ -5234,7 +6197,8 @@
       "phone": "",
       "area": "56.65",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00502",
@@ -5248,7 +6212,8 @@
       "phone": "",
       "area": "75.29",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3000000-101-2026-00248",
@@ -5262,7 +6227,8 @@
       "phone": "",
       "area": "24.63",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3160000-104-2026-00101",
@@ -5276,7 +6242,8 @@
       "phone": "",
       "area": "209.16",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00292",
@@ -5290,7 +6257,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00290",
@@ -5304,7 +6272,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00501",
@@ -5318,7 +6287,8 @@
       "phone": "",
       "area": "29.70",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-104-2026-00628",
@@ -5332,7 +6302,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3140000-104-2026-00183",
@@ -5346,7 +6317,8 @@
       "phone": "",
       "area": "54.06",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00630",
@@ -5360,7 +6332,8 @@
       "phone": "",
       "area": "47.29",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00845",
@@ -5374,7 +6347,12 @@
       "phone": "",
       "area": "149.88",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {
+        "link": "https://www.chingupocha.com/",
+        "category": "술집>요리주점",
+        "naverName": "친구포차"
+      }
     },
     {
       "id": "3160000-101-2026-00264",
@@ -5388,7 +6366,8 @@
       "phone": "",
       "area": "49.26",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-09-01"
+      "updatedSeen": "2026-09-01",
+      "naver": {}
     },
     {
       "id": "3240000-101-2026-00283",
@@ -5402,7 +6381,12 @@
       "phone": "",
       "area": "25.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {
+        "link": "",
+        "category": "한식>해물,생선요리",
+        "naverName": "천호대하구이 강동점"
+      }
     },
     {
       "id": "3010000-101-2026-00504",
@@ -5416,7 +6400,8 @@
       "phone": "",
       "area": "45.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00287",
@@ -5430,7 +6415,8 @@
       "phone": "031-585-5976",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00842",
@@ -5444,7 +6430,8 @@
       "phone": "02-325-7140",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3010000-104-2026-00273",
@@ -5458,7 +6445,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3210000-104-2026-00362",
@@ -5472,7 +6460,8 @@
       "phone": "",
       "area": "7.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3210000-104-2026-00364",
@@ -5486,7 +6475,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00281",
@@ -5500,7 +6490,8 @@
       "phone": "070-8241-2939",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3230000-104-2026-00378",
@@ -5514,7 +6505,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3030000-101-2026-00281",
@@ -5528,7 +6520,8 @@
       "phone": "",
       "area": "56.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00277",
@@ -5542,7 +6535,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3000000-101-2026-00249",
@@ -5556,7 +6550,8 @@
       "phone": "",
       "area": "270.42",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00631",
@@ -5570,7 +6565,8 @@
       "phone": "",
       "area": "36.60",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3180000-104-2026-00468",
@@ -5584,7 +6580,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00282",
@@ -5598,7 +6595,8 @@
       "phone": "031-632-1382",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-104-2026-00627",
@@ -5612,7 +6610,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3160000-101-2026-00263",
@@ -5626,7 +6625,8 @@
       "phone": "",
       "area": "12.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00285",
@@ -5640,7 +6640,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00293",
@@ -5654,7 +6655,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00279",
@@ -5668,7 +6670,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00633",
@@ -5682,7 +6685,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3040000-101-2026-00308",
@@ -5696,7 +6700,12 @@
       "phone": "",
       "area": "28.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {
+        "link": "https://www.instagram.com/oaoseoul_bakerycafe",
+        "category": "카페,디저트>베이커리",
+        "naverName": "오에이오 서울"
+      }
     },
     {
       "id": "3130000-101-2026-00634",
@@ -5710,7 +6719,8 @@
       "phone": "",
       "area": "66.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3010000-104-2026-00272",
@@ -5724,7 +6734,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3160000-101-2026-00261",
@@ -5738,7 +6749,8 @@
       "phone": "",
       "area": "71.25",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3210000-101-2026-00403",
@@ -5746,13 +6758,18 @@
       "address": "서울특별시 서초구 남부순환로 2634-8, 단성빌딩 1층 일부 (양재동)",
       "district": "서초구",
       "licenseDate": "2026-08-27",
-      "modifiedDate": "2026-08-27",
+      "modifiedDate": "2026-09-03",
       "category": "일반음식점",
       "bizType": "한식",
       "phone": "02-572-7770",
       "area": "307.08",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-09-05",
+      "naver": {
+        "link": "",
+        "category": "육류,고기요리>정육식당",
+        "naverName": "양재한우정육식당"
+      }
     },
     {
       "id": "3220000-101-2026-00843",
@@ -5766,7 +6783,8 @@
       "phone": "",
       "area": "154.27",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3120000-101-2026-00293",
@@ -5780,7 +6798,8 @@
       "phone": "",
       "area": "64.78",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00294",
@@ -5794,7 +6813,8 @@
       "phone": "033-378-7177",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3110000-104-2026-00108",
@@ -5808,7 +6828,8 @@
       "phone": "",
       "area": "6.60",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3160000-101-2026-00262",
@@ -5822,7 +6843,8 @@
       "phone": "",
       "area": "26.40",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3150000-101-2026-00483",
@@ -5836,7 +6858,8 @@
       "phone": "",
       "area": "602.16",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00616",
@@ -5850,7 +6873,12 @@
       "phone": "",
       "area": "422.16",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {
+        "link": "",
+        "category": "한식>장어,먹장어요리",
+        "naverName": "설장어"
+      }
     },
     {
       "id": "3210000-101-2026-00402",
@@ -5864,7 +6892,8 @@
       "phone": "",
       "area": "55.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00278",
@@ -5878,7 +6907,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3050000-101-2026-00298",
@@ -5892,7 +6922,8 @@
       "phone": "",
       "area": "35.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00499",
@@ -5906,7 +6937,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00275",
@@ -5920,7 +6952,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3150000-104-2026-00196",
@@ -5934,7 +6967,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-31",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3210000-104-2026-00363",
@@ -5948,7 +6982,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00274",
@@ -5962,7 +6997,8 @@
       "phone": "",
       "area": "49.95",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00284",
@@ -5976,7 +7012,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00500",
@@ -5990,7 +7027,8 @@
       "phone": "",
       "area": "234.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-104-2026-00626",
@@ -6004,7 +7042,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3210000-101-2026-00405",
@@ -6018,7 +7057,8 @@
       "phone": "",
       "area": "59.22",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3130000-104-2026-00214",
@@ -6032,7 +7072,8 @@
       "phone": "",
       "area": "66.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3120000-101-2026-00292",
@@ -6046,7 +7087,8 @@
       "phone": "",
       "area": "69.06",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00276",
@@ -6060,7 +7102,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3080000-101-2026-00216",
@@ -6074,7 +7117,8 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3070000-101-2026-00266",
@@ -6088,7 +7132,8 @@
       "phone": "",
       "area": "112.10",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00617",
@@ -6102,7 +7147,8 @@
       "phone": "",
       "area": "60.48",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3010000-104-2026-00274",
@@ -6116,7 +7162,8 @@
       "phone": "",
       "area": "95.70",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3120000-101-2026-00294",
@@ -6130,7 +7177,8 @@
       "phone": "",
       "area": "24.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3020000-101-2026-00346",
@@ -6144,7 +7192,8 @@
       "phone": "",
       "area": "40.30",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3020000-101-2026-00347",
@@ -6158,7 +7207,8 @@
       "phone": "",
       "area": "68.04",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3240000-101-2026-00284",
@@ -6172,7 +7222,8 @@
       "phone": "",
       "area": "45.77",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3200000-101-2026-00382",
@@ -6186,7 +7237,12 @@
       "phone": "",
       "area": "74.04",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {
+        "link": "https://www.instagram.com/eaglescasa",
+        "category": "술집>요리주점",
+        "naverName": "독수리집 구디본점"
+      }
     },
     {
       "id": "3020000-101-2026-00348",
@@ -6200,7 +7256,8 @@
       "phone": "",
       "area": "39.20",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00844",
@@ -6214,7 +7271,8 @@
       "phone": "",
       "area": "25.89",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00280",
@@ -6228,7 +7286,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00841",
@@ -6242,7 +7301,8 @@
       "phone": "",
       "area": "173.53",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3000000-101-2026-00250",
@@ -6256,7 +7316,8 @@
       "phone": "",
       "area": "1.26",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3150000-101-2026-00482",
@@ -6270,7 +7331,8 @@
       "phone": "",
       "area": "66.42",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00632",
@@ -6284,7 +7346,8 @@
       "phone": "",
       "area": "71.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3090000-101-2026-00120",
@@ -6298,7 +7361,8 @@
       "phone": "",
       "area": "22.44",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00840",
@@ -6312,7 +7376,8 @@
       "phone": "",
       "area": "82.91",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00615",
@@ -6326,7 +7391,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3150000-104-2026-00195",
@@ -6340,7 +7406,8 @@
       "phone": "",
       "area": "20.84",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00283",
@@ -6354,7 +7421,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3230000-101-2026-00549",
@@ -6368,7 +7436,8 @@
       "phone": "",
       "area": "25.00",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3040000-101-2026-00307",
@@ -6382,7 +7451,8 @@
       "phone": "",
       "area": "77.76",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3210000-104-2026-00361",
@@ -6396,7 +7466,8 @@
       "phone": "",
       "area": "13.20",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3240000-104-2026-00198",
@@ -6410,7 +7481,12 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {
+        "link": "",
+        "category": "생활,편의>편의점",
+        "naverName": "CU 암사456점"
+      }
     },
     {
       "id": "3230000-101-2026-00551",
@@ -6424,7 +7500,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3140000-104-2026-00184",
@@ -6438,7 +7515,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3150000-101-2026-00481",
@@ -6452,7 +7530,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3160000-101-2026-00260",
@@ -6466,7 +7545,8 @@
       "phone": "02-6398-2563",
       "area": "45.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3150000-101-2026-00480",
@@ -6480,7 +7560,8 @@
       "phone": "",
       "area": "75.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3020000-101-2026-00342",
@@ -6494,21 +7575,30 @@
       "phone": "",
       "area": "175.70",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3160000-101-2026-00259",
-      "name": "핏제리아 아노브",
+      "name": "피제리아 아노브",
       "address": "서울특별시 구로구 개봉로3가길 59, 101호 (개봉동)",
       "district": "구로구",
       "licenseDate": "2026-08-26",
-      "modifiedDate": "2026-08-26",
+      "modifiedDate": "2026-09-03",
       "category": "일반음식점",
       "bizType": "기타",
       "phone": "",
       "area": "33.05",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "changes": [
+        {
+          "field": "name",
+          "label": "상호",
+          "before": "핏제리아 아노브"
+        }
+      ],
+      "updatedSeen": "2026-09-05",
+      "naver": {}
     },
     {
       "id": "3200000-101-2026-00381",
@@ -6522,7 +7612,8 @@
       "phone": "",
       "area": "18.95",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3040000-101-2026-00305",
@@ -6536,7 +7627,8 @@
       "phone": "",
       "area": "46.20",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3190000-104-2026-00075",
@@ -6550,7 +7642,8 @@
       "phone": "",
       "area": "25.22",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00629",
@@ -6564,7 +7657,8 @@
       "phone": "",
       "area": "40.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3210000-104-2026-00360",
@@ -6578,7 +7672,8 @@
       "phone": "",
       "area": "86.54",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3020000-101-2026-00345",
@@ -6592,7 +7687,8 @@
       "phone": "",
       "area": "90.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3050000-104-2026-00129",
@@ -6606,21 +7702,12 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
-    },
-    {
-      "id": "3180000-104-2026-00466",
-      "name": "주식회사 쥬노",
-      "address": "서울특별시 영등포구 영중로 9, 신세계백화점 1층 일부호 (영등포동4가)",
-      "district": "영등포구",
-      "licenseDate": "2026-08-26",
-      "modifiedDate": "2026-08-26",
-      "category": "휴게음식점",
-      "bizType": "백화점",
-      "phone": "",
-      "area": "3.30",
-      "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "https://blog.naver.com/gs25friend",
+        "category": "생활,편의>편의점",
+        "naverName": "GS25 뉴신이문로점"
+      }
     },
     {
       "id": "3180000-104-2026-00465",
@@ -6634,7 +7721,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3200000-101-2026-00380",
@@ -6648,7 +7736,8 @@
       "phone": "",
       "area": "5.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3200000-101-2026-00379",
@@ -6662,7 +7751,8 @@
       "phone": "",
       "area": "29.74",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3000000-101-2026-00247",
@@ -6676,7 +7766,12 @@
       "phone": "02-735-9929",
       "area": "319.77",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "https://http//app.catchtable.co.kr/ct/shop/jangsuskybeef",
+        "category": "한식>소고기구이",
+        "naverName": "장수하늘소 인사점"
+      }
     },
     {
       "id": "3220000-101-2026-00834",
@@ -6690,7 +7785,8 @@
       "phone": "",
       "area": "201.35",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3040000-104-2026-00129",
@@ -6704,7 +7800,8 @@
       "phone": "",
       "area": "33.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3080000-101-2026-00212",
@@ -6718,7 +7815,8 @@
       "phone": "",
       "area": "133.80",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3110000-101-2026-00251",
@@ -6732,7 +7830,12 @@
       "phone": "",
       "area": "108.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "",
+        "category": "음식점>한식",
+        "naverName": "오봉집 불광역점"
+      }
     },
     {
       "id": "3190000-101-2026-00168",
@@ -6746,7 +7849,8 @@
       "phone": "",
       "area": "23.40",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3060000-101-2026-00242",
@@ -6760,7 +7864,12 @@
       "phone": "",
       "area": "71.94",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "https://www.instagram.com/___yescoffee/",
+        "category": "카페,디저트>카페",
+        "naverName": "예스커피"
+      }
     },
     {
       "id": "3180000-101-2026-00612",
@@ -6774,7 +7883,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00608",
@@ -6788,7 +7898,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00495",
@@ -6802,7 +7913,12 @@
       "phone": "",
       "area": "50.41",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "https://www.instagram.com/yahwa.bar_official",
+        "category": "술집>바(BAR)",
+        "naverName": "야화 혼술바 을지로2호점"
+      }
     },
     {
       "id": "3240000-104-2026-00197",
@@ -6816,7 +7932,12 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "",
+        "category": "생활,편의>편의점",
+        "naverName": "CU 강동CK천동점"
+      }
     },
     {
       "id": "3120000-104-2026-00148",
@@ -6830,7 +7951,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3110000-101-2026-00250",
@@ -6844,7 +7966,12 @@
       "phone": "",
       "area": "52.56",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "",
+        "category": "음식점>한식",
+        "naverName": "솥정원"
+      }
     },
     {
       "id": "3030000-104-2026-00117",
@@ -6858,7 +7985,8 @@
       "phone": "",
       "area": "9.90",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3030000-104-2026-00116",
@@ -6872,7 +8000,8 @@
       "phone": "",
       "area": "9.90",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3150000-104-2026-00194",
@@ -6886,7 +8015,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00273",
@@ -6900,7 +8030,12 @@
       "phone": "",
       "area": "35.87",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "https://www.instagram.com/seojae___glass",
+        "category": "카페,디저트>북카페",
+        "naverName": "서재의잔"
+      }
     },
     {
       "id": "3110000-104-2026-00107",
@@ -6914,7 +8049,12 @@
       "phone": "",
       "area": "8.77",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "",
+        "category": "분식>떡볶이",
+        "naverName": "새절떡볶이"
+      }
     },
     {
       "id": "3180000-101-2026-00613",
@@ -6928,7 +8068,12 @@
       "phone": "",
       "area": "56.20",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "",
+        "category": "음식점>한식",
+        "naverName": "산들 보리"
+      }
     },
     {
       "id": "3100000-101-2026-00289",
@@ -6942,7 +8087,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-29",
-      "updatedSeen": "2026-08-27"
+      "updatedSeen": "2026-08-27",
+      "naver": {}
     },
     {
       "id": "3080000-101-2026-00213",
@@ -6956,7 +8102,8 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3040000-101-2026-00306",
@@ -6970,7 +8117,8 @@
       "phone": "",
       "area": "30.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3100000-101-2026-00272",
@@ -6984,7 +8132,8 @@
       "phone": "",
       "area": "25.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3050000-104-2026-00130",
@@ -6998,7 +8147,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00609",
@@ -7012,7 +8162,8 @@
       "phone": "",
       "area": "268.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00497",
@@ -7026,7 +8177,8 @@
       "phone": "",
       "area": "45.46",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3180000-104-2026-00467",
@@ -7040,7 +8192,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3070000-101-2026-00265",
@@ -7054,7 +8207,8 @@
       "phone": "",
       "area": "102.62",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3200000-104-2026-00125",
@@ -7068,7 +8222,8 @@
       "phone": "",
       "area": "42.27",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3020000-101-2026-00344",
@@ -7082,7 +8237,8 @@
       "phone": "",
       "area": "86.62",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3120000-104-2026-00147",
@@ -7096,7 +8252,12 @@
       "phone": "",
       "area": "78.80",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "https://www.instagram.com/doya_gallery_cafe",
+        "category": "문화,예술>갤러리,화랑",
+        "naverName": "도야갤러리카페"
+      }
     },
     {
       "id": "3010000-101-2026-00496",
@@ -7110,7 +8271,8 @@
       "phone": "",
       "area": "65.32",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3010000-101-2026-00498",
@@ -7124,7 +8286,8 @@
       "phone": "",
       "area": "83.41",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00833",
@@ -7138,7 +8301,8 @@
       "phone": "",
       "area": "60.02",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3140000-101-2026-00270",
@@ -7152,7 +8316,8 @@
       "phone": "",
       "area": "69.82",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00835",
@@ -7166,7 +8331,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00610",
@@ -7180,7 +8346,8 @@
       "phone": "",
       "area": "4.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00837",
@@ -7194,7 +8361,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3090000-104-2026-00061",
@@ -7208,7 +8376,12 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "https://blog.naver.com/gs25friend",
+        "category": "생활,편의>편의점",
+        "naverName": "GS25 방학공원점"
+      }
     },
     {
       "id": "3220000-104-2026-00625",
@@ -7222,7 +8395,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3020000-101-2026-00343",
@@ -7236,7 +8410,8 @@
       "phone": "",
       "area": "93.33",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00611",
@@ -7250,7 +8425,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3170000-104-2026-00072",
@@ -7264,7 +8440,8 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3230000-104-2026-00377",
@@ -7278,7 +8455,8 @@
       "phone": "",
       "area": "4.73",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00836",
@@ -7292,7 +8470,12 @@
       "phone": "",
       "area": "80.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-26"
+      "updatedSeen": "2026-08-26",
+      "naver": {
+        "link": "https://www.instagram.com/ansinoodle?igsi=MWgzZnh2N3p6bDNoaw==",
+        "category": "한식>국수",
+        "naverName": "안시국수"
+      }
     },
     {
       "id": "3220000-101-2026-00830",
@@ -7306,7 +8489,8 @@
       "phone": "",
       "area": "128.98",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00627",
@@ -7320,7 +8504,12 @@
       "phone": "",
       "area": "80.16",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "",
+        "category": "음식점>한식",
+        "naverName": "홍대이층집"
+      }
     },
     {
       "id": "3200000-101-2026-00378",
@@ -7334,7 +8523,12 @@
       "phone": "",
       "area": "21.75",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "",
+        "category": "음식점>한식",
+        "naverName": "호로록"
+      }
     },
     {
       "id": "3220000-104-2026-00620",
@@ -7348,7 +8542,8 @@
       "phone": "053-710-5100",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3210000-101-2026-00391",
@@ -7362,7 +8557,8 @@
       "phone": "",
       "area": "65.25",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3220000-104-2026-00624",
@@ -7376,7 +8572,8 @@
       "phone": "02-3486-6297",
       "area": "74.70",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3130000-101-2026-00628",
@@ -7390,7 +8587,12 @@
       "phone": "",
       "area": "97.25",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "https://www.instagram.com/triport.pub",
+        "category": "술집>맥주,호프",
+        "naverName": "트라이포트 펍"
+      }
     },
     {
       "id": "3220000-104-2026-00621",
@@ -7404,7 +8606,8 @@
       "phone": "02-2272-1946",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3030000-101-2026-00280",
@@ -7418,7 +8621,12 @@
       "phone": "",
       "area": "72.50",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "",
+        "category": "술집>요리주점",
+        "naverName": "키라키라윤 금호점"
+      }
     },
     {
       "id": "3000000-104-2026-00107",
@@ -7432,7 +8640,12 @@
       "phone": "",
       "area": "14.32",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "",
+        "category": "음식점>카페,디저트",
+        "naverName": "크레페마스터 동묘점"
+      }
     },
     {
       "id": "3200000-104-2026-00123",
@@ -7446,7 +8659,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3110000-101-2026-00248",
@@ -7460,7 +8674,8 @@
       "phone": "",
       "area": "52.95",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3220000-104-2026-00619",
@@ -7474,7 +8689,8 @@
       "phone": "",
       "area": "",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3200000-104-2026-00122",
@@ -7488,7 +8704,8 @@
       "phone": "",
       "area": "33.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-28"
+      "updatedSeen": "2026-08-28",
+      "naver": {}
     },
     {
       "id": "3020000-104-2026-00182",
@@ -7502,7 +8719,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3240000-101-2026-00281",
@@ -7516,7 +8734,8 @@
       "phone": "",
       "area": ".00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00605",
@@ -7530,7 +8749,8 @@
       "phone": "",
       "area": "76.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3050000-101-2026-00297",
@@ -7544,7 +8764,8 @@
       "phone": "",
       "area": "26.40",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3110000-101-2026-00249",
@@ -7558,7 +8779,8 @@
       "phone": "",
       "area": "45.26",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3020000-101-2026-00341",
@@ -7572,7 +8794,8 @@
       "phone": "",
       "area": "41.32",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3220000-101-2026-00827",
@@ -7586,7 +8809,8 @@
       "phone": "",
       "area": "33.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3140000-101-2026-00269",
@@ -7600,7 +8824,12 @@
       "phone": "",
       "area": "33.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "",
+        "category": "음식점>한식",
+        "naverName": "옛촌국수"
+      }
     },
     {
       "id": "3240000-101-2026-00282",
@@ -7614,7 +8843,8 @@
       "phone": "",
       "area": "27.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3200000-104-2026-00124",
@@ -7628,7 +8858,8 @@
       "phone": "",
       "area": "53.26",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3030000-101-2026-00279",
@@ -7642,7 +8873,8 @@
       "phone": "",
       "area": "18.66",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3060000-104-2026-00078",
@@ -7656,7 +8888,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3060000-104-2026-00079",
@@ -7670,7 +8903,12 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "https://cu.bgfretail.com/",
+        "category": "생활,편의>편의점",
+        "naverName": "CU 망우우리점"
+      }
     },
     {
       "id": "3040000-101-2026-00303",
@@ -7684,7 +8922,8 @@
       "phone": "",
       "area": "24.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3180000-101-2026-00607",
@@ -7698,7 +8937,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3070000-104-2026-00161",
@@ -7712,7 +8952,8 @@
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {}
     },
     {
       "id": "3080000-101-2026-00211",
@@ -7726,7 +8967,12 @@
       "phone": "",
       "area": "55.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "https://www.instagram.com/kokao.co.kr",
+        "category": "중식>중식당",
+        "naverName": "서울양꼬치"
+      }
     },
     {
       "id": "3010000-101-2026-00494",
@@ -7740,7 +8986,12 @@
       "phone": "",
       "area": "13.22",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "https://www.instagram.com/sambrosroll.official/",
+        "category": "음식점>분식",
+        "naverName": "삼형제김밥 광화문점"
+      }
     },
     {
       "id": "3130000-104-2026-00212",
@@ -7754,7 +9005,12 @@
       "phone": "",
       "area": "33.00",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-08-25",
+      "naver": {
+        "link": "",
+        "category": "카페,디저트>카페",
+        "naverName": "빽다방연남숲길점"
+      }
     },
     {
       "id": "3210000-104-2026-00354",
@@ -7832,13 +9088,13 @@
       "address": "서울특별시 용산구 한강대로30길 25, B1층 119호 (한강로2가, 아스테리움 용산)",
       "district": "용산구",
       "licenseDate": "2026-08-25",
-      "modifiedDate": "2026-08-25",
+      "modifiedDate": "2026-09-03",
       "category": "일반음식점",
       "bizType": "일식",
       "phone": "",
       "area": "43.82",
       "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-25"
+      "updatedSeen": "2026-09-05"
     },
     {
       "id": "3070000-104-2026-00160",
@@ -8339,20 +9595,6 @@
       "modifiedDate": "2026-08-24",
       "category": "휴게음식점",
       "bizType": "편의점",
-      "phone": "",
-      "area": "3.30",
-      "firstSeen": "2026-08-28",
-      "updatedSeen": "2026-08-24"
-    },
-    {
-      "id": "3180000-104-2026-00459",
-      "name": "주식회사 쥬노",
-      "address": "서울특별시 영등포구 영중로 9, 신세계백화점 지하1층 일부호 (영등포동4가)",
-      "district": "영등포구",
-      "licenseDate": "2026-08-24",
-      "modifiedDate": "2026-08-24",
-      "category": "휴게음식점",
-      "bizType": "백화점",
       "phone": "",
       "area": "3.30",
       "firstSeen": "2026-08-28",
@@ -12601,20 +13843,6 @@
       "updatedSeen": "2026-08-18"
     },
     {
-      "id": "3150000-101-2026-00466",
-      "name": "무빙브루어리",
-      "address": "서울특별시 강서구 하늘길 38, 지하층 (방화동)",
-      "district": "강서구",
-      "licenseDate": "2026-08-18",
-      "modifiedDate": "2026-08-18",
-      "category": "일반음식점",
-      "bizType": "한식",
-      "phone": "",
-      "area": "",
-      "firstSeen": "2026-08-20",
-      "updatedSeen": "2026-08-18"
-    },
-    {
       "id": "3020000-101-2026-00333",
       "name": "모미모미",
       "address": "서울특별시 용산구 청파로45길 36, 1층 2호 (청파동2가)",
@@ -13017,20 +14245,6 @@
       "bizType": "일반조리판매",
       "phone": "",
       "area": "",
-      "firstSeen": "2026-08-20",
-      "updatedSeen": "2026-08-18"
-    },
-    {
-      "id": "3220000-104-2026-00604",
-      "name": "(주)은하수산(한시적)",
-      "address": "서울특별시 강남구 역삼로 310, 한솔필리아 이마트역삼점 지하2층 (역삼동)",
-      "district": "강남구",
-      "licenseDate": "2026-08-18",
-      "modifiedDate": "2026-08-18",
-      "category": "휴게음식점",
-      "bizType": "일반조리판매",
-      "phone": "051-246-2775",
-      "area": ".00",
       "firstSeen": "2026-08-20",
       "updatedSeen": "2026-08-18"
     },
@@ -13829,20 +15043,6 @@
       "bizType": "일식",
       "phone": "",
       "area": "115.69",
-      "firstSeen": "2026-08-16",
-      "updatedSeen": "2026-08-14"
-    },
-    {
-      "id": "3150000-101-2026-00463",
-      "name": "과일상점(모찌이야기 잠실)",
-      "address": "서울특별시 강서구 공항대로 165, 원그로브 B동 지하1층 (마곡동)",
-      "district": "강서구",
-      "licenseDate": "2026-08-14",
-      "modifiedDate": "2026-08-14",
-      "category": "일반음식점",
-      "bizType": "한식",
-      "phone": "031-1577-5245",
-      "area": "",
       "firstSeen": "2026-08-16",
       "updatedSeen": "2026-08-14"
     },
@@ -23633,20 +24833,6 @@
       "updatedSeen": "2026-07-29"
     },
     {
-      "id": "3190000-101-2026-00142",
-      "name": "미가찬 종합분식",
-      "address": "서울특별시 동작구 동작대로29길 45, 1층 104호 (사당동)",
-      "district": "동작구",
-      "licenseDate": "2026-07-29",
-      "modifiedDate": "2026-07-29",
-      "category": "일반음식점",
-      "bizType": "분식",
-      "phone": "",
-      "area": "27.88",
-      "firstSeen": "2026-07-29",
-      "updatedSeen": "2026-07-29"
-    },
-    {
       "id": "3180000-101-2026-00536",
       "name": "묵무키 문래",
       "address": "서울특별시 영등포구 도림로 440-19 (문래동3가)",
@@ -23662,17 +24848,24 @@
     },
     {
       "id": "3230000-104-2026-00336",
-      "name": "메종드 라콩비에트",
+      "name": "메종드 라콩비에트(MAISON la Conviette)",
       "address": "서울특별시 송파구 올림픽로 300, 롯데월드타워앤드롯데월드몰 캐주얼동 지하1층 (신천동)",
       "district": "송파구",
       "licenseDate": "2026-07-29",
-      "modifiedDate": "2026-07-29",
+      "modifiedDate": "2026-09-03",
       "category": "휴게음식점",
       "bizType": "기타 휴게음식점",
       "phone": "",
       "area": "92.60",
       "firstSeen": "2026-07-29",
-      "updatedSeen": "2026-07-29"
+      "changes": [
+        {
+          "field": "name",
+          "label": "상호",
+          "before": "메종드 라콩비에트"
+        }
+      ],
+      "updatedSeen": "2026-09-05"
     },
     {
       "id": "3220000-101-2026-00734",
@@ -29443,6 +30636,27 @@
       "updatedSeen": "2026-07-20"
     },
     {
+      "id": "3130000-101-2026-00524",
+      "name": "춘백 강릉순두부짬뽕",
+      "address": "서울특별시 마포구 동교로 250, 약국빌딩 지하1층 (연남동)",
+      "district": "마포구",
+      "licenseDate": "2026-07-20",
+      "modifiedDate": "2026-09-03",
+      "category": "일반음식점",
+      "bizType": "중국식",
+      "phone": "",
+      "area": "54.84",
+      "firstSeen": "2026-07-20",
+      "changes": [
+        {
+          "field": "name",
+          "label": "상호",
+          "before": "강릉순두부짬뽕"
+        }
+      ],
+      "updatedSeen": "2026-09-05"
+    },
+    {
       "id": "3150000-101-2026-00410",
       "name": "천년명가닭강정 강서점",
       "address": "서울특별시 강서구 공항대로41길 34, 플러스존 221-A호 (등촌동)",
@@ -30139,20 +31353,6 @@
       "bizType": "한식",
       "phone": "",
       "area": "16.50",
-      "firstSeen": "2026-07-20",
-      "updatedSeen": "2026-07-20"
-    },
-    {
-      "id": "3130000-101-2026-00524",
-      "name": "강릉순두부짬뽕",
-      "address": "서울특별시 마포구 동교로 250, 약국빌딩 지하1층 (연남동)",
-      "district": "마포구",
-      "licenseDate": "2026-07-20",
-      "modifiedDate": "2026-07-20",
-      "category": "일반음식점",
-      "bizType": "중국식",
-      "phone": "",
-      "area": "54.84",
       "firstSeen": "2026-07-20",
       "updatedSeen": "2026-07-20"
     },
@@ -41432,13 +42632,13 @@
       "address": "서울특별시 동대문구 왕산로35길 38, 1~2층 (제기동)",
       "district": "동대문구",
       "licenseDate": "2026-06-26",
-      "modifiedDate": "2026-06-26",
+      "modifiedDate": "2026-09-03",
       "category": "일반음식점",
       "bizType": "기타",
       "phone": "",
       "area": "90.00",
       "firstSeen": "2026-06-26",
-      "updatedSeen": "2026-06-26"
+      "updatedSeen": "2026-09-05"
     },
     {
       "id": "3010000-101-2026-00381",
@@ -52403,16 +53603,17 @@
       "updatedSeen": "2026-06-08"
     }
   ],
-  "changedCount": 3607,
+  "changedCount": 3655,
   "changedFirstSeen": {
+    "2026-09-05": 52,
     "2026-09-04": 46,
     "2026-09-02": 2,
-    "2026-09-01": 71,
+    "2026-09-01": 70,
     "2026-08-31": 78,
     "2026-08-28": 57,
     "2026-08-27": 57,
     "2026-08-26": 53,
-    "2026-08-25": 59,
+    "2026-08-25": 58,
     "2026-08-24": 64,
     "2026-08-23": 2,
     "2026-08-22": 3,
@@ -52444,7 +53645,7 @@
     "2026-07-16": 2,
     "2026-07-15": 2,
     "2026-07-14": 107,
-    "2026-07-13": 54,
+    "2026-07-13": 53,
     "2026-07-10": 57,
     "2026-07-09": 52,
     "2026-07-08": 51,
@@ -52463,7 +53664,7 @@
     "2026-06-22": 76,
     "2026-06-19": 30,
     "2026-06-18": 105,
-    "2026-06-17": 99,
+    "2026-06-17": 98,
     "2026-06-16": 99,
     "2026-06-15": 84,
     "2026-06-14": 2,
