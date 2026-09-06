@@ -72,6 +72,37 @@ def month_window(months=6):
     return start, end
 
 
+def week_window(weeks=8):
+    """이번 주도 아직 안 끝났으므로 뺀다. 지난 일요일까지만 본다."""
+    end = date.today() - timedelta(days=date.today().weekday() + 1)
+    start = end - timedelta(days=7 * weeks - 1)
+    return start, end
+
+
+def collect_weekly(queries):
+    """주 단위로 재서 '지난주에 갑자기 뛴 말'을 잡는다.
+
+    달 단위는 굼떠서 이번 주에 불붙은 것을 놓친다. 대신 주 단위는
+    들쭉날쭉해서 한 주 값만으로는 못 믿는다. 그래서 지난주를 그 앞
+    두 주의 평균과 견준다.
+    """
+    start, end = week_window(8)
+    out = {}
+    for i in range(0, len(queries), 5):
+        batch = queries[i:i + 5]
+        got = naver.search_trend(
+            batch, start.isoformat(), end.isoformat(), time_unit="week")
+        for query in batch:
+            series = [v for v in (got.get(query) or []) if v is not None]
+            if len(series) < 3:
+                continue
+            before = (series[-2] + series[-3]) / 2
+            if before:
+                out[query] = round(series[-1] / before, 2)
+        time.sleep(0.1)
+    return out
+
+
 def collect_demand(queries):
     """검색어별 관심도와 흐름 두 가지를 잰다.
 
@@ -148,15 +179,17 @@ def main():
 
     # 주제어는 지역과 무관하게 '요즘 무엇이 뜨나'를 본다.
     theme_demand, theme_hot, theme_trend = collect_demand(THEMES)
+    theme_week = collect_weekly(THEMES)
     themes = sorted(
         ({"word": w,
           "demand": theme_demand[w],
           "hot": theme_hot.get(w),
+          "week": theme_week.get(w),
           "trend": theme_trend.get(w)}
          for w in theme_demand),
-        key=lambda x: -(x["hot"] or 0),
+        key=lambda x: -max(x["hot"] or 0, x["week"] or 0),
     )
-    print(f"주제어 {len(themes)}개를 쟀습니다")
+    print(f"주제어 {len(themes)}개를 쟀습니다 (주 단위 {len(theme_week)}개 포함)")
 
     DATA_DIR.mkdir(exist_ok=True)
     (DATA_DIR / "keywords.json").write_text(
@@ -223,14 +256,21 @@ def main():
 
     if themes:
         print()
-        print("  🔥 최근 뜨는 주제어 (지난달이 그 앞달의 몇 배):")
-        for t in themes[:10]:
-            flow = f"{t['hot']:.2f}배" if t["hot"] else "–"
-            print(f"    {flow:>7}  관심도 {t['demand']:>7.1f}  {t['word']}")
+        print("  ⚡ 지난주에 뛴 주제어 (그 앞 두 주 평균 대비):")
+        weekly = sorted((t for t in themes if t["week"]),
+                        key=lambda x: -x["week"])[:8]
+        for t in weekly:
+            print(f"    {t['week']:>5.2f}배  관심도 {t['demand']:>7.1f}  {t['word']}")
+        print()
+        print("  🔥 지난달에 뛴 주제어 (그 앞달 대비):")
+        monthly = sorted((t for t in themes if t["hot"]),
+                         key=lambda x: -x["hot"])[:8]
+        for t in monthly:
+            print(f"    {t['hot']:>5.2f}배  관심도 {t['demand']:>7.1f}  {t['word']}")
+        print()
         print("  가라앉는 쪽:")
-        for t in themes[-5:]:
-            flow = f"{t['hot']:.2f}배" if t["hot"] else "–"
-            print(f"    {flow:>7}  관심도 {t['demand']:>7.1f}  {t['word']}")
+        for t in sorted((t for t in themes if t["hot"]), key=lambda x: x["hot"])[:5]:
+            print(f"    {t['hot']:>5.2f}배  관심도 {t['demand']:>7.1f}  {t['word']}")
         print()
         print("  꾸준히 인기 있는 주제어 (관심도 순):")
         for t in sorted(themes, key=lambda x: -x["demand"])[:10]:

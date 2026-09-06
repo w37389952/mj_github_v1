@@ -219,7 +219,7 @@
   <section id="themeBox" hidden>
     <h2>요즘 뜨는 말 <span class="sub" id="themeWhen"></span></h2>
     <div class="chip-group">
-      <div class="chip-label" id="hotLabel">🔥 요즘 뜨는 말 <span>지난달에 부쩍 늘었습니다</span></div>
+      <div class="chip-label" id="hotLabel">요즘 뜨는 말 <span>⚡ 지난주 · 🔥 지난달에 부쩍 늘었습니다</span></div>
       <div class="chips" id="hotChips"></div>
     </div>
     <div class="chip-group">
@@ -506,15 +506,24 @@ fetch("data/keywords.json")
 
 /* 요즘 무엇이 뜨는지. 글감을 정할 때 보라고 맨 위에 둔다.
    누르면 '특징' 칸에 담겨서 제목과 태그에 그대로 반영된다. */
-const HOT_LINE = 1.15;   // 이 배수를 넘어야 '뜨는 말'로 친다
+const HOT_LINE = 1.15;    // 달 단위로 이 배수를 넘으면 '뜨는 말'
+const WEEK_LINE = 1.25;   // 주 단위는 들쭉날쭉해서 문턱을 더 높인다
+
+const isHot = t => (t.hot != null && t.hot >= HOT_LINE)
+               || (t.week != null && t.week >= WEEK_LINE);
 
 function themeChip(t, kind) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "chip " + kind;
-  const rate = kind === "hot"
-    ? `🔥 ${t.hot}배`
-    : `관심도 ${Math.round(t.demand)}`;
+  let rate = `관심도 ${Math.round(t.demand)}`;
+  if (kind === "hot") {
+    // 주간과 월간이 둘 다 뛰었으면 더 크게 뛴 쪽을 보여 준다.
+    const weekUp = t.week != null && t.week >= WEEK_LINE;
+    const monthUp = t.hot != null && t.hot >= HOT_LINE;
+    if (weekUp && (!monthUp || t.week >= t.hot)) rate = `⚡ 지난주 ${t.week}배`;
+    else rate = `🔥 지난달 ${t.hot}배`;
+  }
   btn.innerHTML = `${t.word}<span class="rate">${rate}</span>`;
   btn.addEventListener("click", () => {
     const el = $("fTrait");
@@ -534,9 +543,10 @@ function renderThemes() {
 
   // 두 줄로 갈라 놓는다. 섞어 놓으면 '노포 1.05배'처럼 뜨지도 않는 말이
   // 뜨는 줄에 껴서 헷갈린다.
+  const rise = t => Math.max(t.week || 0, t.hot || 0);
   const hot = themes
-    .filter(t => t.hot != null && t.hot >= HOT_LINE)
-    .sort((a, b) => b.hot - a.hot)
+    .filter(isHot)
+    .sort((a, b) => rise(b) - rise(a))
     .slice(0, 12);
   const steady = themes
     .filter(t => !hot.includes(t) && t.demand != null)
