@@ -385,7 +385,7 @@
           </div>
           <div class="field wide">
             <label for="fPics">
-              사진 보여 주기 <span class="hint">(최대 4장 · 분위기를 직접 보고 씁니다 · 장당 5원쯤)</span>
+              사진 보여 주기 <span class="hint">(최대 3장 · 분위기를 직접 보고 씁니다 · 장당 4원쯤 · 안 넣어도 됩니다)</span>
             </label>
             <input type="file" id="fPics" accept="image/*" multiple>
             <div class="chips" id="picList" style="margin-top:6px"></div>
@@ -556,11 +556,13 @@ function buildPrompt(v, cands) {
   '~했다', '~더라', '~인 셈이다', 명사로 끊기, 짧은 문장과 긴 문장을 섞어라.
 - 한 문단은 서너 문장. 문단마다 하나의 이야기만 담아라.
 
-[분량]
-- 본문 2,500자를 목표로 한다. 다만 **채우려고 없는 말을 지어내지 마라.**
-- 내가 준 메모가 얇으면 억지로 늘리지 말고, 쓸 수 있는 만큼만 쓴 뒤
-  맨 끝에 "[더 있으면 좋을 것]" 이라고 적고 무엇을 더 알려주면 되는지 3~5개 물어라.
-  (예: 가격, 웨이팅 시간, 좌석 수, 화장실 위치, 재방문 의사)
+[분량 — 공백 빼고 2,500자에서 3,000자 사이]
+- 이 범위에 맞춰라. 3,000자를 넘기지 마라.
+- 다만 **채우려고 없는 말을 지어내지 마라.** 아래 재료가 모자라 2,500자가
+  안 되면 억지로 늘리지 말고, 쓸 수 있는 만큼만 쓴 뒤 맨 끝에
+  "[더 있으면 좋을 것]"으로 무엇을 더 알려주면 되는지 3~5개 물어라.
+- 길이는 같은 말을 되풀이해 늘리는 것이 아니라, 내가 준 재료를 하나하나
+  풀어 쓰고 그때 느낀 것을 붙여 채운다.
 
 [사진]
 - 사진은 ${photos}장이다. 하지만 **사진마다 설명을 붙이지 마라.**
@@ -1020,7 +1022,7 @@ $("apiModel").addEventListener("change", () => {
 /* 사진은 앤트로픽으로 보낼 때만 쓰이고 어디에도 저장하지 않는다.
    원본 그대로 보내면 무거우므로 긴 변 1200픽셀로 줄여 보낸다.
    그래도 분위기를 알아보는 데는 충분하다. */
-const MAX_PICS = 4;
+const MAX_PICS = 3;
 const PIC_SIDE = 1200;
 let PICS = [];
 
@@ -1160,7 +1162,8 @@ async function makeDraft() {
     }
     const chars = out.replace(/\s/g, "").length;
     setStatus(`다 됐습니다 — 공백 빼고 ${chars.toLocaleString()}자`
-      + (chars < 2500 ? " · 2,500자에 못 미칩니다" : ""));
+      + (chars < 2500 ? " · 2,500자에 못 미칩니다. 위 칸을 더 채우면 길어집니다"
+         : chars > 3000 ? " · 3,000자를 넘었습니다" : " · 목표 범위 안"));
     $("copyDraft").hidden = false;
   } catch (err) {
     setStatus(`부르지 못했습니다 — ${err.message}`);

@@ -23,6 +23,14 @@ BLOG_ID = os.environ.get("MY_BLOG_IDS", "haranalice").split(",")[0].strip()
 HOW_MANY = int(os.environ.get("STYLE_SAMPLE_COUNT", "3"))
 MAX_CHARS = int(os.environ.get("STYLE_SAMPLE_CHARS", "1800"))
 
+# 협찬·초대 글은 말투가 평소와 다르다. 흉내 낼 본보기로 삼으면 안 된다.
+SPONSORED = [
+    "협찬", "체험단", "원고료", "소정의", "제공받", "무료로 제공", "서포터즈",
+    "초대받아", "초대를 받아", "초청", "지원받아", "대가를 받", "광고",
+]
+# 앞쪽에서 넉넉히 받아 협찬 글을 걸러낸 뒤 필요한 개수만 남긴다.
+LOOK_BACK = int(os.environ.get("STYLE_LOOK_BACK", "12"))
+
 UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
       "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1")
 HEADERS = {
@@ -72,13 +80,16 @@ def main():
         return
 
     try:
-        posts = recent(HOW_MANY)
+        posts = recent(LOOK_BACK)
     except Exception as exc:
         print(f"RSS를 읽지 못했습니다: {exc}", file=sys.stderr)
         return
 
     samples = []
+    skipped = 0
     for title, log_no in posts:
+        if len(samples) >= HOW_MANY:
+            break
         try:
             text = body_of(log_no)
         except Exception as exc:
@@ -86,9 +97,20 @@ def main():
             continue
         if len(text) < 400:
             continue
+
+        hit = next((w for w in SPONSORED if w in title or w in text), None)
+        if hit:
+            skipped += 1
+            print(f"  건너뜀(협찬/초대 '{hit}'): {title[:36]}")
+            time.sleep(0.4)
+            continue
+
         samples.append({"title": title, "body": text[:MAX_CHARS]})
         print(f"  담음: {title[:40]} ({len(text)}자 중 앞 {MAX_CHARS}자)")
         time.sleep(0.6)
+
+    if skipped:
+        print(f"  협찬·초대로 보이는 글 {skipped}편을 뺐습니다.")
 
     if not samples:
         print("담을 글이 없어 파일을 건드리지 않습니다.", file=sys.stderr)
