@@ -52,17 +52,32 @@ THEMES = [
 ANCHOR = "성수동 카페"
 
 
+def month_window(months=6):
+    """이번 달은 아직 안 끝났으므로 뺀다.
+
+    지난달까지 끝난 달만 본다. 안 그러면 5일치와 한 달치를 견주게 되어
+    모든 검색어가 줄어드는 것처럼 보인다. 2026-09-05 첫 수집에서
+    주제어 42개가 전부 하락으로 나온 것이 그 탓이었다.
+    """
+    first_this_month = date.today().replace(day=1)
+    end = first_this_month - timedelta(days=1)          # 지난달 말일
+    start = end.replace(day=1)
+    for _ in range(months - 1):
+        start = (start - timedelta(days=1)).replace(day=1)
+    return start, end
+
+
 def collect_demand(queries):
-    """검색어별 관심도와 그 흐름을 잰다.
+    """검색어별 관심도와 흐름 두 가지를 잰다.
 
     한 번에 다섯 개까지 되므로 기준 하나 + 실제 네 개씩 나눠 부른다.
-    돌려주는 값은 기준 대비 몇 %인지(demand)와, 석 달 사이 몇 배가
-    되었는지(trend)다. trend가 1보다 크면 찾는 사람이 늘고 있다는 뜻이다.
+
+    demand — 기준 검색어 대비 몇 %인지. 얼마나 많이 찾는가.
+    hot    — 지난달이 그 앞달의 몇 배인가. 지금 뜨는 중인가.
+    trend  — 지난달이 석 달 전의 몇 배인가. 꾸준히 오르는가.
     """
-    end = date.today()
-    start = end - timedelta(days=90)
-    demand = {}
-    trend = {}
+    start, end = month_window(6)
+    demand, hot, trend = {}, {}, {}
 
     for i in range(0, len(queries), 4):
         batch = queries[i:i + 4]
@@ -73,15 +88,16 @@ def collect_demand(queries):
         if not base:
             continue
         for query in batch:
-            series = got.get(query)
+            series = [v for v in (got.get(query) or []) if v is not None]
             if not series:
                 continue
             demand[query] = round(series[-1] / base * 100, 1)
-            # 첫 달이 0이면 배수를 낼 수 없다. 그런 말은 흐름을 비워 둔다.
-            if len(series) >= 2 and series[0]:
-                trend[query] = round(series[-1] / series[0], 2)
+            if len(series) >= 2 and series[-2]:
+                hot[query] = round(series[-1] / series[-2], 2)
+            if len(series) >= 4 and series[-4]:
+                trend[query] = round(series[-1] / series[-4], 2)
         time.sleep(0.1)
-    return demand, trend
+    return demand, hot, trend
 
 
 def bucket(total):
@@ -122,15 +138,18 @@ def main():
         print("문서 수를 하나도 받지 못했습니다.", file=sys.stderr)
         sys.exit(1)
 
-    demand, trend = collect_demand(sorted(entries))
+    demand, hot, trend = collect_demand(sorted(entries))
     print(f"관심도를 잰 검색어 {len(demand)}개 (기준: {ANCHOR} = 100)")
 
     # 주제어는 지역과 무관하게 '요즘 무엇이 뜨나'를 본다.
-    theme_demand, theme_trend = collect_demand(THEMES)
+    theme_demand, theme_hot, theme_trend = collect_demand(THEMES)
     themes = sorted(
-        ({"word": w, "demand": theme_demand[w], "trend": theme_trend.get(w)}
+        ({"word": w,
+          "demand": theme_demand[w],
+          "hot": theme_hot.get(w),
+          "trend": theme_trend.get(w)}
          for w in theme_demand),
-        key=lambda x: -(x["trend"] or 0),
+        key=lambda x: -(x["hot"] or 0),
     )
     print(f"주제어 {len(themes)}개를 쟀습니다")
 
@@ -146,6 +165,7 @@ def main():
             "buckets": {"easy": "3천 미만", "medium": "3천~2만", "hard": "2만 이상"},
             "counts": entries,
             "demand": demand,
+            "hot": hot,
             "trend": trend,
             "themes": themes,
         }, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
@@ -155,30 +175,41 @@ def main():
     print(f"검색어 {len(entries)}개를 쟀습니다 (문서수 호출 {asked}회)")
 
     # 수요는 있는데 공급이 적은 것이 노릴 자리다.
+    #
+    # 수요만 크면 위로 올리면 안 된다. 2026-09-05 첫 수집에서 '해방촌 맛집'
+    # (글 15만 건)이 '노려볼 만한 쪽'에 올라왔다. 지수가 낮은 블로그가
+    # 15만 건짜리 자리를 먹을 수는 없다. 그래서 경쟁도에 상한을 둔다.
+    MAX_DOCS = int(os.environ.get("MAX_DOCS", "20000"))
+    MIN_DEMAND = 3.0
+
     scored = [
         (q, entries[q], demand[q], demand[q] / max(entries[q], 1) * 1000)
-        for q in entries if q in demand
+        for q in entries
+        if q in demand and entries[q] <= MAX_DOCS and demand[q] >= MIN_DEMAND
     ]
     if scored:
         scored.sort(key=lambda x: -x[3])
-        print("  노려볼 만한 쪽 12개 (수요는 있는데 글이 적은 순):")
-        print(f"    {'문서수':>9}  {'관심도':>6}  {'흐름':>5}  검색어")
+        print(f"  노려볼 만한 쪽 12개 (글 {MAX_DOCS:,}건 이하 중 수요 대비 공급이 적은 순):")
+        print(f"    {'문서수':>9}  {'관심도':>6}  {'최근':>5}  검색어")
         for query, total, want, _ in scored[:12]:
-            flow = trend.get(query)
+            flow = hot.get(query)
             mark = f"{flow:>5.2f}" if flow else "    –"
             print(f"    {total:>9,}  {want:>6.1f}  {mark}  {query}")
+    else:
+        print(f"  글 {MAX_DOCS:,}건 이하이면서 수요가 있는 검색어가 없습니다.")
 
     # 수요가 오르는 중인데 아직 글이 적은 자리. 가장 값진 목록이다.
     rising = [
-        (q, entries[q], demand[q], trend[q])
+        (q, entries[q], demand[q], hot[q])
         for q in entries
-        if q in demand and q in trend and trend[q] >= 1.2 and entries[q] < 20000
+        if q in demand and q in hot
+        and hot[q] >= 1.15 and entries[q] <= MAX_DOCS and demand[q] >= MIN_DEMAND
     ]
     if rising:
         rising.sort(key=lambda x: -x[3])
         print()
         print("  ⭐ 뜨는 중인데 아직 글이 적은 검색어:")
-        print(f"    {'문서수':>9}  {'관심도':>6}  {'흐름':>5}  검색어")
+        print(f"    {'문서수':>9}  {'관심도':>6}  {'최근':>5}  검색어")
         for query, total, want, flow in rising[:12]:
             print(f"    {total:>9,}  {want:>6.1f}  {flow:>5.2f}배  {query}")
     else:
@@ -187,14 +218,19 @@ def main():
 
     if themes:
         print()
-        print("  요즘 뜨는 주제어 (석 달 흐름 순):")
+        print("  🔥 최근 뜨는 주제어 (지난달이 그 앞달의 몇 배):")
         for t in themes[:10]:
-            flow = f"{t['trend']:.2f}배" if t["trend"] else "–"
-            print(f"    {flow:>7}  관심도 {t['demand']:>6.1f}  {t['word']}")
+            flow = f"{t['hot']:.2f}배" if t["hot"] else "–"
+            print(f"    {flow:>7}  관심도 {t['demand']:>7.1f}  {t['word']}")
         print("  가라앉는 쪽:")
         for t in themes[-5:]:
+            flow = f"{t['hot']:.2f}배" if t["hot"] else "–"
+            print(f"    {flow:>7}  관심도 {t['demand']:>7.1f}  {t['word']}")
+        print()
+        print("  꾸준히 인기 있는 주제어 (관심도 순):")
+        for t in sorted(themes, key=lambda x: -x["demand"])[:10]:
             flow = f"{t['trend']:.2f}배" if t["trend"] else "–"
-            print(f"    {flow:>7}  관심도 {t['demand']:>6.1f}  {t['word']}")
+            print(f"    관심도 {t['demand']:>7.1f}  석달흐름 {flow:>7}  {t['word']}")
 
 
 if __name__ == "__main__":
