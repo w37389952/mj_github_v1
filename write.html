@@ -291,7 +291,7 @@
         </select>
       </div>
       <div class="field">
-        <label for="fVisit">방문 시점</label>
+        <label for="fVisit">방문 시점 <span class="hint">(비워두면 이번 달로 적습니다)</span></label>
         <input id="fVisit" placeholder="2026년 9월">
       </div>
       <div class="field wide">
@@ -497,9 +497,16 @@ function save() {
 
 const splitList = s => (s || "").split(/[,·]/).map(x => x.trim()).filter(Boolean);
 
+/** 이번 달. 방문 시점을 안 적었을 때 대신 쓴다. */
+function thisMonth() {
+  const now = new Date();
+  return `${now.getFullYear()}년 ${now.getMonth() + 1}월`;
+}
+
 function readForm() {
   const v = {};
   F.forEach(id => { v[id.slice(1).toLowerCase()] = $(id).value.trim(); });
+  if (!v.visit) v.visit = thisMonth();
   v.menus = splitList(v.menu);
   v.traits = splitList(v.trait);
   return v;
@@ -573,7 +580,7 @@ function buildPrompt(v, cands) {
 
 [문체 규칙 — 기존 글 50편에서 뽑음]
 - 평서체(~했다, ~였다). 존댓말·해요체 쓰지 않는다.
-- 첫 줄은 "※${v.visit || "2026년 9월"} 방문"으로 시작한다.
+- 첫 줄은 "※${v.visit} 방문"으로 시작한다.
 - 그 아래 한 줄로: ${v.area} ${t} — 가게를 한 문장으로 설명 + ${v.station}
 - 이어서 정보 블록:
     영업시간 ${v.hours || "(입력 없음)"}
