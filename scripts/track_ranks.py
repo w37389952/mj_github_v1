@@ -36,6 +36,17 @@ GENERIC_TAIL = {"본점", "지점", "점", "카페", "북카페", "커피", "맛
                 "집", "식당", "베이커리", "디저트", "브런치", "술집", "펍",
                 "가게", "공간", "후기", "방문", "추천"}
 
+# 가게 이름처럼 보이지만 일상어로도 흔한 말. 이걸로 순위를 재면 남의 글이
+# 잔뜩 잡혀 아무 뜻이 없다. 2026-09-05 첫 수집에서 '종묘', '프로젝트',
+# '위사'가 목표 검색어로 잡혔다.
+TOO_COMMON = {
+    "종묘", "프로젝트", "익스프레스", "하우스", "가든", "스튜디오", "로스터리",
+    "공장", "클럽", "라운지", "테라스", "정원", "다방", "골목", "시장", "광장",
+    "공원", "거리", "비가", "운치", "오늘", "그날", "역시", "사람", "이야기",
+    "시간", "하루", "우리", "여기", "그곳", "동네", "서울", "주말", "산책",
+}
+MIN_NAME_LEN = 3          # 두 글자 이름은 우연히 겹치기 쉬워 뺀다
+
 POST_RE = re.compile(r"(?s)<item>(.*?)</item>")
 TITLE_RE = re.compile(r"(?s)<title><!\[CDATA\[(.*?)\]\]></title>")
 LINK_RE = re.compile(r"<link>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</link>")
@@ -106,9 +117,18 @@ def target_keywords(title):
     tail = list(words)
     while tail and tail[-1] in GENERIC_TAIL:
         tail.pop()
-    if tail and len(tail[-1]) >= 2 and tail[-1] not in GENERIC_TAIL:
-        name = tail[-1]
-        if name not in out:
+    if tail:
+        last = tail[-1]
+        # 흔한 말이거나 너무 짧으면 앞 낱말을 붙여 구체화한다.
+        # '프랙티스 프로젝트'처럼 두 낱말이면 우연히 겹칠 일이 없다.
+        if last in TOO_COMMON or len(last) < MIN_NAME_LEN:
+            if len(tail) >= 2 and tail[-2] not in GENERIC_TAIL:
+                name = f"{tail[-2]} {last}"
+            else:
+                name = ""
+        else:
+            name = last
+        if name and name not in out:
             out.append(name)
 
     return out[:3]
