@@ -122,6 +122,14 @@ def collect_demand(queries):
         anchor_series = got.get(ANCHOR) or []
         base = anchor_series[-1] if anchor_series else None
         if not base:
+            # 2026-09-07 첫 수집에서 648개 중 352개만 값을 받았다. 기준이 빠지면
+            # 그 묶음 전체를 버리게 되므로 한 번은 다시 물어본다.
+            time.sleep(1.5)
+            got = naver.search_trend(
+                [ANCHOR] + batch, start.isoformat(), end.isoformat())
+            anchor_series = got.get(ANCHOR) or []
+            base = anchor_series[-1] if anchor_series else None
+        if not base:
             continue
         for query in batch:
             series = [v for v in (got.get(query) or []) if v is not None]
@@ -218,7 +226,9 @@ def main():
     # (글 15만 건)이 '노려볼 만한 쪽'에 올라왔다. 지수가 낮은 블로그가
     # 15만 건짜리 자리를 먹을 수는 없다. 그래서 경쟁도에 상한을 둔다.
     MAX_DOCS = int(os.environ.get("MAX_DOCS", "20000"))
-    MIN_DEMAND = 3.0
+    # 2026-09-07 첫 결과에서 이 값이 3.0이면 여섯 개만 남고 전부 '브런치'였다.
+    # 지역+업종 조합은 관심도가 대체로 낮게 나오므로 문턱을 내린다.
+    MIN_DEMAND = float(os.environ.get("MIN_DEMAND", "1.0"))
 
     scored = [
         (q, entries[q], demand[q], demand[q] / max(entries[q], 1) * 1000)
