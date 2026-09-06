@@ -385,7 +385,7 @@
           </div>
           <div class="field wide">
             <label for="fPics">
-              사진 보여 주기 <span class="hint">(최대 3장 · 분위기를 직접 보고 씁니다 · 장당 4원쯤 · 안 넣어도 됩니다)</span>
+              사진 보여 주기 <span class="hint">(최대 5장 · 분위기를 직접 보고 씁니다 · 안 넣어도 됩니다)</span>
             </label>
             <input type="file" id="fPics" accept="image/*" multiple>
             <div class="chips" id="picList" style="margin-top:6px"></div>
@@ -393,7 +393,7 @@
         </div>
         <div class="row">
           <button type="button" class="btn" id="askApi">생성</button>
-          <span class="chip-hint" style="margin:0">한 편에 1분쯤 걸립니다</span>
+          <span class="chip-hint" style="margin:0" id="costGuess"></span>
         </div>
         <div class="chip-hint">
           키는 이 브라우저에만 저장되고 저장소에 올라가지 않습니다. 앤트로픽으로만 보내집니다.
@@ -556,9 +556,9 @@ function buildPrompt(v, cands) {
   '~했다', '~더라', '~인 셈이다', 명사로 끊기, 짧은 문장과 긴 문장을 섞어라.
 - 한 문단은 서너 문장. 문단마다 하나의 이야기만 담아라.
 
-[분량 — 공백 빼고 2,500자에서 3,000자 사이]
-- 이 범위에 맞춰라. 3,000자를 넘기지 마라.
-- 다만 **채우려고 없는 말을 지어내지 마라.** 아래 재료가 모자라 2,500자가
+[분량 — 공백 빼고 2,600자]
+- 2,600자에 맞춰라. 조금 모자라거나 넘치는 것은 괜찮지만 크게 벗어나지 마라.
+- 다만 **채우려고 없는 말을 지어내지 마라.** 아래 재료가 모자라 2,600자가
   안 되면 억지로 늘리지 말고, 쓸 수 있는 만큼만 쓴 뒤 맨 끝에
   "[더 있으면 좋을 것]"으로 무엇을 더 알려주면 되는지 3~5개 물어라.
 - 길이는 같은 말을 되풀이해 늘리는 것이 아니라, 내가 준 재료를 하나하나
@@ -770,6 +770,7 @@ function render() {
 
   renderCompetition(v);
   $("prompt").textContent = buildPrompt(v, cands);
+  refreshCostGuess();
 
   const tags = buildTags(v);
   $("tags").textContent = tags.map(x => "#" + x).join(" ");
@@ -1017,12 +1018,14 @@ $("apiKey").addEventListener("change", () => {
 });
 $("apiModel").addEventListener("change", () => {
   try { localStorage.setItem(API_MODEL_STORE, $("apiModel").value); } catch (e) {}
+  refreshCostGuess();
 });
+$("useStyle").addEventListener("change", refreshCostGuess);
 
 /* 사진은 앤트로픽으로 보낼 때만 쓰이고 어디에도 저장하지 않는다.
    원본 그대로 보내면 무거우므로 긴 변 1200픽셀로 줄여 보낸다.
    그래도 분위기를 알아보는 데는 충분하다. */
-const MAX_PICS = 3;
+const MAX_PICS = 5;
 const PIC_SIDE = 1200;
 let PICS = [];
 
@@ -1071,6 +1074,7 @@ $("fPics").addEventListener("change", async e => {
     tag.textContent = `앞 ${MAX_PICS}장만 씁니다`;
     box.append(tag);
   }
+  refreshCostGuess();
 });
 
 function styleBlock() {
@@ -1078,6 +1082,40 @@ function styleBlock() {
   return "\n\n[내가 전에 쓴 글 — 말투와 흐름을 이대로 따라라]\n"
     + STYLE.samples.map((s, i) =>
         `--- 예시 ${i + 1} · ${s.title} ---\n${s.body}`).join("\n\n");
+}
+
+/* 요금 — 1백만 토큰당 달러. 2026-09 기준.
+   앤트로픽이 값을 바꾸면 여기만 고치면 된다. */
+const PRICE = {
+  "claude-sonnet-5":  { in: 2,  out: 10 },
+  "claude-opus-5":    { in: 5,  out: 25 },
+  "claude-haiku-4-5": { in: 1,  out: 5 },
+};
+const WON = 1400;              // 환율은 어림이다
+const TOKENS_PER_CHAR = 1.1;   // 한국어 어림값
+const PIC_TOKENS = 1600;       // 긴 변 1200픽셀 사진 한 장 어림
+const TARGET_CHARS = 2600;
+
+function won(dollars) {
+  const w = dollars * WON;
+  return w < 10 ? w.toFixed(1) : Math.round(w).toLocaleString();
+}
+
+function guessCost() {
+  const price = PRICE[$("apiModel").value];
+  if (!price) return null;
+  const promptChars = ($("prompt").textContent || "").length + styleBlock().length;
+  const inTokens = promptChars * TOKENS_PER_CHAR + PICS.length * PIC_TOKENS;
+  const outTokens = TARGET_CHARS * TOKENS_PER_CHAR;
+  return (inTokens * price.in + outTokens * price.out) / 1e6;
+}
+
+function refreshCostGuess() {
+  const dollars = guessCost();
+  if (dollars == null) { $("costGuess").textContent = ""; return; }
+  const pics = PICS.length ? ` · 사진 ${PICS.length}장 포함` : "";
+  $("costGuess").textContent = `예상 약 ${won(dollars)}원${pics} · 1분쯤 걸립니다`;
+  $("askApi").textContent = `생성 (약 ${won(dollars)}원)`;
 }
 
 async function makeDraft() {
@@ -1142,7 +1180,7 @@ async function makeDraft() {
     // 줄 단위로 흘러오는 응답을 이어 붙인다. 긴 글이라 기다리는 동안 보여 준다.
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = "", out = "";
+    let buffer = "", out = "", usedIn = 0, usedOut = 0;
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -1157,13 +1195,28 @@ async function makeDraft() {
             out += evt.delta.text;
             $("draft").textContent = out;
           }
+          // 실제 쓴 토큰이 응답에 같이 온다. 어림값 대신 이걸로 값을 매긴다.
+          if (evt.type === "message_start" && evt.message && evt.message.usage) {
+            usedIn = evt.message.usage.input_tokens || 0;
+          }
+          if (evt.type === "message_delta" && evt.usage) {
+            usedOut = evt.usage.output_tokens || usedOut;
+          }
         } catch (e) {}
       }
     }
+
     const chars = out.replace(/\s/g, "").length;
-    setStatus(`다 됐습니다 — 공백 빼고 ${chars.toLocaleString()}자`
-      + (chars < 2500 ? " · 2,500자에 못 미칩니다. 위 칸을 더 채우면 길어집니다"
-         : chars > 3000 ? " · 3,000자를 넘었습니다" : " · 목표 범위 안"));
+    const price = PRICE[$("apiModel").value];
+    const realCost = price
+      ? (usedIn * price.in + usedOut * price.out) / 1e6 : null;
+
+    const gap = chars - TARGET_CHARS;
+    const lengthNote = Math.abs(gap) <= 300 ? "목표에 맞음"
+      : gap < 0 ? "짧습니다 — 위 칸을 더 채우면 길어집니다"
+      : "목표보다 깁니다";
+    setStatus(`다 됐습니다 — 공백 빼고 ${chars.toLocaleString()}자 · ${lengthNote}`
+      + (realCost != null ? ` · 실제 ${won(realCost)}원` : ""));
     $("copyDraft").hidden = false;
   } catch (err) {
     setStatus(`부르지 못했습니다 — ${err.message}`);
