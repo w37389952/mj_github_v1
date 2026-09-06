@@ -1092,9 +1092,37 @@ const PRICE = {
   "claude-haiku-4-5": { in: 1,  out: 5 },
 };
 const WON = 1400;              // 환율은 어림이다
-const TOKENS_PER_CHAR = 1.1;   // 한국어 어림값
 const PIC_TOKENS = 1600;       // 긴 변 1200픽셀 사진 한 장 어림
 const TARGET_CHARS = 2600;
+
+/* 처음에는 한국어 어림값으로 잡고, 한 번 돌릴 때마다 실제로 쓴 토큰을
+   기록해 다음 예상에 반영한다. 돌릴수록 값이 맞아 간다. */
+const RUNS_STORE = "seoul-radar:apiRuns";
+const KEEP_RUNS = 12;
+const DEFAULT_RATIO = 1.1;
+
+function loadRuns() {
+  try { return JSON.parse(localStorage.getItem(RUNS_STORE) || "[]"); }
+  catch (e) { return []; }
+}
+function saveRun(run) {
+  const runs = loadRuns();
+  runs.push(run);
+  try { localStorage.setItem(RUNS_STORE, JSON.stringify(runs.slice(-KEEP_RUNS))); }
+  catch (e) {}
+}
+
+/** 지난 기록에서 '글자당 토큰'을 뽑는다. 기록이 없으면 어림값을 쓴다. */
+function ratios() {
+  const runs = loadRuns().filter(r => r.chars > 0 && r.outChars > 0);
+  if (!runs.length) return { inR: DEFAULT_RATIO, outR: DEFAULT_RATIO, n: 0 };
+  const mean = list => list.reduce((a, b) => a + b, 0) / list.length;
+  return {
+    inR: mean(runs.map(r => Math.max(0, r.inTok - r.pics * PIC_TOKENS) / r.chars)),
+    outR: mean(runs.map(r => r.outTok / r.outChars)),
+    n: runs.length,
+  };
+}
 
 function won(dollars) {
   const w = dollars * WON;
@@ -1104,17 +1132,26 @@ function won(dollars) {
 function guessCost() {
   const price = PRICE[$("apiModel").value];
   if (!price) return null;
-  const promptChars = ($("prompt").textContent || "").length + styleBlock().length;
-  const inTokens = promptChars * TOKENS_PER_CHAR + PICS.length * PIC_TOKENS;
-  const outTokens = TARGET_CHARS * TOKENS_PER_CHAR;
-  return (inTokens * price.in + outTokens * price.out) / 1e6;
+  const { inR, outR, n } = ratios();
+  const chars = ($("prompt").textContent || "").length + styleBlock().length;
+  const inTokens = chars * inR + PICS.length * PIC_TOKENS;
+  const outTokens = TARGET_CHARS * outR;
+  return { dollars: (inTokens * price.in + outTokens * price.out) / 1e6, n };
+}
+
+function spentSoFar() {
+  return loadRuns().reduce((sum, r) => sum + (r.cost || 0), 0);
 }
 
 function refreshCostGuess() {
-  const dollars = guessCost();
-  if (dollars == null) { $("costGuess").textContent = ""; return; }
+  const guess = guessCost();
+  if (!guess) { $("costGuess").textContent = ""; return; }
+  const { dollars, n } = guess;
   const pics = PICS.length ? ` · 사진 ${PICS.length}장 포함` : "";
-  $("costGuess").textContent = `예상 약 ${won(dollars)}원${pics} · 1분쯤 걸립니다`;
+  const basis = n ? `지난 ${n}번 기준` : "첫 예상이라 어림";
+  const spent = spentSoFar();
+  const total = spent > 0 ? ` · 지금까지 쓴 돈 ${won(spent)}원` : "";
+  $("costGuess").textContent = `${basis}${pics} · 1분쯤 걸립니다${total}`;
   $("askApi").textContent = `생성 (약 ${won(dollars)}원)`;
 }
 
@@ -1211,12 +1248,27 @@ async function makeDraft() {
     const realCost = price
       ? (usedIn * price.in + usedOut * price.out) / 1e6 : null;
 
+    // 이번에 실제로 쓴 값을 남겨 다음 예상을 맞춰 간다.
+    if (usedIn && usedOut && chars) {
+      saveRun({
+        at: new Date().toISOString().slice(0, 10),
+        model: $("apiModel").value,
+        chars: ($("prompt").textContent || "").length + styleBlock().length,
+        pics: PICS.length,
+        inTok: usedIn,
+        outTok: usedOut,
+        outChars: out.length,
+        cost: realCost || 0,
+      });
+    }
+
     const gap = chars - TARGET_CHARS;
     const lengthNote = Math.abs(gap) <= 300 ? "목표에 맞음"
       : gap < 0 ? "짧습니다 — 위 칸을 더 채우면 길어집니다"
       : "목표보다 깁니다";
     setStatus(`다 됐습니다 — 공백 빼고 ${chars.toLocaleString()}자 · ${lengthNote}`
       + (realCost != null ? ` · 실제 ${won(realCost)}원` : ""));
+    refreshCostGuess();
     $("copyDraft").hidden = false;
   } catch (err) {
     setStatus(`부르지 못했습니다 — ${err.message}`);
