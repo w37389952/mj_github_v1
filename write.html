@@ -288,8 +288,35 @@
         <input id="fPhotos" type="number" min="1" placeholder="40">
       </div>
       <div class="field wide">
-        <label for="fMemo">맛과 분위기 메모 <span class="hint">(몇 문장이면 충분합니다. 이걸 바탕으로 본문이 나옵니다)</span></label>
-        <textarea id="fMemo" placeholder="양갱이 안 달고 팥 맛이 진했다. 빙수는 우유 얼음이라 부드러웠다. 2층은 창가 자리가 좋고 혼자 오기 편했다. 웨이팅은 없었다."></textarea>
+        <label>본 것과 느낀 것 <span class="hint">— 채운 만큼 글이 길고 구체적으로 나옵니다. 비운 칸은 글에 안 나옵니다</span></label>
+      </div>
+      <div class="field">
+        <label for="fTaste">맛 <span class="hint">(메뉴별로)</span></label>
+        <textarea id="fTaste" style="min-height:64px" placeholder="양갱은 안 달고 팥 맛이 진했다. 빙수는 우유 얼음이라 부드러웠고 끝까지 안 녹았다."></textarea>
+      </div>
+      <div class="field">
+        <label for="fMood">분위기 · 인테리어</label>
+        <textarea id="fMood" style="min-height:64px" placeholder="우드톤에 조명이 낮았다. 1층은 좁고 2층이 넓다. 창이 커서 오후에 빛이 잘 든다."></textarea>
+      </div>
+      <div class="field">
+        <label for="fSeat">좌석 · 자리</label>
+        <textarea id="fSeat" style="min-height:64px" placeholder="2층 창가 2인석이 좋다. 혼자 앉기 편한 바 자리도 있다. 콘센트는 벽 쪽에만."></textarea>
+      </div>
+      <div class="field">
+        <label for="fWait">웨이팅 · 붐빔 · 주차</label>
+        <textarea id="fWait" style="min-height:64px" placeholder="평일 오후 3시엔 자리 여유 있었다. 주말은 웨이팅 있다고 들었다."></textarea>
+      </div>
+      <div class="field">
+        <label for="fPrice">가격 <span class="hint">(적으면 글에 숫자가 들어갑니다)</span></label>
+        <textarea id="fPrice" style="min-height:64px" placeholder="양갱 4,500원 / 빙수 12,000원 / 아메리카노 5,000원"></textarea>
+      </div>
+      <div class="field">
+        <label for="fWho">누구에게 맞나 · 재방문 의사</label>
+        <textarea id="fWho" style="min-height:64px" placeholder="혼자 책 보러 오기 좋다. 시끄러운 걸 싫어하는 사람에게. 다시 갈 것 같다."></textarea>
+      </div>
+      <div class="field wide">
+        <label for="fMemo">그 밖에 기억나는 것</label>
+        <textarea id="fMemo" style="min-height:64px" placeholder="사장님이 원두를 직접 볶는다고 했다. 화장실은 건물 공용."></textarea>
       </div>
     </div>
 
@@ -356,10 +383,17 @@
               <span id="styleCount">내 글을 예시로 보내 말투 맞추기</span>
             </label>
           </div>
+          <div class="field wide">
+            <label for="fPics">
+              사진 보여 주기 <span class="hint">(최대 5장 · 분위기를 직접 보고 씁니다 · 안 넣어도 됩니다)</span>
+            </label>
+            <input type="file" id="fPics" accept="image/*" multiple>
+            <div class="chips" id="picList" style="margin-top:6px"></div>
+          </div>
         </div>
         <div class="row">
-          <button type="button" class="btn ghost" id="askApi">생성</button>
-          <span class="chip-hint" style="margin:0">한 편에 1분쯤 걸립니다</span>
+          <button type="button" class="btn" id="askApi">생성</button>
+          <span class="chip-hint" style="margin:0" id="costGuess"></span>
         </div>
         <div class="chip-hint">
           키는 이 브라우저에만 저장되고 저장소에 올라가지 않습니다. 앤트로픽으로만 보내집니다.
@@ -407,7 +441,16 @@
 
 <script>
 const KEY = "seoul-radar:write";
-const F = ["fPaste","fName","fArea","fStation","fNear","fType","fVisit","fMenu","fTrait","fHours","fPark","fInsta","fPhotos","fMemo"];
+const F = ["fPaste","fName","fArea","fStation","fNear","fType","fVisit","fMenu","fTrait",
+           "fHours","fPark","fInsta","fPhotos",
+           "fTaste","fMood","fSeat","fWait","fPrice","fWho","fMemo"];
+
+// 채운 칸만 지시문에 넣는다. 비운 칸은 아예 언급하지 않아야 지어내지 않는다.
+const NOTE_FIELDS = [
+  ["taste", "맛"], ["mood", "분위기·인테리어"], ["seat", "좌석·자리"],
+  ["wait", "웨이팅·붐빔·주차"], ["price", "가격"], ["who", "누구에게 맞나·재방문"],
+  ["memo", "그 밖에"],
+];
 const $ = id => document.getElementById(id);
 
 function load() {
@@ -513,11 +556,13 @@ function buildPrompt(v, cands) {
   '~했다', '~더라', '~인 셈이다', 명사로 끊기, 짧은 문장과 긴 문장을 섞어라.
 - 한 문단은 서너 문장. 문단마다 하나의 이야기만 담아라.
 
-[분량]
-- 본문 2,500자를 목표로 한다. 다만 **채우려고 없는 말을 지어내지 마라.**
-- 내가 준 메모가 얇으면 억지로 늘리지 말고, 쓸 수 있는 만큼만 쓴 뒤
-  맨 끝에 "[더 있으면 좋을 것]" 이라고 적고 무엇을 더 알려주면 되는지 3~5개 물어라.
-  (예: 가격, 웨이팅 시간, 좌석 수, 화장실 위치, 재방문 의사)
+[분량 — 공백 빼고 2,600자]
+- 2,600자에 맞춰라. 조금 모자라거나 넘치는 것은 괜찮지만 크게 벗어나지 마라.
+- 다만 **채우려고 없는 말을 지어내지 마라.** 아래 재료가 모자라 2,600자가
+  안 되면 억지로 늘리지 말고, 쓸 수 있는 만큼만 쓴 뒤 맨 끝에
+  "[더 있으면 좋을 것]"으로 무엇을 더 알려주면 되는지 3~5개 물어라.
+- 길이는 같은 말을 되풀이해 늘리는 것이 아니라, 내가 준 재료를 하나하나
+  풀어 쓰고 그때 느낀 것을 붙여 채운다.
 
 [사진]
 - 사진은 ${photos}장이다. 하지만 **사진마다 설명을 붙이지 마라.**
@@ -538,7 +583,8 @@ ${cands.map((c, i) => `${i + 1}. ${c.title}  (검색어 ${c.n}개)`).join("\n")}
 - 특징: ${v.traits.join(", ") || "(입력 없음)"}
 
 [내가 보고 느낀 것 — 이걸 본문의 뼈대로 삼아라]
-${v.memo || "(메모 없음)"}
+${NOTE_FIELDS.map(([k, label]) => (v[k] ? `· ${label}: ${v[k]}` : ""))
+  .filter(Boolean).join("\n") || "(아직 아무것도 안 적었다. 그러면 글을 억지로 쓰지 말고, 무엇을 알려주면 되는지만 물어라.)"}
 
 [하지 말 것]
 - 내가 쓰지 않은 맛·가격·메뉴를 지어내지 마라. 모르는 것은 [확인 필요]로 표시해라.
@@ -724,6 +770,7 @@ function render() {
 
   renderCompetition(v);
   $("prompt").textContent = buildPrompt(v, cands);
+  refreshCostGuess();
 
   const tags = buildTags(v);
   $("tags").textContent = tags.map(x => "#" + x).join(" ");
@@ -971,6 +1018,63 @@ $("apiKey").addEventListener("change", () => {
 });
 $("apiModel").addEventListener("change", () => {
   try { localStorage.setItem(API_MODEL_STORE, $("apiModel").value); } catch (e) {}
+  refreshCostGuess();
+});
+$("useStyle").addEventListener("change", refreshCostGuess);
+
+/* 사진은 앤트로픽으로 보낼 때만 쓰이고 어디에도 저장하지 않는다.
+   원본 그대로 보내면 무거우므로 긴 변 1200픽셀로 줄여 보낸다.
+   그래도 분위기를 알아보는 데는 충분하다. */
+const MAX_PICS = 5;
+const PIC_SIDE = 1200;
+let PICS = [];
+
+function shrink(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, PIC_SIDE / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      const data = canvas.toDataURL("image/jpeg", 0.8);
+      resolve({ name: file.name, data: data.split(",")[1] });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("읽지 못함")); };
+    img.src = url;
+  });
+}
+
+$("fPics").addEventListener("change", async e => {
+  const files = [...e.target.files].slice(0, MAX_PICS);
+  const box = $("picList");
+  box.innerHTML = "";
+  PICS = [];
+  for (const file of files) {
+    try {
+      const pic = await shrink(file);
+      PICS.push(pic);
+      const tag = document.createElement("span");
+      tag.className = "chip";
+      tag.textContent = pic.name.slice(0, 22);
+      box.append(tag);
+    } catch (err) {
+      const tag = document.createElement("span");
+      tag.className = "chip cold";
+      tag.textContent = `${file.name.slice(0, 18)} — 읽지 못함`;
+      box.append(tag);
+    }
+  }
+  if (e.target.files.length > MAX_PICS) {
+    const tag = document.createElement("span");
+    tag.className = "chip cold";
+    tag.textContent = `앞 ${MAX_PICS}장만 씁니다`;
+    box.append(tag);
+  }
+  refreshCostGuess();
 });
 
 function styleBlock() {
@@ -978,6 +1082,77 @@ function styleBlock() {
   return "\n\n[내가 전에 쓴 글 — 말투와 흐름을 이대로 따라라]\n"
     + STYLE.samples.map((s, i) =>
         `--- 예시 ${i + 1} · ${s.title} ---\n${s.body}`).join("\n\n");
+}
+
+/* 요금 — 1백만 토큰당 달러. 2026-09 기준.
+   앤트로픽이 값을 바꾸면 여기만 고치면 된다. */
+const PRICE = {
+  "claude-sonnet-5":  { in: 2,  out: 10 },
+  "claude-opus-5":    { in: 5,  out: 25 },
+  "claude-haiku-4-5": { in: 1,  out: 5 },
+};
+const WON = 1400;              // 환율은 어림이다
+const PIC_TOKENS = 1600;       // 긴 변 1200픽셀 사진 한 장 어림
+const TARGET_CHARS = 2600;
+
+/* 처음에는 한국어 어림값으로 잡고, 한 번 돌릴 때마다 실제로 쓴 토큰을
+   기록해 다음 예상에 반영한다. 돌릴수록 값이 맞아 간다. */
+const RUNS_STORE = "seoul-radar:apiRuns";
+const KEEP_RUNS = 12;
+const DEFAULT_RATIO = 1.1;
+
+function loadRuns() {
+  try { return JSON.parse(localStorage.getItem(RUNS_STORE) || "[]"); }
+  catch (e) { return []; }
+}
+function saveRun(run) {
+  const runs = loadRuns();
+  runs.push(run);
+  try { localStorage.setItem(RUNS_STORE, JSON.stringify(runs.slice(-KEEP_RUNS))); }
+  catch (e) {}
+}
+
+/** 지난 기록에서 '글자당 토큰'을 뽑는다. 기록이 없으면 어림값을 쓴다. */
+function ratios() {
+  const runs = loadRuns().filter(r => r.chars > 0 && r.outChars > 0);
+  if (!runs.length) return { inR: DEFAULT_RATIO, outR: DEFAULT_RATIO, n: 0 };
+  const mean = list => list.reduce((a, b) => a + b, 0) / list.length;
+  return {
+    inR: mean(runs.map(r => Math.max(0, r.inTok - r.pics * PIC_TOKENS) / r.chars)),
+    outR: mean(runs.map(r => r.outTok / r.outChars)),
+    n: runs.length,
+  };
+}
+
+function won(dollars) {
+  const w = dollars * WON;
+  return w < 10 ? w.toFixed(1) : Math.round(w).toLocaleString();
+}
+
+function guessCost() {
+  const price = PRICE[$("apiModel").value];
+  if (!price) return null;
+  const { inR, outR, n } = ratios();
+  const chars = ($("prompt").textContent || "").length + styleBlock().length;
+  const inTokens = chars * inR + PICS.length * PIC_TOKENS;
+  const outTokens = TARGET_CHARS * outR;
+  return { dollars: (inTokens * price.in + outTokens * price.out) / 1e6, n };
+}
+
+function spentSoFar() {
+  return loadRuns().reduce((sum, r) => sum + (r.cost || 0), 0);
+}
+
+function refreshCostGuess() {
+  const guess = guessCost();
+  if (!guess) { $("costGuess").textContent = ""; return; }
+  const { dollars, n } = guess;
+  const pics = PICS.length ? ` · 사진 ${PICS.length}장 포함` : "";
+  const basis = n ? `지난 ${n}번 기준` : "첫 예상이라 어림";
+  const spent = spentSoFar();
+  const total = spent > 0 ? ` · 지금까지 쓴 돈 ${won(spent)}원` : "";
+  $("costGuess").textContent = `${basis}${pics} · 1분쯤 걸립니다${total}`;
+  $("askApi").textContent = `생성 (약 ${won(dollars)}원)`;
 }
 
 async function makeDraft() {
@@ -1011,7 +1186,25 @@ async function makeDraft() {
         model: $("apiModel").value,
         max_tokens: 8000,
         stream: true,
-        messages: [{ role: "user", content: prompt + styleBlock() }],
+        messages: [{
+          role: "user",
+          content: [
+            ...PICS.map(p => ({
+              type: "image",
+              source: { type: "base64", media_type: "image/jpeg", data: p.data },
+            })),
+            {
+              type: "text",
+              text: prompt
+                + (PICS.length
+                    ? `\n\n[사진 ${PICS.length}장을 함께 보냈다]\n`
+                      + "이 사진에 보이는 것만 분위기 묘사에 써라. "
+                      + "안 보이는 것을 짐작해 쓰지 마라. 메뉴 이름과 가격은 내가 적은 것만 쓴다."
+                    : "")
+                + styleBlock(),
+            },
+          ],
+        }],
       }),
     });
 
@@ -1024,7 +1217,7 @@ async function makeDraft() {
     // 줄 단위로 흘러오는 응답을 이어 붙인다. 긴 글이라 기다리는 동안 보여 준다.
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = "", out = "";
+    let buffer = "", out = "", usedIn = 0, usedOut = 0;
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -1039,12 +1232,43 @@ async function makeDraft() {
             out += evt.delta.text;
             $("draft").textContent = out;
           }
+          // 실제 쓴 토큰이 응답에 같이 온다. 어림값 대신 이걸로 값을 매긴다.
+          if (evt.type === "message_start" && evt.message && evt.message.usage) {
+            usedIn = evt.message.usage.input_tokens || 0;
+          }
+          if (evt.type === "message_delta" && evt.usage) {
+            usedOut = evt.usage.output_tokens || usedOut;
+          }
         } catch (e) {}
       }
     }
+
     const chars = out.replace(/\s/g, "").length;
-    setStatus(`다 됐습니다 — 공백 빼고 ${chars.toLocaleString()}자`
-      + (chars < 2500 ? " · 2,500자에 못 미칩니다" : ""));
+    const price = PRICE[$("apiModel").value];
+    const realCost = price
+      ? (usedIn * price.in + usedOut * price.out) / 1e6 : null;
+
+    // 이번에 실제로 쓴 값을 남겨 다음 예상을 맞춰 간다.
+    if (usedIn && usedOut && chars) {
+      saveRun({
+        at: new Date().toISOString().slice(0, 10),
+        model: $("apiModel").value,
+        chars: ($("prompt").textContent || "").length + styleBlock().length,
+        pics: PICS.length,
+        inTok: usedIn,
+        outTok: usedOut,
+        outChars: out.length,
+        cost: realCost || 0,
+      });
+    }
+
+    const gap = chars - TARGET_CHARS;
+    const lengthNote = Math.abs(gap) <= 300 ? "목표에 맞음"
+      : gap < 0 ? "짧습니다 — 위 칸을 더 채우면 길어집니다"
+      : "목표보다 깁니다";
+    setStatus(`다 됐습니다 — 공백 빼고 ${chars.toLocaleString()}자 · ${lengthNote}`
+      + (realCost != null ? ` · 실제 ${won(realCost)}원` : ""));
+    refreshCostGuess();
     $("copyDraft").hidden = false;
   } catch (err) {
     setStatus(`부르지 못했습니다 — ${err.message}`);
