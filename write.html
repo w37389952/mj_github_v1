@@ -332,11 +332,10 @@
       <pre class="prompt" id="prompt"></pre>
       <div class="row">
         <button type="button" class="btn ghost" id="copyPrompt">지시문 복사</button>
-        <button type="button" class="btn" id="askApi">여기서 바로 초안 만들기</button>
       </div>
 
       <details class="fold" id="apiFold">
-        <summary>초안 만들기 설정 (앤트로픽 API)</summary>
+        <summary>여기서 바로 초안 만들기 (앤트로픽 API)</summary>
         <div class="grid" style="margin-top:10px">
           <div class="field">
             <label for="apiKey">API 키 <span class="hint">(이 브라우저에만 저장됩니다)</span></label>
@@ -353,9 +352,13 @@
           <div class="field wide">
             <label style="display:flex;align-items:center;gap:7px;font-weight:600">
               <input type="checkbox" id="useStyle" checked style="width:auto">
-              내 글 <span id="styleCount">몇</span>편을 예시로 함께 보내 말투를 맞춥니다
+              <span id="styleCount">내 글을 예시로 보내 말투 맞추기</span>
             </label>
           </div>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" id="askApi">초안 만들기</button>
+          <span class="chip-hint" style="margin:0">한 편에 1분쯤 걸립니다</span>
         </div>
         <div class="chip-hint">
           키는 이 브라우저에만 저장되고 저장소에 올라가지 않습니다. 앤트로픽으로만 보내집니다.
@@ -927,10 +930,20 @@ fetch("data/style.json")
   .then(j => {
     STYLE = j;
     const n = (j && j.samples || []).length;
-    $("styleCount").textContent = n || "0";
-    if (!n) { $("useStyle").checked = false; $("useStyle").disabled = true; }
+    if (n) {
+      $("styleCount").textContent = `내 글 ${n}편을 예시로 보내 말투 맞추기`;
+    } else {
+      $("styleCount").textContent =
+        "말투 예시 없음 — 오늘 밤 수집이 돌면 내 글이 담깁니다";
+      $("useStyle").checked = false;
+      $("useStyle").disabled = true;
+    }
   })
-  .catch(() => { $("styleCount").textContent = "0"; });
+  .catch(() => {
+    $("styleCount").textContent = "말투 예시를 불러오지 못했습니다";
+    $("useStyle").checked = false;
+    $("useStyle").disabled = true;
+  });
 
 try {
   const savedKey = localStorage.getItem(API_KEY_STORE);
