@@ -351,23 +351,14 @@
           </div>
           <div class="field wide">
             <label style="display:flex;align-items:center;gap:7px;font-weight:600">
-              <input type="checkbox" id="useStyle" style="width:auto">
-              내 글을 예시로 함께 보내 말투를 맞춥니다
-              <span class="hint" id="styleCount"></span>
+              <input type="checkbox" id="useStyle" checked style="width:auto">
+              내 글 <span id="styleCount">몇</span>편을 예시로 함께 보내 말투를 맞춥니다
             </label>
-          </div>
-          <div class="field wide">
-            <label for="styleText">
-              말투 예시 <span class="hint">(내 글 한두 편을 붙여넣으세요 · 이 브라우저에만 저장)</span>
-            </label>
-            <textarea id="styleText" style="min-height:90px"
-              placeholder="네이버 블로그에서 내 글 본문을 복사해 붙여넣으세요.
-한 편이면 충분하고, 두 편이면 더 정확해집니다."></textarea>
           </div>
         </div>
         <div class="chip-hint">
-          키와 말투 예시는 <b>이 브라우저에만</b> 저장됩니다. 저장소에 올라가지 않고,
-          앤트로픽으로 보낼 때만 쓰입니다. <b>키는 누구에게도, 저에게도 알려주지 마세요.</b>
+          키는 이 브라우저에만 저장되고 저장소에 올라가지 않습니다. 앤트로픽으로만 보내집니다.
+          <b>키는 누구에게도, 저에게도 알려주지 마세요.</b>
           요금은 앤트로픽에 직접 청구됩니다.
         </div>
       </details>
@@ -929,28 +920,16 @@ $("parse").addEventListener("click", () => {
 const API_KEY_STORE = "seoul-radar:anthropicKey";
 const API_MODEL_STORE = "seoul-radar:anthropicModel";
 
-/* 말투 예시는 저장소에 두지 않는다. 저장소가 공개라 누구나 내려받을 수 있고,
-   그러면 남이 흉내 내기 좋은 꼴로 내 글을 놓아 두는 셈이 된다.
-   그래서 이 브라우저에만 둔다. */
-const STYLE_STORE = "seoul-radar:styleSample";
-
-function refreshStyleCount() {
-  const n = $("styleText").value.replace(/\s/g, "").length;
-  $("styleCount").textContent = n ? `${n.toLocaleString()}자 넣음` : "아직 비어 있음";
-  $("useStyle").disabled = n < 200;
-  if (n < 200) $("useStyle").checked = false;
-}
-
-try {
-  const savedStyle = localStorage.getItem(STYLE_STORE);
-  if (savedStyle) $("styleText").value = savedStyle;
-} catch (e) {}
-refreshStyleCount();
-
-$("styleText").addEventListener("input", refreshStyleCount);
-$("styleText").addEventListener("change", () => {
-  try { localStorage.setItem(STYLE_STORE, $("styleText").value); } catch (e) {}
-});
+let STYLE = null;
+fetch("data/style.json")
+  .then(r => (r.ok ? r.json() : null))
+  .then(j => {
+    STYLE = j;
+    const n = (j && j.samples || []).length;
+    $("styleCount").textContent = n || "0";
+    if (!n) { $("useStyle").checked = false; $("useStyle").disabled = true; }
+  })
+  .catch(() => { $("styleCount").textContent = "0"; });
 
 try {
   const savedKey = localStorage.getItem(API_KEY_STORE);
@@ -967,9 +946,10 @@ $("apiModel").addEventListener("change", () => {
 });
 
 function styleBlock() {
-  const text = $("styleText").value.trim();
-  if (!$("useStyle").checked || text.length < 200) return "";
-  return "\n\n[내가 전에 쓴 글 — 말투와 흐름을 이대로 따라라]\n" + text;
+  if (!$("useStyle").checked || !STYLE || !STYLE.samples) return "";
+  return "\n\n[내가 전에 쓴 글 — 말투와 흐름을 이대로 따라라]\n"
+    + STYLE.samples.map((s, i) =>
+        `--- 예시 ${i + 1} · ${s.title} ---\n${s.body}`).join("\n\n");
 }
 
 async function makeDraft() {
