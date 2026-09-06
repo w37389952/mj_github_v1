@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>블로그 글쓰기 — 서울 신상 레이더</title>
 <style>
   :root {
@@ -329,7 +330,47 @@
     <section>
       <h2>글 지시문 <span class="sub">복사해서 클로드 대화창에 붙이고 사진을 함께 올리세요</span></h2>
       <pre class="prompt" id="prompt"></pre>
-      <div class="row"><button type="button" class="btn ghost" id="copyPrompt">지시문 복사</button></div>
+      <div class="row">
+        <button type="button" class="btn ghost" id="copyPrompt">지시문 복사</button>
+        <button type="button" class="btn" id="askApi">여기서 바로 초안 만들기</button>
+      </div>
+
+      <details class="fold" id="apiFold">
+        <summary>초안 만들기 설정 (앤트로픽 API)</summary>
+        <div class="grid" style="margin-top:10px">
+          <div class="field">
+            <label for="apiKey">API 키 <span class="hint">(이 브라우저에만 저장됩니다)</span></label>
+            <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="apiModel">모델</label>
+            <select id="apiModel">
+              <option value="claude-sonnet-5">Sonnet 5 — 글 한 편 약 55원 (권장)</option>
+              <option value="claude-opus-5">Opus 5 — 약 140원</option>
+              <option value="claude-haiku-4-5">Haiku 4.5 — 약 27원</option>
+            </select>
+          </div>
+          <div class="field wide">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600">
+              <input type="checkbox" id="useStyle" checked style="width:auto">
+              내 글 <span id="styleCount">몇</span>편을 예시로 함께 보내 말투를 맞춥니다
+            </label>
+          </div>
+        </div>
+        <div class="chip-hint">
+          키는 이 브라우저에만 저장되고 저장소에 올라가지 않습니다. 앤트로픽으로만 보내집니다.
+          <b>키는 누구에게도, 저에게도 알려주지 마세요.</b>
+          요금은 앤트로픽에 직접 청구됩니다.
+        </div>
+      </details>
+
+      <div id="draftBox" hidden>
+        <div class="row" style="margin-top:14px">
+          <span id="draftStatus" style="font-size:13px;color:var(--ink-soft)"></span>
+          <button type="button" class="btn ghost" id="copyDraft" hidden>초안 복사</button>
+        </div>
+        <pre class="prompt" id="draft"></pre>
+      </div>
     </section>
 
     <section>
@@ -872,6 +913,123 @@ $("parse").addEventListener("click", () => {
   });
   if (any) { save(); history.replaceState(null, "", location.pathname); }
 })();
+
+/* ── 앤트로픽 API로 초안 만들기 ────────────────────────────────
+   키는 이 브라우저에만 둔다. 저장소에도, 나에게도 가지 않는다.
+   브라우저에서 직접 부르려면 anthropic-dangerous-direct-browser-access
+   헤더가 있어야 한다. 없으면 CORS로 막힌다. */
+const API_KEY_STORE = "seoul-radar:anthropicKey";
+const API_MODEL_STORE = "seoul-radar:anthropicModel";
+
+let STYLE = null;
+fetch("data/style.json")
+  .then(r => (r.ok ? r.json() : null))
+  .then(j => {
+    STYLE = j;
+    const n = (j && j.samples || []).length;
+    $("styleCount").textContent = n || "0";
+    if (!n) { $("useStyle").checked = false; $("useStyle").disabled = true; }
+  })
+  .catch(() => { $("styleCount").textContent = "0"; });
+
+try {
+  const savedKey = localStorage.getItem(API_KEY_STORE);
+  if (savedKey) $("apiKey").value = savedKey;
+  const savedModel = localStorage.getItem(API_MODEL_STORE);
+  if (savedModel) $("apiModel").value = savedModel;
+} catch (e) {}
+
+$("apiKey").addEventListener("change", () => {
+  try { localStorage.setItem(API_KEY_STORE, $("apiKey").value.trim()); } catch (e) {}
+});
+$("apiModel").addEventListener("change", () => {
+  try { localStorage.setItem(API_MODEL_STORE, $("apiModel").value); } catch (e) {}
+});
+
+function styleBlock() {
+  if (!$("useStyle").checked || !STYLE || !STYLE.samples) return "";
+  return "\n\n[내가 전에 쓴 글 — 말투와 흐름을 이대로 따라라]\n"
+    + STYLE.samples.map((s, i) =>
+        `--- 예시 ${i + 1} · ${s.title} ---\n${s.body}`).join("\n\n");
+}
+
+async function makeDraft() {
+  const key = $("apiKey").value.trim();
+  if (!key) {
+    $("apiFold").open = true;
+    $("apiKey").focus();
+    setStatus("먼저 API 키를 넣어주세요.");
+    return;
+  }
+  const prompt = $("prompt").textContent;
+  if (!prompt) { setStatus("먼저 위에서 ‘만들기’를 눌러주세요."); return; }
+
+  const btn = $("askApi");
+  btn.disabled = true;
+  $("draftBox").hidden = false;
+  $("copyDraft").hidden = true;
+  $("draft").textContent = "";
+  setStatus("만드는 중… 1분쯤 걸립니다.");
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: $("apiModel").value,
+        max_tokens: 8000,
+        stream: true,
+        messages: [{ role: "user", content: prompt + styleBlock() }],
+      }),
+    });
+
+    if (!resp.ok) {
+      const detail = await resp.text();
+      setStatus(`실패 (HTTP ${resp.status}) — ${detail.slice(0, 200)}`);
+      return;
+    }
+
+    // 줄 단위로 흘러오는 응답을 이어 붙인다. 긴 글이라 기다리는 동안 보여 준다.
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "", out = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        try {
+          const evt = JSON.parse(line.slice(5).trim());
+          if (evt.type === "content_block_delta" && evt.delta && evt.delta.text) {
+            out += evt.delta.text;
+            $("draft").textContent = out;
+          }
+        } catch (e) {}
+      }
+    }
+    const chars = out.replace(/\s/g, "").length;
+    setStatus(`다 됐습니다 — 공백 빼고 ${chars.toLocaleString()}자`
+      + (chars < 2500 ? " · 2,500자에 못 미칩니다" : ""));
+    $("copyDraft").hidden = false;
+  } catch (err) {
+    setStatus(`부르지 못했습니다 — ${err.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function setStatus(text) { $("draftStatus").textContent = text; }
+
+$("askApi").addEventListener("click", makeDraft);
+$("copyDraft").addEventListener("click", e => copy($("draft").textContent, e.target, "초안 복사"));
 
 $("go").addEventListener("click", render);
 $("clear").addEventListener("click", () => {

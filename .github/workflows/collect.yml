@@ -67,6 +67,12 @@ jobs:
           fi
           python scripts/collect_keywords.py
 
+      - name: 말투 예시 담기
+        env:
+          MY_BLOG_IDS: ${{ vars.MY_BLOG_IDS || 'haranalice' }}
+          STYLE_SAMPLES: ${{ vars.STYLE_SAMPLES || '1' }}
+        run: python scripts/build_style_samples.py || echo "말투 예시를 건너뜁니다."
+
       - name: 가게 이름 목록 만들기
         run: python scripts/build_shop_index.py || echo "목록 만들기를 건너뜁니다."
 
