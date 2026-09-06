@@ -253,6 +253,14 @@
     <div class="chip-hint">누르면 아래 ‘특징’ 칸에 담깁니다.</div>
   </section>
 
+  <section id="chanceBox" hidden>
+    <h2>노려볼 만한 검색어 <span class="sub">찾는 사람은 있는데 쓴 글이 적은 자리</span></h2>
+    <div id="chanceList"></div>
+    <div class="chip-hint">
+      글 수가 적을수록 1위를 먹기 쉽습니다. 이 동네로 글을 쓸 계획이면 제목에 그대로 넣으세요.
+    </div>
+  </section>
+
   <section>
     <h2>가게 정보 <span class="sub">역명과 동네를 꼭 채우세요 — 제목 검색어가 여기서 나옵니다</span></h2>
     <div class="grid">
@@ -627,6 +635,7 @@ fetch("data/keywords.json")
   .then(j => {
     KW = j;
     renderThemes();
+    renderChances();
     if ($("out").classList.contains("show")) renderCompetition(readForm());
   })
   .catch(() => {});
@@ -662,6 +671,41 @@ function themeChip(t, kind) {
     btn.style.opacity = "1";
   });
   return btn;
+}
+
+/* 수집 로그에만 있던 '노려볼 만한 검색어'를 화면으로 옮긴다.
+   로그를 보러 GitHub에 들어갈 이유가 없어야 한다. */
+const CHANCE_MAX_DOCS = 20000;
+const CHANCE_MIN_DEMAND = 1.0;
+
+function renderChances() {
+  if (!KW || !KW.counts || !KW.demand) return;
+  const rows = [];
+  for (const [query, want] of Object.entries(KW.demand)) {
+    const docs = KW.counts[query];
+    if (docs == null || docs > CHANCE_MAX_DOCS || want < CHANCE_MIN_DEMAND) continue;
+    rows.push({ query, docs, want, hot: (KW.hot || {})[query],
+                score: want / Math.max(docs, 1) * 1000 });
+  }
+  if (!rows.length) return;
+  rows.sort((a, b) => b.score - a.score);
+
+  const box = $("chanceList");
+  box.innerHTML = "";
+  rows.slice(0, 10).forEach(r => {
+    const el = document.createElement("div");
+    el.className = "kw";
+    const left = document.createElement("div");
+    const bits = [`글 ${r.docs.toLocaleString()}건`, `관심도 ${r.want}`];
+    if (r.hot != null && r.hot >= 1.15) bits.push(`🔥 지난달 ${r.hot}배`);
+    left.innerHTML = `<div class="q">${r.query}</div><div class="n">${bits.join(" · ")}</div>`;
+    const badge = document.createElement("span");
+    badge.className = "grade" + (r.docs < 3000 ? " easy" : "");
+    badge.textContent = r.docs < 3000 ? "쉬움" : "보통";
+    el.append(left, badge);
+    box.append(el);
+  });
+  $("chanceBox").hidden = false;
 }
 
 function renderThemes() {
