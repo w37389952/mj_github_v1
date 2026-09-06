@@ -451,11 +451,12 @@
     <section>
       <h2>발행 전 점검 <span class="sub">2026-09-04 상위 노출 글 36편을 분석해 뽑은 항목</span></h2>
       <ul class="check">
-        <li><span class="mark">☐</span><span><b>본문 2,500자 이상</b><span class="why">상위 1위 글 중앙값 2,600자. 최근 글은 1,982자였습니다.</span></span></li>
+        <li><span class="mark">☐</span><span><b>본문 2,600자 안팎</b><span class="why">상위 1위 글 중앙값 2,600자. 최근 글은 1,982자였습니다.</span></span></li>
         <li><span class="mark">☐</span><span><b>제목에 검색어 4개 이상</b><span class="why">역명 · 동네 · 업종 · 메뉴 · 의도어를 섞습니다.</span></span></li>
         <li><span class="mark">☐</span><span><b>스티커 1~2개</b><span class="why">상위 69%가 사용. 근거는 약한 편이니 부담 없이.</span></span></li>
         <li><span class="mark">☐</span><span><b>이전 글 링크카드 1개</b><span class="why">상위 39%가 사용. 같은 동네 글로 연결하면 좋습니다.</span></span></li>
         <li><span class="mark">☐</span><span><b>지도 첨부</b><span class="why">상위 97%. 이미 늘 하고 있는 항목입니다.</span></span></li>
+        <li><span class="mark">☐</span><span><b>붙여넣기는 Ctrl+Shift+V</b><span class="why">그냥 붙이면 눈에 안 보이는 서식이 함께 들어갑니다.</span></span></li>
       </ul>
       <div class="note">
         상단 <b>&lt;요약&gt; ✔</b> 블록은 상위 1위 글 중 8%만 씁니다. 다만 조회수 하락은
@@ -623,6 +624,13 @@ ${cands.map((c, i) => `${i + 1}. ${c.title}  (검색어 ${c.n}개)`).join("\n")}
 [내가 보고 느낀 것 — 이걸 본문의 뼈대로 삼아라]
 ${NOTE_FIELDS.map(([k, label]) => (v[k] ? `· ${label}: ${v[k]}` : ""))
   .filter(Boolean).join("\n") || "(아직 아무것도 안 적었다. 그러면 글을 억지로 쓰지 말고, 무엇을 알려주면 되는지만 물어라.)"}
+
+[반드시 지킬 형식 — 네이버 블로그에 그대로 붙여넣을 글이다]
+- **굵게**, ## 제목, --- 구분선, - 목록표 같은 마크다운 기호를 절대 쓰지 마라.
+  네이버 에디터에서는 그 기호가 그대로 글자로 보인다.
+- 강조가 필요하면 줄을 바꾸거나 낱말을 골라 쓰는 것으로 대신해라.
+- 목록이 필요하면 앞에 ✔ 나 · 을 붙인 줄로 쓴다.
+- 결과에 설명이나 머리말을 붙이지 마라. 제목 한 줄과 본문만 내놓아라.
 
 [하지 말 것]
 - 내가 쓰지 않은 맛·가격·메뉴를 지어내지 마라. 모르는 것은 [확인 필요]로 표시해라.
