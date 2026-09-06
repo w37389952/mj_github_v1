@@ -891,6 +891,89 @@ function areaFromAddress(address) {
   return dong ? dong[1] : "";
 }
 
+/* 동네마다 가까운 역과 이웃 동네.
+   인허가 자료에 좌표가 없어 거리로 계산할 수가 없다. 그래서 네가 자주 쓰는
+   동네만 표로 적어 둔다. 없는 동네는 빈칸으로 두고 직접 넣으면 된다.
+   [역, 인접 지역] */
+const AREA_MAP = {
+  "후암동": ["숙대입구역", "남영동"],
+  "남영동": ["남영역", "후암동"],
+  "해방촌": ["녹사평역", "이태원"],
+  "이태원동": ["이태원역", "한남동"],
+  "한남동": ["한강진역", "이태원"],
+  "용산동": ["삼각지역", "이태원"],
+  "효창동": ["효창공원앞역", "용문동"],
+  "청파동": ["숙대입구역", "남영동"],
+
+  "연남동": ["홍대입구역", "연희동"],
+  "연희동": ["홍대입구역", "연남동"],
+  "동교동": ["홍대입구역", "연남동"],
+  "서교동": ["홍대입구역", "상수동"],
+  "상수동": ["상수역", "합정동"],
+  "합정동": ["합정역", "망원동"],
+  "망원동": ["망원역", "합정동"],
+  "성산동": ["마포구청역", "망원동"],
+  "공덕동": ["공덕역", "아현동"],
+  "아현동": ["애오개역", "공덕동"],
+
+  "성수동": ["성수역", "서울숲"],
+  "성수동1가": ["성수역", "서울숲"],
+  "성수동2가": ["뚝섬역", "성수동"],
+  "송정동": ["뚝섬역", "성수동"],
+
+  "익선동": ["종로3가역", "낙원동"],
+  "삼청동": ["안국역", "북촌"],
+  "가회동": ["안국역", "삼청동"],
+  "체부동": ["경복궁역", "서촌"],
+  "통인동": ["경복궁역", "서촌"],
+  "누상동": ["경복궁역", "서촌"],
+  "명동": ["명동역", "을지로"],
+  "충무로": ["충무로역", "명동"],
+  "신당동": ["신당역", "동대문"],
+  "황학동": ["신당역", "동대문"],
+
+  "봉천동": ["서울대입구역", "낙성대"],
+  "신림동": ["신림역", "봉천동"],
+  "구산동": ["구산역", "응암동"],
+  "응암동": ["응암역", "구산동"],
+  "대조동": ["연신내역", "불광동"],
+  "불광동": ["불광역", "연신내"],
+  "갈현동": ["연신내역", "불광동"],
+
+  "가산동": ["가산디지털단지역", "독산동"],
+  "독산동": ["독산역", "가산동"],
+  "문래동": ["문래역", "영등포"],
+  "영등포동": ["영등포역", "문래동"],
+  "당산동": ["당산역", "영등포"],
+  "여의도동": ["여의도역", "노량진"],
+  "화곡동": ["화곡역", "까치산"],
+  "등촌동": ["등촌역", "화곡동"],
+
+  "역삼동": ["역삼역", "선릉"],
+  "논현동": ["논현역", "신사동"],
+  "신사동": ["신사역", "압구정"],
+  "압구정동": ["압구정로데오역", "청담동"],
+  "청담동": ["청담역", "압구정"],
+  "삼성동": ["삼성역", "선릉"],
+  "잠실동": ["잠실역", "송파"],
+  "방이동": ["방이역", "잠실"],
+  "성북동": ["한성대입구역", "혜화"],
+  "삼선동": ["한성대입구역", "성북동"],
+  "제기동": ["제기동역", "청량리"],
+  "창천동": ["신촌역", "이대"],
+  "대현동": ["이대역", "신촌"],
+};
+
+function fillAreaExtras(area) {
+  const found = AREA_MAP[area];
+  if (!found) return false;
+  const [station, near] = found;
+  let touched = false;
+  if (station && !$("fStation").value.trim()) { $("fStation").value = station; touched = true; }
+  if (near && !$("fNear").value.trim()) { $("fNear").value = near; touched = true; }
+  return touched;
+}
+
 const BIZ_TO_TYPE = {
   "커피숍": "카페", "까페": "카페", "과자점": "베이커리", "제과점": "베이커리",
   "경양식": "카페", "기타": "카페", "한식": "맛집", "중국식": "맛집",
@@ -907,9 +990,11 @@ function fillFromShop(row) {
   if (guess && [...$("fType").options].some(o => o.value === guess)) {
     $("fType").value = guess;
   }
+  const filledExtras = fillAreaExtras(area);
   $("ac").hidden = true;
   save();
-  $("parseMsg").textContent = `레이더에서 찾았습니다 — ${address}`;
+  $("parseMsg").textContent = `레이더에서 찾았습니다 — ${address}`
+    + (filledExtras ? " · 가까운 역과 인접 지역도 채웠습니다" : "");
 }
 
 function renderAc(hits) {
@@ -933,6 +1018,11 @@ $("fName").addEventListener("input", () => {
 });
 $("fName").addEventListener("blur", () => setTimeout(() => { $("ac").hidden = true; }, 120));
 
+// 동네를 손으로 넣거나 고쳤을 때도 역·인접 지역을 채워 준다.
+$("fArea").addEventListener("change", () => {
+  if (fillAreaExtras($("fArea").value.trim())) save();
+});
+
 $("parse").addEventListener("click", () => {
   const raw = ($("fPaste").value || "").trim();
   // 짧은 링크(naver.me)나 지도 주소는 가게 번호만 담고 있다. 이름도 주소도
@@ -952,6 +1042,7 @@ $("parse").addEventListener("click", () => {
   const filled = [];
   if (got.name && !$("fName").value) { $("fName").value = got.name; filled.push("가게 이름"); }
   if (got.area && !$("fArea").value) { $("fArea").value = got.area; filled.push("동네"); }
+  if (got.area && fillAreaExtras(got.area)) filled.push("가까운 역·인접 지역");
   if (got.type) {
     const opt = [...$("fType").options].find(o => o.value === got.type);
     if (opt) { $("fType").value = got.type; filled.push("업종"); }
