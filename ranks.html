@@ -33,13 +33,19 @@
   header h1 { font-size: 28px; margin-top: 4px; letter-spacing: -0.02em; }
   header .period { color: var(--ink-soft); margin-top: 6px; font-size: 15px; }
 
-  .tabs { display: flex; gap: 6px; margin-top: 22px; border-bottom: 1px solid var(--line); }
-  .tab {
-    font-size: 15px; font-weight: 600; color: var(--ink-soft); text-decoration: none;
-    padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  .crumb { margin-top: 20px; font-size: 13.5px; color: var(--ink-faint); }
+  .crumb a { color: var(--ink-soft); text-decoration: none; }
+  .crumb a:hover { color: var(--accent); }
+  .subtabs { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+  .subtab {
+    font-size: 13.5px; font-weight: 600; text-decoration: none;
+    color: var(--ink-soft); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px;
   }
-  .tab:hover { color: var(--ink); }
-  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .subtab:hover { color: var(--ink); }
+  .subtab[aria-selected="true"] {
+    color: var(--accent); border-color: var(--accent); background: var(--accent-soft);
+  }
 
   .note {
     margin-top: 18px; padding: 11px 14px; border-radius: 10px;
@@ -107,10 +113,11 @@
     <div class="period" id="period">불러오는 중…</div>
   </header>
 
-  <div class="tabs" role="tablist">
-    <a class="tab" href="index.html" role="tab" aria-selected="false">신상 검색</a>
-    <a class="tab" href="write.html" role="tab" aria-selected="false">글쓰기</a>
-    <span class="tab" role="tab" aria-selected="true">순위</span>
+  <div class="crumb"><a href="index.html">← 서울 신상 레이더</a> · 블로그</div>
+  <div class="subtabs" role="tablist">
+    <a class="subtab" href="index.html" role="tab" aria-selected="false">신상 검색</a>
+    <a class="subtab" href="write.html" role="tab" aria-selected="false">글쓰기</a>
+    <span class="subtab" role="tab" aria-selected="true">순위</span>
   </div>
 
   <div class="note">
