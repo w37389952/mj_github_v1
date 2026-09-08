@@ -1595,12 +1595,17 @@ async function runSummary(label, fn) {
 const VIEW_STORE = "dantok-view";
 let viewSaveTimer = null;
 
+// 탭마다 보던 것이 다르다. 요약은 날짜와 고른 요약, 자료함은 날짜와 갈래, 월간은 달,
+// 검색은 검색어다. 한 덩어리로 묶어두면 탭을 옮길 때마다 서로를 덮어써서 자리를 잃는다.
 function keepRoomState() {
   if (!S.roomId) return;
-  S.roomState[S.roomId] = {
-    view: S.view, date: S.date, topicId: S.topicId,
-    vaultKind: S.vaultKind, month: S.month, query: S.query,
-  };
+  const st = S.roomState[S.roomId] || (S.roomState[S.roomId] = {});
+  st.view = S.view;
+  if (S.view === "summary") st.summary = { date: S.date, topicId: S.topicId };
+  else if (S.view === "vault") st.vault = { date: S.date, kind: S.vaultKind };
+  else if (S.view === "month") st.month = S.month;
+  else st.search = S.query;
+
   S.lastRoom = S.roomId;
   // 화면을 그릴 때마다 저장하면 낭비라 잠시 모았다가 한 번에 적는다
   clearTimeout(viewSaveTimer);
@@ -1611,19 +1616,48 @@ function keepRoomState() {
   }, 400);
 }
 
+// 그 사이 대화를 다시 넣어 날짜나 요약 덩어리가 달라졌을 수 있다. 없는 것은 붙들지 않는다.
+function pruneState() {
+  const r = room();
+  if (!r) return;
+  if (S.date && !r.days.some(d => d.date === S.date)) { S.date = null; S.topicId = null; }
+  if (S.topicId) {
+    const d = r.days.find(x => x.date === S.date);
+    if (!d || !d.topics.some(t => t.id === S.topicId)) S.topicId = null;
+  }
+  if (S.month && !monthsOf(r).some(([m]) => m === S.month)) S.month = null;
+  // 요약은 날짜가 있어야 볼 것이 있다. 처음 열면 가장 최근 날로 시작한다.
+  if (S.view === "summary" && !S.date && r.days.length) S.date = r.days[0].date;
+}
+
+function applyView(view) {
+  const st = S.roomState[S.roomId] || {};
+  S.view = view;
+  if (view === "summary") {
+    S.date = (st.summary || {}).date || null;
+    S.topicId = (st.summary || {}).topicId || null;
+  } else if (view === "vault") {
+    S.date = (st.vault || {}).date || null;       // 비어 있으면 '전체 기간'
+    S.vaultKind = (st.vault || {}).kind || "all";
+  } else if (view === "month") {
+    S.month = st.month || null;
+  } else {
+    S.query = st.search || "";
+  }
+  pruneState();
+}
+
+// 탭을 옮길 때는 떠나는 탭의 자리를 먼저 적어 둔다.
+function goView(view) {
+  keepRoomState();
+  applyView(view);
+}
+
+// 방을 옮길 때도 마찬가지다. 적어 두는 것이 먼저이고, 그다음에 방을 바꾼다.
 function goRoom(id) {
   keepRoomState();
   S.roomId = id;
-  const r = S.rooms.find(x => x.id === id);
-  const v = S.roomState[id] || {};
-  S.view = v.view || "summary";
-  S.vaultKind = v.vaultKind || "all";
-  S.month = v.month || null;
-  S.query = v.query || "";
-  // 그 사이 대화를 다시 넣어 날짜가 달라졌을 수 있다. 없는 날짜를 붙들지 않는다.
-  S.date = r && v.date && r.days.some(d => d.date === v.date) ? v.date : null;
-  const day = S.date && r ? r.days.find(d => d.date === S.date) : null;
-  S.topicId = day && day.topics.some(t => t.id === v.topicId) ? v.topicId : null;
+  applyView((S.roomState[id] || {}).view || "summary");
 }
 
 /* ── 방 탭 ── */
@@ -2194,6 +2228,7 @@ function vaultCard(it, d) {
 
   const go = el("button", "btn sm", "대화에서 보기");
   go.onclick = () => {
+    keepRoomState();   // 자료함에서 보던 자리를 잃지 않는다
     S.view = "summary"; S.date = m.date; S.topicId = null;
     render();
     jumpTo(m.i, [m.i]);
@@ -2355,7 +2390,10 @@ function renderMonth(main) {
       h.innerHTML = `<span class="who">${esc(fmtDate(d.date))}</span>
         <span>전체 ${d.total.toLocaleString()}건</span><span class="spacer"></span>`;
       const go = el("button", "btn sm", "그 날 보기");
-      go.onclick = () => { S.view = "summary"; S.date = d.date; S.topicId = null; render(); };
+      go.onclick = () => {
+        keepRoomState();   // 월간에서 보던 달을 잃지 않는다
+        S.view = "summary"; S.date = d.date; S.topicId = null; render();
+      };
       h.appendChild(go);
       card.appendChild(h);
       const body = el("div", "card-body");
@@ -2930,9 +2968,8 @@ window.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); 
 $("#fileInput").onchange = e => { handleFiles(e.target.files); e.target.value = ""; };
 $("#views").onclick = e => {
   const b = e.target.closest(".view-tab");
-  if (!b) return;
-  S.view = b.dataset.view;
-  if (S.view === "vault") S.date = null;
+  if (!b || b.dataset.view === S.view) return;
+  goView(b.dataset.view);
   render();
 };
 window.addEventListener("dragover", e => e.preventDefault());
@@ -3063,12 +3100,8 @@ const SAMPLE = `AI 자동화 연구소 님과 카카오톡 대화
     setTimeout(() => toast("정리 규칙이 바뀌었어요. 같은 .txt를 다시 넣으면 새 규칙으로 읽어요."), 600);
   }
   if (S.rooms.length) {
-    // 마지막에 보던 방으로 돌아가고, 그 방에서 보던 자리까지 되살린다
+    // 마지막에 보던 방으로 돌아가고, 그 방에서 보던 탭과 자리까지 되살린다
     goRoom(S.rooms.some(r => r.id === S.lastRoom) ? S.lastRoom : S.rooms[0].id);
-    if (!S.date) {
-      const days = S.rooms.find(r => r.id === S.roomId).days;
-      S.date = days.length ? days[0].date : null;
-    }
   }
   render();
 })();
