@@ -1367,6 +1367,8 @@ const S = {
   vaultKind: "all",
   hideChatter: true,
   query: "",
+  roomState: {},   // 방마다 마지막으로 보던 자리. 키는 방id
+  lastRoom: null,  // 마지막에 보던 방
   sums: {},        // AI 요약 결과. 키는 "방id|날짜"
   month: null,     // 월간 탭에서 고른 달
   busy: null,      // 요약 진행 중인 대상
@@ -1586,6 +1588,44 @@ async function runSummary(label, fn) {
   }
 }
 
+/* ── 방마다 보던 자리 기억하기 ──
+   방을 옮겼다가 돌아오면 처음 화면으로 돌아가 있으면, 보던 날짜와 요약을 다시 찾아야 한다.
+   방마다 마지막 자리를 따로 적어 두고 돌아올 때 그대로 되돌린다. */
+
+const VIEW_STORE = "dantok-view";
+let viewSaveTimer = null;
+
+function keepRoomState() {
+  if (!S.roomId) return;
+  S.roomState[S.roomId] = {
+    view: S.view, date: S.date, topicId: S.topicId,
+    vaultKind: S.vaultKind, month: S.month, query: S.query,
+  };
+  S.lastRoom = S.roomId;
+  // 화면을 그릴 때마다 저장하면 낭비라 잠시 모았다가 한 번에 적는다
+  clearTimeout(viewSaveTimer);
+  viewSaveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(VIEW_STORE, JSON.stringify({ rooms: S.roomState, last: S.lastRoom }));
+    } catch (_) {}
+  }, 400);
+}
+
+function goRoom(id) {
+  keepRoomState();
+  S.roomId = id;
+  const r = S.rooms.find(x => x.id === id);
+  const v = S.roomState[id] || {};
+  S.view = v.view || "summary";
+  S.vaultKind = v.vaultKind || "all";
+  S.month = v.month || null;
+  S.query = v.query || "";
+  // 그 사이 대화를 다시 넣어 날짜가 달라졌을 수 있다. 없는 날짜를 붙들지 않는다.
+  S.date = r && v.date && r.days.some(d => d.date === v.date) ? v.date : null;
+  const day = S.date && r ? r.days.find(d => d.date === S.date) : null;
+  S.topicId = day && day.topics.some(t => t.id === v.topicId) ? v.topicId : null;
+}
+
 /* ── 방 탭 ── */
 function renderRooms() {
   const box = $("#rooms");
@@ -1599,11 +1639,16 @@ function renderRooms() {
         dbDel(r.id);
         mediaDel(r.id);
         S.rooms = S.rooms.filter(x => x.id !== r.id);
-        if (S.roomId === r.id) { S.roomId = S.rooms[0] ? S.rooms[0].id : null; S.date = null; }
+        delete S.roomState[r.id];
+        if (S.roomId === r.id) {
+          if (S.rooms[0]) goRoom(S.rooms[0].id);
+          else { S.roomId = null; S.date = null; S.topicId = null; }
+        }
         render();
         return;
       }
-      S.roomId = r.id; S.date = null; S.topicId = null; render();
+      if (r.id !== S.roomId) goRoom(r.id);
+      render();
     };
     box.appendChild(b);
   }
@@ -2500,6 +2545,7 @@ function render() {
   }
   lastDrawn = key;
   lastChatKey = chat ? chatKey : null;
+  keepRoomState();
 }
 
 // 누른 항목이 화면에서 있던 자리를 그대로 두고 다시 그린다.
@@ -2980,6 +3026,11 @@ const SAMPLE = `AI 자동화 연구소 님과 카카오톡 대화
 
 (async function boot() {
   loadAI();
+  try {
+    const v = JSON.parse(localStorage.getItem(VIEW_STORE) || "{}") || {};
+    S.roomState = v.rooms || {};
+    S.lastRoom = v.last || null;
+  } catch (_) {}
   for (const rec of await sumGetAll()) S.sums[rec.id] = rec;
   const saved = await dbAll();
   for (const rec of saved) {
@@ -3012,8 +3063,12 @@ const SAMPLE = `AI 자동화 연구소 님과 카카오톡 대화
     setTimeout(() => toast("정리 규칙이 바뀌었어요. 같은 .txt를 다시 넣으면 새 규칙으로 읽어요."), 600);
   }
   if (S.rooms.length) {
-    S.roomId = S.rooms[0].id;
-    S.date = S.rooms[0].days.length ? S.rooms[0].days[0].date : null;
+    // 마지막에 보던 방으로 돌아가고, 그 방에서 보던 자리까지 되살린다
+    goRoom(S.rooms.some(r => r.id === S.lastRoom) ? S.lastRoom : S.rooms[0].id);
+    if (!S.date) {
+      const days = S.rooms.find(r => r.id === S.roomId).days;
+      S.date = days.length ? days[0].date : null;
+    }
   }
   render();
 })();
