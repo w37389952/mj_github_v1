@@ -597,22 +597,59 @@ function isChatter(t) {
   return false;
 }
 
+// 프롬프트로 볼 만한 신호들. 한 가지만으로는 평범한 말과 구별되지 않아 여럿을 센다.
+const PROMPT_CUES = [
+  // 역할을 지정하는 말
+  /(당신은|너는|넌|당신의 역할|assistant)\s|you are|act as|your task|이제부터|지금부터 너/i,
+  // 코드블록
+  /```|~~~/,
+  // '항목:' 꼴로 조건을 늘어놓는 형태 (한글)
+  /^\s*[#*\-•]?\s*(역할|목표|주제|조건|규칙|제약|지시\s?사항|요구\s?사항|출력|출력\s?형식|입력|형식|예시|말투|톤|스타일|분량|단계|참고|주의|맥락|대상|목적)\s*[:：]/m,
+  // 같은 형태 (영문)
+  /^\s*[#*\-•]?\s*(role|task|goal|topic|context|constraints?|instructions?|examples?|input|output|format|tone|style|length|rules?|steps?|requirements?|persona|audience|objective)\s*:/im,
+  // 채워 넣는 자리
+  /\{\{?\s*[\w가-힣 ]{1,24}\s*\}?\}|\[[\w가-힣 ]{2,24}\]|<[\w가-힣 ]{2,24}>/,
+  // 글머리표나 번호 매기기가 두 줄 이상
+  /^\s*(?:#{1,4}\s|[-*•]\s|\d+[.)]\s).*\n[\s\S]*?^\s*(?:#{1,4}\s|[-*•]\s|\d+[.)]\s)/m,
+  // 시키는 말투 (한글). '보세요' 같은 권유는 평범한 말이라 넣지 않는다.
+  /(줘|주세요|줄래|주라|하라|해라)(?=[\s.!?~,)\]]|$)|(?:하지|쓰지|넣지|붙이지)\s?마/m,
+  // 무엇을 하라는 동사 (한글)
+  /(작성|생성|요약|번역|분석|추천|정리|출력|답변|변환|추출|분류|평가|검토)(해|하고|하여|해서|할)/,
+  // 시키는 동사 (영문)
+  /\b(generate|write|create|summari[sz]e|translate|analyz\w*|rewrite|explain|list|provide|extract|classify|respond)\b/i,
+  // 조건을 다는 말 (영문)
+  /\b(must|should|ensure|avoid|do not|don'?t|keep it|no more than|at least|under \d|within \d|in \w+ format)\b/i,
+];
+
+// 한국어 방에 올라온 긴 영문은 대개 어디선가 복사해 온 프롬프트다.
+function mostlyLatin(s) {
+  const t = s.replace(RE_URL, " ");
+  const latin = (t.match(/[A-Za-z]/g) || []).length;
+  const hangul = (t.match(/[가-힣]/g) || []).length;
+  return latin >= 60 && latin > hangul * 3;
+}
+
 function isPromptLike(t) {
-  const explicit = /(프롬프트|prompt)\s*[:：\n]/i.test(t);
-  if (t.length < 100) return explicit && t.length > 45;
-  const cues = [
-    /(당신은|너는\s|넌\s|you are|act as|역할\s*[:：]|role\s*[:：])/i,
-    /```|~~~/,
-    /(지시\s?사항|요구\s?사항|출력\s?형식|제약\s?조건|규칙\s*[:：]|instructions?\s*[:：]|output format|constraints?\s*[:：]|rules?\s*[:：])/i,
-    /\{\{?\s*\w+\s*\}?\}/,
-    /^\s*(#{1,4}\s|[-*•]\s|\d+[.)]\s)/m,
-    /(단계|step)\s*\d/i,
-  ];
-  let hits = cues.reduce((n, r) => n + (r.test(t) ? 1 : 0), 0);
-  if (explicit) hits += 2;
-  if (t.length > 400) hits += 1;
-  if (t.split("\n").length >= 4) hits += 1;
-  return hits >= 3;
+  const s = t.trim();
+  const lines = s.split("\n").filter(x => x.trim()).length;
+  // 짧으면 평범한 말과 구별이 안 된다. 다만 여러 줄로 짜인 글은 짧아도 프롬프트일 수 있다.
+  if (s.length < 40) return false;
+  if (s.length < 60 && lines < 3) return false;
+  if (/^https?:\/\/\S+$/.test(s)) return false;        // 링크 한 줄은 프롬프트가 아니다
+
+  const explicit = /(프롬프트|prompt)\s*[:：\n]/i.test(s) || /^(프롬프트|prompt)\b/i.test(s);
+  let hits = PROMPT_CUES.reduce((n, r) => n + (r.test(s) ? 1 : 0), 0);
+  if (explicit) hits += 3;
+  if (mostlyLatin(s)) hits += 2;
+
+  if (lines >= 4) hits += 1;
+  if (lines >= 8) hits += 1;
+  if (s.length > 300) hits += 1;
+  if (s.length > 800) hits += 1;
+
+  // 길거나, 여러 줄로 짜였거나, 대놓고 프롬프트라 밝힌 글은 문턱을 낮춘다
+  const need = (s.length >= 300 || lines >= 3 || explicit) ? 3 : 4;
+  return hits >= need;
 }
 
 // '사진' '동영상'은 무언가 오갔다는 표시일 뿐 파일 이름이 아니다.
