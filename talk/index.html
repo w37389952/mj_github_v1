@@ -2189,6 +2189,7 @@ function renderVault(main) {
 
   const days = S.date ? [dayOf(S.date)].filter(Boolean) : r.days;
   const sc = el("div", "scroll");
+  sc.id = "rightScroll";
   const cards = el("div", "cards");
   let n = 0;
 
@@ -2393,6 +2394,7 @@ function renderMonth(main) {
   right.appendChild(rh);
 
   const sc = el("div", "scroll");
+  sc.id = "rightScroll";
   const cards = el("div", "cards");
 
   if (!done.length) {
@@ -2577,7 +2579,7 @@ function renderEmpty(main) {
 
 // 날짜나 요약을 누를 때마다 화면을 다시 그리는데, 그때 왼쪽 목록이 맨 위로
 // 튀면 아래쪽 날짜를 볼 때마다 다시 스크롤해야 한다. 위치를 기억했다가 되돌린다.
-let lastDrawn = null, lastChatKey = null, pendingChatRestore = null;
+let lastDrawn = null, lastChatKey = null, lastRightKey = null, pendingChatRestore = null;
 const scrollMem = {};
 
 function render() {
@@ -2585,6 +2587,9 @@ function render() {
   if (prev && lastDrawn) scrollMem[lastDrawn] = prev.scrollTop;
   const prevChat = document.getElementById("chatScroll");
   if (prevChat && lastChatKey) scrollMem[lastChatKey] = prevChat.scrollTop;
+  // 자료함·월간의 오른쪽 목록도 어디까지 봤는지 적어 둔다
+  const prevRight = document.getElementById("rightScroll");
+  if (prevRight && lastRightKey) scrollMem[lastRightKey] = prevRight.scrollTop;
 
   renderRooms();
   freeShots();
@@ -2595,7 +2600,7 @@ function render() {
   for (const b of document.querySelectorAll(".view-tab"))
     b.classList.toggle("on", b.dataset.view === S.view);
 
-  if (!S.rooms.length) { lastDrawn = lastChatKey = null; renderEmpty(main); return; }
+  if (!S.rooms.length) { lastDrawn = lastChatKey = lastRightKey = null; renderEmpty(main); return; }
   const r = room();
   if (!r) { S.roomId = S.rooms[0].id; return render(); }
   if (S.view === "summary") renderSummary(main);
@@ -2618,8 +2623,20 @@ function render() {
     // 이 복원이 곧이어 실행될 jumpTo의 이동을 덮어쓰지 않도록 취소할 수 있게 잡아둔다
     pendingChatRestore = setTimeout(() => { chat.scrollTop = y; pendingChatRestore = null; }, 0);
   }
+  // 목록을 실제로 결정하는 것만 이름에 담는다. 자료함은 날짜와 갈래, 월간은 달이다.
+  // 상관없는 것까지 섞으면 다른 탭에 다녀온 것만으로 다른 목록이 돼 자리를 잃는다.
+  const rightKey = `${key}|right|` +
+    (S.view === "vault" ? `${S.date}|${S.vaultKind}` : S.view === "month" ? String(S.month) : "");
+  const right = document.getElementById("rightScroll");
+  if (right && scrollMem[rightKey]) {
+    const y = scrollMem[rightKey];
+    right.scrollTop = y;
+    setTimeout(() => { right.scrollTop = y; }, 0);
+  }
+
   lastDrawn = key;
   lastChatKey = chat ? chatKey : null;
+  lastRightKey = right ? rightKey : null;
   keepRoomState();
 }
 
