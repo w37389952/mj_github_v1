@@ -204,6 +204,20 @@
   .card .detail { color: var(--ink-faint); font-size: 13px; margin-top: 3px; }
   .card .detail:empty { display: none; }
   .card .meta { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  /* 왜 걸린 글인지 짚어 주는 표시.
+     노랑은 수집기가 찾은 말, 파랑은 내가 검색창에 친 말이다. */
+  mark.hit-why {
+    background: var(--accent-soft); color: var(--accent);
+    font-weight: 700; padding: 0 2px; border-radius: 3px;
+  }
+  mark.hit-mine {
+    background: #cfe4ff; color: #12457e;
+    font-weight: 700; padding: 0 2px; border-radius: 3px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) mark.hit-mine { background: #1d3b5c; color: #bcd9ff; }
+  }
+  :root[data-theme="dark"] mark.hit-mine { background: #1d3b5c; color: #bcd9ff; }
   .badge { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
   .badge.rest { background: var(--badge-rest); color: var(--badge-rest-ink); }
   .badge.general { background: var(--badge-general); color: var(--badge-general-ink); }
@@ -1459,10 +1473,72 @@ function blogCard(post) {
       <a class="map-link" target="_blank" rel="noopener">글 보기 →</a>
       <button type="button" class="map-link hide-btn">이미 아는 곳</button>
     </div>`;
+  /* 수집기가 어느 검색어로 이 글을 찾았는지 남겨 둔다('연남동 가오픈').
+     낱말로 쪼개 짚는다 — 통째로는 글 안에 그대로 있는 일이 드물다.
+     예전 자료에는 matched가 없으므로, 없으면 수집기가 쓰는 말로 대신한다. */
+  const COLLECTOR_WORDS = ["신상카페", "가오픈", "프리오픈", "정식오픈",
+                           "새로 생긴", "오픈했어요", "오픈 소식", "신상", "오픈"];
+  function matchWords(post) {
+    const why = [];
+    if (post.matched) {
+      post.matched.split(/\s+/).forEach(w => { if (w.length >= 2) why.push(w); });
+    } else {
+      if (post.area) why.push(post.area);
+      const text = post.title + post.description;
+      COLLECTOR_WORDS.forEach(w => { if (text.includes(w)) why.push(w); });
+    }
+    /* '카페 오픈 소식' 같은 넓은 검색어는 첫 낱말이 동네가 아니라 '카페'다.
+       그런 말을 짚어 봐야 알려 주는 것이 없으니 뺀다. */
+    const DULL = new Set(["카페", "맛집", "서울", "소식", "준비"]);
+    const mine = $("search").value.trim();
+    return {
+      why: [...new Set(why)].filter(w => !DULL.has(w)),
+      mine: mine.length >= 2 ? mine : "",
+    };
+  }
+
+  const escapeHtml = s => (s || "").replace(/[&<>"]/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  /* 짚을 말이 겹칠 수 있으므로 자리를 먼저 다 찾아 놓고 겹치는 것은 버린 뒤
+     뒤에서부터 끼워 넣는다. 앞에서 넣으면 자리가 밀린다. */
+  function markUp(text, hits) {
+    const src = text || "";
+    const spans = [];
+    const find = (needle, cls) => {
+      if (!needle) return;
+      let from = 0;
+      const hay = src.toLowerCase(), what = needle.toLowerCase();
+      while (true) {
+        const at = hay.indexOf(what, from);
+        if (at < 0) break;
+        spans.push({ at, to: at + needle.length, cls });
+        from = at + needle.length;
+      }
+    };
+    if (hits.mine) find(hits.mine, "hit-mine");
+    hits.why.forEach(w => find(w, "hit-why"));
+    spans.sort((a, b) => a.at - b.at || (b.to - b.at) - (a.to - a.at));
+    const kept = [];
+    let end = -1;
+    spans.forEach(s => { if (s.at >= end) { kept.push(s); end = s.to; } });
+    let out = "";
+    let cursor = 0;
+    kept.forEach(s => {
+      out += escapeHtml(src.slice(cursor, s.at));
+      out += `<mark class="${s.cls}">${escapeHtml(src.slice(s.at, s.to))}</mark>`;
+      cursor = s.to;
+    });
+    return out + escapeHtml(src.slice(cursor));
+  }
+
   const title = card.querySelector(".blog-title");
-  title.textContent = post.title;
+  /* 왜 이 글이 여기 있는지 보이게 짚어 준다. 걸린 검색어(가오픈·신상카페…)와
+     내가 친 검색어를 둘 다 표시한다. 색이 다르므로 무엇 때문인지 구별된다. */
+  const hits = matchWords(post);
+  title.innerHTML = markUp(post.title, hits);
   title.href = post.link;
-  card.querySelector(".blog-desc").textContent = post.description;
+  card.querySelector(".blog-desc").innerHTML = markUp(post.description, hits);
   card.querySelector(".blogger").textContent = post.blogger;
   card.querySelector(".area").textContent = post.area;
   // 협찬 글도 버리지 않는다. 초대받아 가오픈 전에 다녀온 글일 수 있어서다.
