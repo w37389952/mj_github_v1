@@ -160,6 +160,10 @@
   .chip.hot .rate { color: var(--accent); }
   .chip.steady { border-color: var(--ink-faint); }
   .chip-hint { font-size: 12.5px; color: var(--ink-faint); margin-top: 8px; }
+  /* 사진 붙여넣는 칸 — 비어 있을 때만 안내 글을 띄운다. */
+  #picPaste[data-show-hint="1"]::before {
+    content: attr(data-empty); color: var(--ink-faint); pointer-events: none;
+  }
 
   .chip-group { margin-bottom: 12px; }
   .chip-group:last-of-type { margin-bottom: 0; }
@@ -449,11 +453,13 @@
             <label for="fPics">
               사진 보여 주기 <span class="hint">(최대 5장 · 분위기를 직접 보고 씁니다 · 안 넣어도 됩니다)</span>
             </label>
-            <div id="picDrop" tabindex="0" style="border:1.5px dashed var(--line);border-radius:10px;padding:12px;cursor:pointer">
-              <div style="font-size:13px;color:var(--ink-soft)">
-                여기를 누르고 <b>Ctrl+V</b>로 붙여넣으세요 · 끌어다 놓아도 됩니다
-              </div>
-              <input type="file" id="fPics" accept="image/*" multiple style="margin-top:8px">
+            <div id="picDrop" style="border:1.5px dashed var(--line);border-radius:10px;padding:12px">
+              <input type="file" id="fPics" accept="image/*" multiple>
+              <div id="picPaste" contenteditable="true" spellcheck="false"
+                   data-empty="여기를 클릭한 뒤 Ctrl+V — 사진을 끌어다 놓아도 됩니다"
+                   style="margin-top:8px;min-height:38px;padding:9px 11px;border-radius:8px;
+                          border:1.5px solid var(--line);background:var(--bg);
+                          font-size:13px;color:var(--ink-soft);outline:none;cursor:text"></div>
             </div>
             <div class="chips" id="picList" style="margin-top:6px"></div>
           </div>
@@ -479,9 +485,20 @@
     </section>
 
     <section>
-      <h2>네이버 태그 <span class="sub">최대 30개 — 발행 화면 태그란에 그대로 붙여넣기</span></h2>
+      <h2>네이버 태그 <span class="sub">네이버 태그란은 한 번에 100자까지라 통째로는 안 들어갑니다 — 하나씩 넣으세요</span></h2>
       <div class="tagbox"><span id="tags"></span><span class="count" id="tagCount"></span></div>
-      <div class="row"><button type="button" class="btn ghost" id="copyTags">태그 복사</button></div>
+      <div class="chips" id="tagChips" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px">
+        <button type="button" class="btn" id="nextTag">다음 태그 복사</button>
+        <button type="button" class="btn ghost" id="resetTag">처음부터</button>
+        <button type="button" class="btn ghost" id="copyTags">전부 한 줄로 복사</button>
+        <span class="chip-hint" style="margin:0" id="tagProgress"></span>
+      </div>
+      <div class="note">
+        네이버 태그란은 한 칸에 한 태그를 넣고 <b>Enter</b>를 칩니다.
+        <b>다음 태그 복사</b>를 누르고 태그란에 붙여넣은 뒤 Enter — 이걸 되풀이하면 됩니다.
+        태그를 직접 눌러 하나만 복사할 수도 있습니다.
+      </div>
     </section>
 
     <section>
@@ -1120,9 +1137,24 @@ function buildPrompt(v, cands) {
 - 광고처럼 들리는 표현("강추", "인생") 대신 관찰한 사실을 쓴다.
 
 [문장 — 이것부터 지켜라]
-- 문장 끝을 반복하지 마라. '~였다'로만 끝내면 읽기 지겹다.
-  '~했다', '~더라', '~인 셈이다', 명사로 끊기, 짧은 문장과 긴 문장을 섞어라.
-- 한 문단은 서너 문장. 문단마다 하나의 이야기만 담아라.
+- **수필처럼 쓰지 마라.** 이 블로그는 감상문이 아니라 가게 기록이다.
+  본 것을 먼저 적고 판단을 한 겹 얹는다. 사물 없이 느낌만 흐르면 안 된다.
+  나쁜 보기: "미니멀하면서도 따뜻한 인테리어가 이 동네의 작은 로스터리를
+  찾은 사람들을 자연스럽게 쉬게 만든다." — 무엇을 봤는지가 없다.
+  좋은 보기: "옅은 회색 벽에 우드 테이블을 놓았다. 의자는 등받이가 낮아
+  오래 앉기보다 잠깐 쉬어 가는 자리에 가까웠다."
+- 내가 자주 쓰는 맺음이다. 이 결로 섞어 써라:
+    ~한 카페.        (이름씨로 끊기)
+    ~했다. ~였다.
+    그래서 더 ~였던.
+    ~이기도 하였다.
+    ~같았다.
+- '~인 셈이다'와 '~더라'는 쓰지 마라. 내가 안 쓰는 말이다.
+- 한 가지 맺음이 세 문장 넘게 이어지면 안 된다. 특히 '~것 같다',
+  '~느껴졌다', '~만든다'를 되풀이하지 마라.
+- 한 문단은 네 문장에서 여섯 문장. 문단마다 하나의 이야기만 담아라.
+- 미사여구를 겹치지 마라. '고즈넉함을 준다', '성의가 느껴지는 곳' 같은
+  뭉뚱그린 말 대신 무엇을 보고 그렇게 생각했는지를 적어라.
 
 [분량 — 공백 빼고 2,600자. 이것이 가장 자주 어긋난다]
 - 2,600자를 채워라. 2,000자 아래로 내려가면 실패로 본다.
@@ -1139,16 +1171,17 @@ function buildPrompt(v, cands) {
   더 알려주면 되는지 3~5개 물어라. 다만 내가 적은 것을 다 풀어 쓰기 전에는
   모자라다고 말하지 마라.
 
-[글의 차례 — 채운 칸은 저마다 한 문단 이상]
+[글의 차례 — 내가 늘 쓰는 순서다. 이대로 따라라]
 1) 첫 줄 방문 표시 · 한 줄 소개 · 정보 블록 · <요약> ✔ 7줄
-2) 들어가며 — 어떻게 알고 갔는지, 가는 길, 첫인상 (서너 문장)
-3) 공간 — 분위기와 인테리어 (한 문단)
-4) 자리 — 어디에 앉았고 어떤 자리가 있는지 (한 문단)
-5) 메뉴와 맛 — **메뉴마다 한 문단씩 따로**. 시킨 것, 생긴 것, 맛, 느낌
-6) 가격 — 적었으면 숫자를 넣어 한 문단
-7) 소리·음악 — 적었으면 한 문단
-8) 웨이팅·붐빔·주차 — 적었으면 한 문단
-9) 누구에게 맞나 · 다시 갈지 (한 문단)
+2) 바깥 — 가게 외관. 어디에 있고 겉이 어떻게 생겼는지 (한 문단)
+3) 안 — 내부 인테리어. 벽·가구·색·짜임새 (한 문단)
+4) 언제 갔나 — 방문 시각과 웨이팅·붐빔. 그때 햇살이 어땠는지 (한 문단)
+5) 소리 — 음악과 소리. 그리고 눈에 띈 소품 (한 문단)
+6) 메뉴 — 메뉴판 이야기를 먼저 꺼내고, **시킨 메뉴마다 한 문단씩**
+   따로 쓴다. 생긴 것 → 맛 → 그때 느낌 → 가격 차례로.
+7) 끝 — 어떤 사람에게 맞는 곳인지로 끝맺는다 (한 문단)
+
+방문 시각과 웨이팅은 글 한가운데(4번)에 둔다. 첫 문단에 몰아넣지 마라.
 
 [사진]
 - 사진 자리를 표시하지 마라. 사진은 내가 직접 넣는다.
@@ -1169,6 +1202,11 @@ ${cands.map((c, i) => `${i + 1}. ${c.title}  (검색어 ${c.n}개)`).join("\n")}
 ${v.proseBits.length
   ? `[제목에는 안 넣었지만 본문에 꼭 쓸 것]\n${v.proseBits.map(x => `· ${x}`).join("\n")}\n\n`
   : ""}[내가 보고 느낀 것 — 이걸 본문의 뼈대로 삼아라]
+아래는 내가 직접 적은 말이다. 한 줄도 버리지 마라. 특히 '맛' 칸에 적은
+말은 그 메뉴 문단에 반드시 살려 써라 — 내가 실제로 느낀 것이고, 네가
+지어낸 맛 표현보다 이것이 먼저다. 내 말을 그대로 옮기라는 뜻은 아니고,
+그 내용이 빠지지 않게 문장으로 풀어 쓰라는 뜻이다.
+
 ${NOTE_FIELDS.map(([k, label]) => (v[k] ? `· ${label}: ${v[k]}` : ""))
   .filter(Boolean).join("\n") || "(아직 아무것도 안 적었다. 그러면 글을 억지로 쓰지 말고, 무엇을 알려주면 되는지만 물어라.)"}
 
@@ -1569,10 +1607,66 @@ function render(opts) {
   $("tags").textContent = tags.map(x => "#" + x).join(" ");
   $("tagCount").textContent = `${tags.length}개 / 최대 30개`;
   $("tags").dataset.plain = tags.join(",");
+  drawTagChips(tags);
 
   $("out").classList.add("show");
   if (!quiet) $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   save();
+}
+
+/* 네이버 태그란은 한 칸에 한 태그씩 넣고 Enter를 치는 곳이다. 서른 개를
+   한 줄로 붙이면 한 덩어리로 보고 '100자가 넘는다'며 거절한다. 그래서
+   하나씩 집어 갈 수 있게 한다. 어디까지 넣었는지 표시해 두면 서른 번을
+   눌러도 헷갈리지 않는다. */
+let TAGS = [];
+let tagAt = 0;
+
+function drawTagChips(tags) {
+  TAGS = tags.slice();
+  tagAt = 0;
+  drawTagState();
+}
+
+function drawTagState() {
+  const box = $("tagChips");
+  box.innerHTML = "";
+  TAGS.forEach((tag, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (i < tagAt ? "" : i === tagAt ? " hot" : "");
+    b.style.opacity = i < tagAt ? "0.4" : "1";
+    b.textContent = (i < tagAt ? "✓ " : "") + "#" + tag;
+    b.title = "누르면 이 태그만 복사합니다";
+    b.addEventListener("click", () => {
+      copyText("#" + tag);
+      tagAt = i + 1;
+      drawTagState();
+    });
+    box.append(b);
+  });
+  $("tagProgress").textContent = TAGS.length
+    ? (tagAt >= TAGS.length ? `${TAGS.length}개를 다 넣었습니다`
+        : `${tagAt} / ${TAGS.length}개 넣음 · 다음은 #${TAGS[tagAt]}`)
+    : "";
+  $("nextTag").disabled = tagAt >= TAGS.length;
+}
+
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.append(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  ta.remove();
 }
 
 function copy(text, btn, label) {
@@ -2073,6 +2167,7 @@ async function addPics(fileList) {
   }
   drawPicList();
   refreshCostGuess();
+  if (typeof drawPasteBox === "function") { drawPasteBox(); pasteHint(); }
   return added;
 }
 
@@ -2081,16 +2176,54 @@ $("fPics").addEventListener("change", e => {
   e.target.value = "";              // 같은 파일을 다시 고를 수 있게 비운다
 });
 
-// 붙여넣기 — 글쓰기 칸에 치는 중일 때는 가로채지 않는다.
-document.addEventListener("paste", async e => {
-  const tag = (e.target.tagName || "").toLowerCase();
-  if (tag === "input" && e.target.type !== "file") return;
-  if (tag === "textarea") return;
+/* 어디를 누르고 붙여넣어야 하는지 알 수 없다는 말이 있었다. 그래서
+   커서가 깜빡이는 칸을 두고 거기에 붙여넣게 한다. 빈칸일 때는 안내 글이
+   흐리게 떠 있다가 사진이 들어오면 몇 장인지로 바뀐다. */
+const pasteBox = $("picPaste");
+
+function drawPasteBox() {
+  pasteBox.textContent = PICS.length ? `사진 ${PICS.length}장 · 더 붙여넣어도 됩니다` : "";
+}
+function pasteHint() {
+  // :empty에 기대면 커서가 들어간 순간 빈 노드가 생겨 안내가 사라진다.
+  const empty = !pasteBox.textContent.trim();
+  pasteBox.dataset.showHint = empty ? "1" : "0";
+}
+pasteBox.addEventListener("focus", () => {
+  pasteBox.style.borderColor = "var(--accent)";
+});
+pasteBox.addEventListener("blur", () => {
+  pasteBox.style.borderColor = "var(--line)";
+  drawPasteBox(); pasteHint();
+});
+// 글자를 치는 칸이 아니다. 붙여넣기 말고는 아무것도 안 들어가게 막는다.
+pasteBox.addEventListener("keydown", e => {
+  const pass = ["Tab", "Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
+  if (pass.includes(e.key)) return;
+  if ((e.ctrlKey || e.metaKey) && ["v", "V"].includes(e.key)) return;
+  e.preventDefault();
+});
+
+async function takePaste(e, from) {
   const items = (e.clipboardData && e.clipboardData.files) || [];
   if (!items.length) return;
   e.preventDefault();
   const n = await addPics(items);
-  if (n) $("draftStatus").textContent = `사진 ${n}장을 붙여넣었습니다 (모두 ${PICS.length}장)`;
+  if (n) {
+    drawPasteBox(); pasteHint();
+    $("draftStatus").textContent =
+      `사진 ${n}장을 붙여넣었습니다 (모두 ${PICS.length}장)${from}`;
+  }
+}
+
+pasteBox.addEventListener("paste", e => takePaste(e, ""));
+// 칸 밖에서 붙여넣어도 받아 준다. 다만 글 쓰는 칸에서는 가로채지 않는다.
+document.addEventListener("paste", e => {
+  if (e.target === pasteBox) return;
+  const tag = (e.target.tagName || "").toLowerCase();
+  if (tag === "textarea") return;
+  if (tag === "input" && e.target.type !== "file") return;
+  takePaste(e, "");
 });
 
 const drop = $("picDrop");
@@ -2102,8 +2235,12 @@ const drop = $("picDrop");
   e.preventDefault();
   drop.style.borderColor = "var(--line)";
 }));
-drop.addEventListener("drop", e => addPics(e.dataTransfer.files));
-drop.addEventListener("click", e => { if (e.target === drop) drop.focus(); });
+drop.addEventListener("drop", async e => {
+  await addPics(e.dataTransfer.files);
+  drawPasteBox(); pasteHint();
+});
+drop.addEventListener("click", e => { if (e.target === drop) pasteBox.focus(); });
+pasteHint();
 
 function styleBlock() {
   /* samples가 빈 배열이면 머리말만 남고 예시가 하나도 안 붙는다. 그러면
@@ -2369,7 +2506,8 @@ function titlePrompt(v) {
     .sort((a, b) => b.demand - a.demand).slice(0, 4);
   const line = (label, val) => (val ? `${label}: ${val}\n` : "");
 
-  return `너는 네이버 블로그 제목을 짓는다. 제목 후보 다섯 개를 써라.
+  return `너는 네이버 블로그 제목을 짓는다. 제목 후보 여덟 개를 써라.
+(몇 개는 걸러지므로 넉넉히 낸다. 여덟 개가 서로 달라야 한다.)
 ${draft ? `
 [본문 — 이 글을 읽고 제목을 붙여라]
 ${draft}${draft.length >= DRAFT_FOR_TITLE ? "\n(뒷부분 줄임)" : ""}
@@ -2410,9 +2548,20 @@ ${line("이름", v.name)}${line("동네", v.area)}${line("가까운 역", v.stat
 
   차례를 반드시 지켜라: 꾸밈말은 **업종어 바로 앞**에 오고, 가게 이름은
   그 뒤에 온다. 꾸밈말이 가게 이름을 꾸미면 말이 안 된다.
-    맞다  : 망원동 햇살 가득한 창가에서 핸드드립을 내리는 카페☕ 에드 로스트웍스
+    맞다  : 망원동 햇살이 소복이 드는 핸드드립 카페☕ 에드 로스트웍스
     틀리다: 망원동 카페 햇살 가득한 창가에서 핸드드립 커피를 마시는 에드 로스트웍스
             (→ '마시는'이 가게 이름에 걸려 가게가 커피를 마시는 꼴이 된다)
+
+  꾸밈말은 **가게를 설명하는 말**이어야 한다. 손님이 하는 행동을
+  '~하는 카페'로 붙이면 카페가 그 행동을 하는 꼴이 된다.
+    틀리다: 구수한 롱블랙을 마시는 카페      (카페가 롱블랙을 마신다)
+    틀리다: 직접 로스팅 필터커피 카페        (말이 끊겨 있다)
+    맞다  : 롱블랙이 구수한 카페
+    맞다  : 원두를 직접 볶는 로스터리 카페
+    맞다  : 핸드드립으로 내려 주는 카페
+    맞다  : 혼자 앉기 좋은 카페 / 햇살이 잘 드는 카페
+  즐겨 쓰는 꼴은 '~하기 좋은', '~이 맛있는', '~가 있는', '~로 유명한',
+  '~를 내려 주는', '~를 직접 볶는'이다. '~를 마시는/먹는/즐기는'은 쓰지 마라.
 
 [제목 규칙 — 상위 노출 75편을 재서 얻은 것]
 - 길이 30~42자. 이 사람은 29자로 쓰고 상위 노출은 38자다. 그 사이로 맞춰라.
@@ -2446,7 +2595,7 @@ ${themes.length ? `\n[내가 적은 말 중 검색량이 확인된 것]\n`
   + `\n동네에 안 매인 자리라 경쟁이 딴판이다. 어울리는 후보에 넣어라.` : ""}
 
 [답 형식]
-제목 다섯 줄만 출력한다. 번호·따옴표·설명·빈 줄을 붙이지 마라.`;
+제목 여덟 줄만 출력한다. 번호·따옴표·설명·빈 줄을 붙이지 마라.`;
 }
 
 function guessTitleCost() {
@@ -2531,12 +2680,15 @@ async function makeTitles() {
       .filter(s => !badTitle(s))
       // 이모지를 빠뜨리고 오면 붙여 준다. 내 제목 120편에는 예외가 없었다.
       .map(s => (/\p{Extended_Pictographic}/u.test(s) ? s : withEmoji(s, v.name, emoji)))
-      .slice(0, 5);
+      .slice(0, 6);
     if (!titles.length) {
       $("titleStatus").textContent =
         "쓸 만한 제목이 없어 다 걸렀습니다(엉뚱한 동네나 로마자). 다시 눌러보세요.";
       return;
     }
+    // 몇 개를 왜 뺐는지 밝힌다. 개수가 들쭉날쭉한 이유를 몰라선 안 된다.
+    const raw = text.split("\n").map(s => s.trim()).filter(s => s.length >= 12).length;
+    const dropped = Math.max(0, Math.min(raw, 8) - titles.length);
 
     renderCands(titles.map(x => measureTitle(x, "API가 지음", v)), v);
 
@@ -2557,9 +2709,10 @@ async function makeTitles() {
       id: String(Date.now()), at: new Date().toISOString(), kind: "titles",
       shop: v.name, model: $("apiModel").value, cost, titles,
     });
-    $("titleStatus").textContent = "다 됐습니다"
-      + (cost != null ? ` — 실제 ${won(cost)}원` : "")
-      + " · 마음에 안 들면 다시 누르세요 · 지난 것은 아래 ‘지난 API 결과’에 남습니다";
+    $("titleStatus").textContent = `${titles.length}개 나왔습니다`
+      + (dropped ? ` (${dropped}개는 엉뚱한 동네·로마자가 섞여 걸렀습니다)` : "")
+      + (cost != null ? ` · 실제 ${won(cost)}원` : "")
+      + " · 지난 것은 아래 ‘지난 API 결과’에 남습니다";
     refreshTitleCost();
     refreshCostGuess();
     save();
@@ -2613,7 +2766,17 @@ $("clear").addEventListener("click", () => {
   $("fName").focus();
 });
 $("copyPrompt").addEventListener("click", e => copy($("prompt").textContent, e.target, "지시문 복사"));
-$("copyTags").addEventListener("click", e => copy($("tags").textContent, e.target, "태그 복사"));
+$("copyTags").addEventListener("click", e => copy($("tags").textContent, e.target, "전부 한 줄로 복사"));
+$("nextTag").addEventListener("click", e => {
+  if (tagAt >= TAGS.length) return;
+  const tag = TAGS[tagAt];
+  copyText("#" + tag);
+  tagAt += 1;
+  drawTagState();
+  e.target.textContent = `#${tag} 복사됨 — 붙여넣고 Enter`;
+  setTimeout(() => { e.target.textContent = "다음 태그 복사"; }, 1400);
+});
+$("resetTag").addEventListener("click", () => { tagAt = 0; drawTagState(); });
 F.forEach(id => $(id).addEventListener("change", save));
 
 load();
