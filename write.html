@@ -611,14 +611,31 @@ function buildTags(v) {
   const menu1 = v.menus[0] || "";
   const menu2 = v.menus[1] || "";
 
+  /* 동네와 붙일 말은 '분류어'뿐이다. 사람들은 '문래동 카페'나 '문래동 디저트'는
+     쳐도 '문래동 아메리카노'는 안 친다. 메뉴 이름은 단독 태그로만 쓴다.
+     그중에서도 밤 수집이 실제로 재어 둔 조합을 먼저 쓴다. */
+  const KIND_WORDS = {
+    "카페": ["카페", "커피", "디저트", "베이커리", "브런치"],
+    "베이커리": ["베이커리", "빵집", "카페", "디저트"],
+    "브런치": ["브런치", "카페", "맛집"],
+    "디저트": ["디저트", "카페", "베이커리"],
+    "술집": ["술집", "맛집", "호프"],
+    "바": ["바", "술집", "맛집"],
+    "이자카야": ["이자카야", "술집", "맛집"],
+  };
+  const kinds = KIND_WORDS[t] || [t, "맛집"];
+  const measured = KW && KW.counts ? KW.counts : {};
+  // 재어 둔 조합을 앞에, 나머지는 뒤에. 재어 둔 것이 실제로 쓰이는 말이다.
+  const areaCombos = kinds
+    .map(k => ({ tag: `${v.area}${k}`, known: measured[`${v.area} ${k}`] != null }))
+    .sort((a, b) => Number(b.known) - Number(a.known))
+    .map(x => x.tag);
+
   const base = [
     v.name, v.area, v.station, v.near,
-    `${v.area}${t}`, `${v.station}${t}`, `${v.area} ${t}`,
-    `${v.area}맛집`, `서울${t}`, `${t}추천`, `${v.area}${t}추천`,
+    ...areaCombos,
+    `${v.station}${t}`, `${v.area} ${t}`, `서울${t}`, `${t}추천`, `${v.area}${t}추천`,
     ...v.menus, ...v.traits,
-    // 동네와 붙이는 것은 짧은 메뉴만. '문래동파블로바치즈케이크'는 아무도 안 친다.
-    menu1 && menu1.replace(/\s/g, "").length <= 5 ? `${v.area}${menu1.replace(/\s/g, "")}` : "",
-    menu2 && menu2.replace(/\s/g, "").length <= 5 ? `${v.area}${menu2.replace(/\s/g, "")}` : "",
     "신상카페", "내돈내산", "솔직후기", "서울맛집", "데이트코스",
   ];
 
@@ -855,12 +872,12 @@ function renderCompetition(v) {
     v.near ? `${v.near} ${t}` : "",
     v.near ? `${v.near} ${t} 추천` : "",
     stationArea ? `${stationArea} ${t}` : "",
-    menu1 ? `${v.area} ${menu1}` : "",
-    menu2 ? `${v.area} ${menu2}` : "",
     trait1 ? `${v.area} ${trait1}` : "",
     `${v.area} 맛집`,
     `${v.area} 디저트`,
     `${v.area} 베이커리`,
+    `${v.area} 브런치`,
+    `${v.area} 술집`,
   ].filter(Boolean);
 
   if (!KW) {
