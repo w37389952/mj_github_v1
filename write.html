@@ -378,7 +378,7 @@
 
   <div class="out" id="out">
     <section>
-      <h2>제목 후보 <span class="sub">상위 노출 글은 조각 4~6개를 담고, 65%가 ‘동네+업종’을 붙여서 씁니다</span></h2>
+      <h2>제목 후보 <span class="sub">상위 노출 60편은 검색어 3~6개였고 7개 이상은 한 편도 없었습니다 · 65%가 ‘동네+업종’을 붙여서 씁니다</span></h2>
       <div id="cands"></div>
     </section>
 
@@ -454,7 +454,7 @@
       <h2>발행 전 점검 <span class="sub">2026-09-04 상위 노출 글 36편을 분석해 뽑은 항목</span></h2>
       <ul class="check">
         <li><span class="mark">☐</span><span><b>본문 2,600자 안팎</b><span class="why">상위 1위 글 중앙값 2,600자. 최근 글은 1,982자였습니다.</span></span></li>
-        <li><span class="mark">☐</span><span><b>제목에 검색어 4개 이상</b><span class="why">역명 · 동네 · 업종 · 메뉴 · 의도어를 섞습니다.</span></span></li>
+        <li><span class="mark">☐</span><span><b>제목에 검색어 3~6개</b><span class="why">상위 노출 60편의 중앙값은 4개. 7개 이상은 한 편도 없었습니다 — 꽉 채우지 마세요.</span></span></li>
         <li><span class="mark">☐</span><span><b>스티커 1~2개</b><span class="why">상위 69%가 사용. 근거는 약한 편이니 부담 없이.</span></span></li>
         <li><span class="mark">☐</span><span><b>이전 글 링크카드 1개</b><span class="why">상위 39%가 사용. 같은 동네 글로 연결하면 좋습니다.</span></span></li>
         <li><span class="mark">☐</span><span><b>지도 첨부</b><span class="why">상위 97%. 이미 늘 하고 있는 항목입니다.</span></span></li>
@@ -552,16 +552,23 @@ function readForm() {
 }
 
 // 검색어로 셀 만한 토큰만 센다. '~에 2호점을 오픈한' 같은 수식어는 검색어가 아니다.
-function countKeywords(title, v) {
-  const parts = [
-    v.station, v.area, v.near, v.type, v.name,
-    v.area && v.type ? `${v.area} ${v.type}` : "",
-    ...v.menus, ...v.traits,
-    "후기", "추천", "내돈내산", "신상",
-  ].filter(Boolean);
-  const hit = new Set();
-  parts.forEach(p => { if (title.includes(p)) hit.add(p); });
-  return hit.size;
+/* 상위 노출 60편을 잰 방식과 똑같이 센다. 그래야 '상위는 4개'와 견줄 수 있다.
+   역명 하나, 동네 하나, 업종어 수, 의도어 수를 더한다.
+
+   2026-09-09 측정: 상위 60편 중앙값 4개, 최대 6개, 7개 이상은 0편.
+   그런데 내가 만들던 제목은 8~9개였다. 많을수록 좋다고 잘못 잡았다. */
+const TYPE_RE = /카페|맛집|베이커리|브런치|디저트|술집|이자카야|파스타|고기집|레스토랑|빵집|커피|국수/g;
+const INTENT_RE = /후기|추천|내돈내산|솔직|데이트|코스|가볼만한곳|모음|가성비|웨이팅|주차|놀거리|핫플|가이드|강추|신상/g;
+const GOOD_MIN = 3;
+const GOOD_MAX = 6;
+
+function countKeywords(title) {
+  let n = 0;
+  if (/[가-힣]{2,7}역/.test(title)) n += 1;
+  if (/[가-힣]{2,4}(동|가|촌|리단길)/.test(title)) n += 1;
+  n += (title.match(TYPE_RE) || []).length;
+  n += (title.match(INTENT_RE) || []).length;
+  return n;
 }
 
 /* 어디에나 있는 메뉴는 태그로 넣어도 경쟁이 수백만 건이라 값어치가 없다.
@@ -608,26 +615,42 @@ function titleCandidates(v) {
   const who = (v.who || "").split(/[.\n]/)[0].trim();          // '혼자 책 읽기 좋다'
   const moodBit = (v.mood || "").split(/[.\n]/)[0].trim();     // '우드톤에 조명이 낮았다'
   const shorten = (s, n) => (s && s.length <= n ? s : "");
-  const situation = shorten(who, 16) || shorten(moodBit, 16) || trait1;
+  /* '혼자 책 읽기 좋다'를 제목 앞에 그대로 두면 말이 안 붙는다.
+     흔한 서술 어미만 꾸밈꼴로 바꾸고, 못 바꾸는 것은 쓰지 않는다. */
+  const asModifier = s => {
+    if (!s) return "";
+    const map = [
+      [/좋다$/, "좋은"], [/좋아보인다$/, "좋은"], [/괜찮다$/, "괜찮은"],
+      [/편하다$/, "편한"], [/조용하다$/, "조용한"], [/한적하다$/, "한적한"],
+      [/넓다$/, "넓은"], [/아늑하다$/, "아늑한"], [/예쁘다$/, "예쁜"],
+    ];
+    for (const [re, to] of map) if (re.test(s)) return s.replace(re, to);
+    return /(은|는|ㄴ|던|좋은|한|인)$/.test(s) ? s : "";
+  };
+  const situation = asModifier(shorten(who, 16)) || asModifier(shorten(moodBit, 16)) || trait1;
 
+  /* 조각을 3~6개로 맞춘다. 상위 노출 60편이 그 범위 안에 다 들어 있었고,
+     7개 이상은 한 편도 없었다. 꽉 채우는 것이 아니라 고르는 것이 맞다. */
   // ① 그 집만의 메뉴로 연다 — 그 메뉴를 찾는 사람이 정확히 걸린다
-  if (special) push(`${special} 있는 ${v.area} ${t} ${v.name} | ${v.station} 후기`);
+  if (special) push(`${special} 있는 ${v.area} ${t} ${v.name}`);
   // ② 대괄호로 동네를 못 박는다 — 1위 글의 23%가 쓰는 형태
-  push(`[${v.area} ${t}] ${v.name} — ${menu1} ${trait1} 내돈내산 후기`);
+  push(`[${v.area} ${t}] ${v.name} ${menu1} 내돈내산 후기`);
   // ③ 상황으로 연다 — '혼자 책 읽기 좋은' 처럼 사람이 찾는 맥락
-  if (situation) push(`${situation} ${v.area} ${t} ${v.name} | ${v.station} ${menu1}`);
+  if (situation) push(`${situation} ${v.area} ${t} ${v.name} 후기`);
   // ④ 역명으로 연다 — 역 이름으로 찾는 사람을 잡는다
-  if (v.station) push(`${v.station} ${t} ${v.name} ${v.area} ${menu1} 솔직후기`);
+  if (v.station) push(`${v.station} ${t} ${v.name} ${menu1} 솔직후기`);
   // ⑤ 인접 지역까지 묶는다 — 옆 동네로 찾는 사람도 걸린다
-  if (v.near) push(`${v.area} ${v.near} ${t} ${v.name} ${trait1} ${menu2 || menu1} 추천`);
+  if (v.near) push(`${v.area} ${v.near} ${t} ${v.name} ${trait1} 추천`);
   // ⑥ 기본형 — 위에서 못 채웠을 때를 위한 자리
-  push(`${v.area} ${t} 추천 ${v.name} | ${v.station} ${menu1} ${t} 후기`);
-  push(`${v.name} ${v.area} ${t} ㅣ ${menu1} ${menu2} ${v.station} 데이트 코스`);
+  push(`${v.area} ${t} 추천 ${v.name} ${menu1} 후기`);
+  push(`${v.name} ${v.area} ${t} ㅣ ${menu1} 데이트 코스`);
 
   const target = v.area && t ? `${v.area}${t}` : "";
-  return out.slice(0, 5).map(title => ({
+  // 조각이 너무 많은 후보는 아예 내놓지 않는다.
+  const within = out.filter(x => countKeywords(x) <= GOOD_MAX);
+  return (within.length ? within : out).slice(0, 5).map(title => ({
     title,
-    n: countKeywords(title, v),
+    n: countKeywords(title),
     len: title.length,
     // 상위 노출 글의 65%는 '동네+업종'을 붙여서 그대로 담고 있다.
     // 사이에 다른 말이 끼면 구절이 끊긴다. 그걸 표시해 준다.
@@ -1001,7 +1024,10 @@ function render() {
     const phrase = c.hasPhrase
       ? `· <b>‘${v.area} ${v.type || "카페"}’ 붙어 있음 ✓</b>`
       : `· <span style="color:var(--ink-faint)">‘${v.area} ${v.type || "카페"}’ 끊김</span>`;
-    me.innerHTML = `검색어 <b>${c.n}개</b> · ${c.len}자 ${phrase}`;
+    // 상위 노출 60편은 3~6개 안에 다 있었다. 벗어나면 알려 준다.
+    const fit = c.n < GOOD_MIN ? ` <span style="color:var(--ink-faint)">(적음)</span>`
+      : c.n > GOOD_MAX ? ` <span style="color:var(--ink-faint)">(많음)</span>` : "";
+    me.innerHTML = `검색어 <b>${c.n}개</b>${fit} · ${c.len}자 ${phrase}`;
     txt.append(ti, me);
     const acts = document.createElement("div");
     acts.className = "acts";
