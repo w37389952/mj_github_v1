@@ -390,6 +390,11 @@
     </section>
 
     <section>
+      <h2>이 글에 쓸 검색어 <span class="sub">동네 검색어가 다 불리해도, 쓸 수 있는 자리는 남아 있습니다</span></h2>
+      <div id="picks"></div>
+    </section>
+
+    <section>
       <h2>키워드 경쟁도 <span class="sub">찾는 사람(관심도)을 이미 쓰인 글 수로 나눈 순 — 위에 있을수록 파고들 틈이 큽니다</span></h2>
       <div id="compet"></div>
     </section>
@@ -638,33 +643,30 @@ const familyOf = t => TYPE_FAMILY[t] || ["맛집", "카페"];
    붙으면 헛다리다. 태그와 제목이 같은 잣대를 써야 한다. */
 const KIND_POOL = ["카페", "커피", "디저트", "베이커리", "빵집", "브런치",
                    "맛집", "술집", "호프", "이자카야", "바"];
+/* 낱말이 통째로 있을 때만 센다. 그냥 includes로 보면 '햇살맛집'이
+   '맛집'으로 잡혀, 카페 글인데 '망원동 맛집'을 제목에 물고 나온다. */
+function saysWord(text, word) {
+  const re = new RegExp(`(^|[\\s,·/])${word}([\\s,·/]|을|를|도|은|는|이|가|와|과|$)`);
+  return re.test(text);
+}
 function writtenKinds(v) {
   const t = v.type || "카페";
   const written = [...v.menus, ...v.traits, v.taste, v.mood, v.memo]
     .filter(Boolean).join(" ");
-  return [t, ...KIND_POOL.filter(k => k !== t && written.includes(k))];
+  return [t, ...KIND_POOL.filter(k => k !== t && saysWord(written, k))];
 }
 
-/* 적어 둔 문장을 제목 앞에 세울 수 있는 꾸밈꼴로 바꾼다.
-   '혼자 책 읽기 좋다' → '혼자 책 읽기 좋은'. 못 바꾸는 것은 아예 안 쓴다 —
-   '직원이 직접 구워줌' 같은 말이 제목에 박히는 일이 있었다. */
-const MODIFIER_MAP = [
-  [/좋(다|았다|아요|습니다)$/, "좋은"], [/괜찮(다|았다)$/, "괜찮은"],
-  [/편(하다|했다)$/, "편한"], [/조용(하다|했다)$/, "조용한"],
-  [/한적(하다|했다)$/, "한적한"], [/넓(다|었다)$/, "넓은"],
-  [/아늑(하다|했다)$/, "아늑한"], [/예(쁘다|뻤다)$/, "예쁜"],
-  [/멋(지다|졌다)$/, "멋진"], [/맛있(다|었다)$/, "맛있는"],
-  [/진(하다|했다)$/, "진한"], [/부드(럽다|러웠다)$/, "부드러운"],
-  [/많(다|았다)$/, "많은"], [/잘 (든다|들었다)$/, "잘 드는"],
-  [/(이|가) 크다$/, "이 큰"], [/있(다|었다)$/, "있는"],
-];
-function asModifier(s, max) {
-  let x = (s || "").trim().replace(/[.!?]+$/, "");
-  if (!x || x.length > max) return "";
-  for (const [re, to] of MODIFIER_MAP) if (re.test(x)) return x.replace(re, to);
-  // 이미 꾸밈꼴이거나 이름씨로 끝나면 그대로 쓴다.
-  return /다$/.test(x) ? "" : x;
-}
+/* 줄글 칸(분위기·좌석·웨이팅·맛·메모)은 제목에 쓰지 않는다.
+
+   한동안 그 문장을 잘라 꾸밈꼴로 바꿔 제목에 넣었는데, 결과가
+   '에드 로스트웍스 주차는 불가 직접 내려주시는 필터 커피',
+   '반려동물과 함께 산책하는 주민 합정동 카페'처럼 비문이 되었다.
+   문장을 조각내 이어 붙여서 말이 되게 만들 방법은 없다.
+
+   상위 노출 제목이 실제로 하는 것은 이름씨를 쌓는 것이다 —
+   '문래동 창작촌 조용한 카페 토시코, 이색 디저트 맛집 흑맥주 커피'.
+   그래서 제목 재료는 쉼표로 끊어 적는 칸(메뉴·특징)에서만 가져온다.
+   줄글은 글 지시문으로 가고, 거기서 클로드가 문장으로 쓴다. */
 
 /* 이 글에 쓸 만한, 밤에 재어 둔 검색어들. 제목 후보와 경쟁도 표가 같은 값을 본다.
    동네는 내 동네와 옆 동네까지, 분류어는 내가 실제로 적은 것만 본다. */
@@ -701,19 +703,14 @@ function titleCandidates(v) {
   const special = pickDistinctMenu(v.menus);
   const bar = $("fBar") && $("fBar").checked;
 
-  /* 설명하는 말 주머니. 검색어가 아니라 글자를 채우는 쪽이다.
-     상위 1위 글들이 쓰는 방식이다 — '통창 뷰가 멋진', '커피 맛있고 분위기 좋은'.
-
-     한 칸에서 한 마디만 뽑으면 주머니가 두세 개밖에 안 차고, 그러면
-     다섯 후보에 똑같은 말이 돌아가며 박힌다. 칸마다 두 마디까지 뽑는다. */
-  const clauses = s => (s || "").split(/[.\n]/).map(x => x.trim()).filter(Boolean);
-  const fromField = s => clauses(s).slice(0, 2).map(x => asModifier(x, 16)).filter(Boolean);
-  const describers = [...new Set([
-    ...fromField(v.who), ...fromField(v.mood), ...fromField(v.seat),
-    ...fromField(v.taste), ...fromField(v.wait), ...fromField(v.memo),
-    ...v.traits,
-  ])];
-  const situation = describers[0] || trait1;
+  /* 쌓을 이름씨 주머니. 쉼표로 끊어 적은 칸에서만 가져오므로 낱말이고,
+     낱말을 쌓는 한 비문이 나올 수 없다. 여덟 자가 넘으면 낱말이 아니라
+     문장을 적은 것이니 제목에는 안 쓴다. */
+  const asWord = s => {
+    const x = (s || "").trim().replace(/[.!?,]+$/, "");
+    return x && x.length <= 8 && x.split(/\s+/).length <= 2 ? x : "";
+  };
+  const words = [...new Set([...v.traits, ...v.menus].map(asWord).filter(Boolean))];
 
   const out = [];
   /* 같은 말이 두 번 들어가면 지운다. 역명이 겹쳐 '문래역문래역'이 되거나
@@ -731,21 +728,10 @@ function titleCandidates(v) {
     return kept.join(" ").replace(/\s+/g, " ").trim();
   };
 
-  /* 32자에 못 미치면 남은 메뉴·특징·설명을 덧붙여 채운다. 이때 붙이는 말은
-     업종어도 의도어도 아니어서 검색어 개수는 늘지 않는다. */
-  /* 채우는 순서가 곧 값어치다. 설명하는 말과 특징이 먼저고, 메뉴는 그다음이다.
-     아메리카노처럼 어디에나 있는 메뉴로 자리를 메우면 길이만 늘고 얻는 게 없다. */
-  const spare = [...new Set([
-    ...describers.slice(1),
-    ...v.menus.slice(1).filter(m => !COMMON_MENUS.has(m.replace(/\s/g, ""))),
-  ])];
-  /* 꾸밈말은 꾸밀 이름씨 앞에 놓아야 말이 된다. 그냥 뒤에 붙이면
-     '에드 로스트웍스 2층 창가 자리가 좋은'처럼 허공에 걸린다.
-     그래서 꾸밈꼴은 가게 이름 바로 앞에, 이름씨는 끝에 넣는다. */
-  const isModifier = s => /(은|는|한|인|던|의|좋은|드는)$/.test(s) && s.length > 3;
-  /* 한 후보가 쓴 말은 다음 후보에서 안 쓴다. 차례만 돌려서는 모자란다 —
-     주머니가 둘뿐이면 '2층 창가 자리가 좋은'이 네 후보에 그대로 박힌다.
-     주머니가 마르면 그때만 다시 꺼내 쓴다. */
+  /* 32자에 못 미치면 남은 낱말을 덧붙여 채운다. 아메리카노처럼 어디에나
+     있는 메뉴로 자리를 메우면 길이만 늘고 얻는 것이 없으므로 뒤로 민다. */
+  const spare = words.filter(w => !COMMON_MENUS.has(w.replace(/\s/g, "")));
+  /* 한 후보가 쓴 말은 다음 후보에서 안 쓴다. 주머니가 마르면 그때만 다시 꺼낸다. */
   const taken = new Set();
   const push = (why, head, tail) => {
     const fresh = spare.filter(b => !taken.has(b));
@@ -754,9 +740,8 @@ function titleCandidates(v) {
     for (const bit of pool) {
       if (x.length >= LEN_MIN) break;
       if (x.replace(/\s/g, "").includes(bit.replace(/\s/g, ""))) continue;
-      const at = isModifier(bit) ? head.indexOf(name) : head.length;
-      const wider = [...head];
-      wider.splice(at < 0 ? head.length : at, 0, bit);
+      // 이름씨를 이름씨 뒤에 쌓는다. 자리를 고를 일이 없으니 비문이 안 난다.
+      const wider = [...head, bit];
       const joined = clean([...wider, ...tail]);
       if (joined.length > LEN_MAX || countKeywords(joined) > GOOD_MAX) continue;
       x = joined;
@@ -777,8 +762,8 @@ function titleCandidates(v) {
   if (special) push("메뉴로 열기", [special, "있는", v.area, t, name], []);
   // ② 대괄호로 동네를 못 박는다 — 1위 글의 23%가 쓰는 형태
   push("동네 못 박기", [`[${v.area} ${t}]`, name, menu1], ["내돈내산 후기"]);
-  // ③ 상황으로 연다 — '혼자 책 읽기 좋은' 처럼 사람이 찾는 맥락
-  if (situation) push("상황으로 열기", [situation, v.area, t, name], ["후기"]);
+  // ③ 특징 낱말로 연다 — '통창 합정동 카페 …'처럼 이름씨를 앞에 세운다
+  if (trait1) push("특징으로 열기", [asWord(trait1), v.area, t, name], ["후기"]);
   // ④ 역명으로 연다 — 역 이름으로 찾는 사람을 잡는다
   if (v.station) push("역명으로 열기", [v.station, t, name, menu1], ["솔직후기"]);
   /* ⑤ 밤에 재어 둔 것 중 기회가 가장 큰 검색어로 연다.
@@ -1087,6 +1072,74 @@ function grade(total, want) {
   return { cls: "", label: "불리" };
 }
 
+/* '전부 불리'로 끝내면 볼 이유가 없다. 동네 검색어가 다 막혀 있어도
+   쓸 수 있는 자리는 세 군데 남는다.
+
+   1. 그중 그나마 기회가 큰 동네 검색어
+   2. 내가 적은 말과 겹치는 주제어 — 동네에 매이지 않아 경쟁이 딴판이다.
+      '합정동 카페'는 글 25만 건인데 '핸드드립'은 관심도 47.9짜리 별도 자리다.
+   3. 고유명 — 가게 이름과 그 집만의 메뉴. 경쟁자가 아예 없다. */
+function renderPicks(v) {
+  const box = $("picks");
+  box.innerHTML = "";
+  const t = v.type || "카페";
+  const rows = [];
+
+  const ranked = measuredQueries(v);
+  ranked.slice(0, 2).forEach((r, i) => rows.push({
+    word: r.query,
+    note: `기회 ${r.opp.toFixed(1)} — 잰 것 중 ${i === 0 ? "가장" : "두 번째로"} 나은 동네 검색어`,
+    cls: r.opp >= OPP_FAIR ? "easy" : "",
+  }));
+
+  /* 주제어는 동네 격자와 따로 잰 값이다. 내가 적은 말에 실제로 있는 것만
+     고른다 — 빵 얘기를 안 했는데 '소금빵'을 권하면 헛다리다. */
+  const written = [...v.menus, ...v.traits, v.taste, v.mood,
+                   v.seat, v.who, v.memo].filter(Boolean).join(" ");
+  const themes = ((KW && KW.themes) || [])
+    .filter(x => saysWord(written, x.word))
+    .sort((a, b) => b.demand - a.demand)
+    .slice(0, 4);
+  themes.forEach(x => rows.push({
+    word: x.word,
+    note: `관심도 ${Math.round(x.demand)} — 동네에 안 매이는 자리라 경쟁이 딴판입니다`,
+    cls: "easy",
+  }));
+
+  const special = pickDistinctMenu(v.menus);
+  if (v.name) rows.push({ word: v.name, note: "고유명 — 경쟁자가 없어 그대로 1위입니다", cls: "easy" });
+  if (special) rows.push({ word: special, note: "그 집만의 메뉴 — 찾는 사람은 적어도 정확히 걸립니다", cls: "easy" });
+
+  if (!rows.length) {
+    const p = document.createElement("div");
+    p.className = "note";
+    p.textContent = "동네와 업종을 채우면 여기에 쓸 검색어를 골라 드립니다.";
+    box.append(p);
+    return;
+  }
+
+  rows.forEach(r => {
+    const el = document.createElement("div");
+    el.className = "kw";
+    const left = document.createElement("div");
+    left.innerHTML = `<div class="q">${r.word}</div><div class="n">${r.note}</div>`;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn ghost";
+    btn.textContent = "복사";
+    btn.addEventListener("click", () => copy(r.word, btn, "복사"));
+    el.append(left, btn);
+    box.append(el);
+  });
+
+  const tip = document.createElement("div");
+  tip.className = "note";
+  tip.innerHTML = `‘${v.area} ${t}’ 하나로 1위를 노리는 것은 글 수십만 건과 겨루는 일입니다. `
+    + "위 목록에서 <b>둘셋을 골라 제목 앞쪽에 같이</b> 넣으면, 큰 검색어에서 밀려도 "
+    + "작은 검색어로는 걸립니다. 주제어는 관심도만 재어 두었고 글 수는 재지 않았습니다.";
+  box.append(tip);
+}
+
 function renderCompetition(v) {
   const box = $("compet");
   box.innerHTML = "";
@@ -1232,6 +1285,7 @@ function render() {
     $("cands").append(el);
   });
 
+  renderPicks(v);
   renderCompetition(v);
   $("prompt").textContent = buildPrompt(v, cands);
   refreshCostGuess();
