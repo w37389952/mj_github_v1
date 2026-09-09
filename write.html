@@ -276,10 +276,12 @@
       <div class="field">
         <label for="fStation">가장 가까운 역 <span class="hint">(제목에 넣습니다)</span></label>
         <input id="fStation" placeholder="숙대입구역">
+        <div class="chips" id="stationPick" style="margin-top:5px"></div>
       </div>
       <div class="field">
         <label for="fNear">인접 지역 <span class="hint">(선택 · 같이 검색되는 동네)</span></label>
         <input id="fNear" placeholder="남영동">
+        <div class="chips" id="nearPick" style="margin-top:5px"></div>
       </div>
       <div class="field">
         <label for="fType">업종</label>
@@ -397,6 +399,11 @@
         <span id="titleHint">초안을 먼저 만들면 그 글을 읽고 제목을 붙입니다.</span>
         <span id="titleStatus"></span>
       </div>
+    </section>
+
+    <section id="histBox" hidden>
+      <h2>지난 API 결과 <span class="sub">돈 주고 받은 것이니 지우기 전까지 남겨 둡니다 · 새로고침해도 그대로입니다</span></h2>
+      <div id="histList"></div>
     </section>
 
     <section>
@@ -520,13 +527,142 @@ function load() {
   F.forEach(id => { if (saved[id] != null) $(id).value = saved[id]; });
   if (saved.fBar != null) $("fBar").checked = Boolean(saved.fBar);
   if (saved.fIntent != null) $("fIntent").checked = Boolean(saved.fIntent);
+  /* 새로고침해도 API로 뽑아 둔 것이 살아 있어야 한다. 돈을 주고 받은
+     결과가 F5 한 번에 날아가면 안 된다. 지우는 것은 '새 글 쓰기'뿐이다. */
+  if (saved.draft) {
+    $("draft").textContent = saved.draft;
+    $("draftBox").hidden = false;
+    $("copyDraft").hidden = false;
+    if (saved.draftStatus) $("draftStatus").textContent = saved.draftStatus;
+  }
+  if (saved.shown) {
+    $("out").classList.add("show");
+    // 저장해 둔 제목이 있으면 그것을 되살리고, 없으면 규칙으로 다시 짓는다.
+    try {
+      const v = readForm();
+      if (v.name && v.area) {
+        if (saved.titles && saved.titles.length) {
+          renderCands(saved.titles.map(x => measureTitle(x.title, x.why, v)), v);
+          renderPicks(v); renderCompetition(v);
+          $("prompt").textContent = buildPrompt(v, titleCandidates(v));
+          const tags = buildTags(v);
+          $("tags").textContent = tags.map(x => "#" + x).join(" ");
+          $("tagCount").textContent = `${tags.length}개 / 최대 30개`;
+          $("tags").dataset.plain = tags.join(",");
+        } else {
+          render({ quiet: true });
+        }
+      }
+    } catch (e) {}
+  }
+  refreshCostGuess();
+  refreshTitleCost();
+  drawHistory();
+  if ($("fArea").value.trim()) drawAreaPicks($("fArea").value.trim());
 }
 function save() {
   const d = {};
   F.forEach(id => { d[id] = $(id).value; });
   d.fBar = $("fBar").checked;
   d.fIntent = $("fIntent").checked;
+  d.draft = $("draft") ? $("draft").textContent : "";
+  d.draftStatus = $("draftStatus") ? $("draftStatus").textContent : "";
+  d.shown = $("out").classList.contains("show");
+  d.titles = [...document.querySelectorAll("#cands .cand")].map(el => ({
+    title: el.querySelector(".title").textContent,
+    why: (el.dataset.why || "지난 결과"),
+  }));
   try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
+}
+
+/* ── 지난 API 결과 보관 ──────────────────────────────────────────────
+   같은 글로 API를 두 번 돌리면 앞의 것이 화면에서 사라진다. 돈을 주고
+   받은 결과이고, 두 번째가 더 나쁠 수도 있다. 그래서 돌릴 때마다
+   따로 쌓아 두고 언제든 되돌려 볼 수 있게 한다. */
+const HIST_STORE = "seoul-radar:history";
+const KEEP_HIST = 12;
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_STORE) || "[]"); }
+  catch (e) { return []; }
+}
+function pushHistory(entry) {
+  const list = loadHistory();
+  list.unshift(entry);                       // 새것이 위로
+  try { localStorage.setItem(HIST_STORE, JSON.stringify(list.slice(0, KEEP_HIST))); }
+  catch (e) {
+    // 자리가 모자라면 오래된 것부터 버리고 다시 시도한다.
+    try { localStorage.setItem(HIST_STORE, JSON.stringify(list.slice(0, 4))); } catch (e2) {}
+  }
+  drawHistory();
+}
+function dropHistory(id) {
+  const list = loadHistory().filter(x => x.id !== id);
+  try { localStorage.setItem(HIST_STORE, JSON.stringify(list)); } catch (e) {}
+  drawHistory();
+}
+
+function whenText(iso) {
+  const d = new Date(iso);
+  const p = n => String(n).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function drawHistory() {
+  const box = $("histList");
+  if (!box) return;
+  const list = loadHistory();
+  $("histBox").hidden = list.length === 0;
+  box.innerHTML = "";
+  list.forEach(h => {
+    const el = document.createElement("div");
+    el.className = "kw";
+    const left = document.createElement("div");
+    const what = h.kind === "draft"
+      ? `초안 ${h.chars ? h.chars.toLocaleString() + "자" : ""}`
+      : `제목 ${(h.titles || []).length}개`;
+    const head = h.kind === "draft"
+      ? (h.draft || "").split("\n").find(x => x.trim()) || ""
+      : (h.titles || [])[0] || "";
+    left.innerHTML = `<div class="q">${whenText(h.at)} · ${what}`
+      + `<span style="font-weight:400;color:var(--ink-faint)"> · ${h.shop || ""}`
+      + `${h.cost != null ? " · " + won(h.cost) + "원" : ""}</span></div>`
+      + `<div class="n" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${head}</div>`;
+    const acts = document.createElement("div");
+    acts.style.cssText = "display:flex;gap:6px;flex-shrink:0";
+    const open = document.createElement("button");
+    open.type = "button"; open.className = "btn ghost"; open.textContent = "되살리기";
+    open.addEventListener("click", () => restoreHistory(h.id));
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "btn ghost"; del.textContent = "✕";
+    del.title = "이 기록만 지웁니다";
+    del.addEventListener("click", () => dropHistory(h.id));
+    acts.append(open, del);
+    el.append(left, acts);
+    box.append(el);
+  });
+}
+
+function restoreHistory(id) {
+  const h = loadHistory().find(x => x.id === id);
+  if (!h) return;
+  if (h.kind === "draft") {
+    $("draftBox").hidden = false;
+    $("draft").textContent = h.draft || "";
+    $("copyDraft").hidden = false;
+    setStatus(`${whenText(h.at)}에 돌린 초안을 되살렸습니다`
+      + (h.chars ? ` — 공백 빼고 ${h.chars.toLocaleString()}자` : "")
+      + (h.cost != null ? ` · ${won(h.cost)}원` : ""));
+    $("draftBox").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    refreshTitleCost();
+  } else {
+    const v = readForm();
+    renderCands((h.titles || []).map(x =>
+      measureTitle(x, `${whenText(h.at)}에 지음`, v)), v);
+    $("titleStatus").textContent = `${whenText(h.at)}에 돌린 제목을 되살렸습니다`;
+    $("cands").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  save();
 }
 
 // 슬래시로 이어 쓴 것도 갈라야 한다. '숯불구이/지리산흑돼지/직원이직접구워줌'이
@@ -1395,6 +1531,7 @@ function renderCands(cands, v) {
     btn.textContent = "복사";
     btn.addEventListener("click", () => copy(c.title, btn, "복사"));
     acts.append(btn);
+    el.dataset.why = c.why;                  // 새로고침 뒤에도 무엇이었는지 남긴다
     el.append(txt, acts);
     $("cands").append(el);
   });
@@ -1413,10 +1550,11 @@ function measureTitle(title, why, v) {
   };
 }
 
-function render() {
+function render(opts) {
+  const quiet = opts && opts.quiet;           // 새로고침으로 되살릴 때는 조용히
   const v = readForm();
   if (!v.name || !v.area) {
-    alert("가게 이름과 동네는 채워주세요. 제목 검색어가 거기서 나옵니다.");
+    if (!quiet) alert("가게 이름과 동네는 채워주세요. 제목 검색어가 거기서 나옵니다.");
     return;
   }
   const cands = titleCandidates(v);
@@ -1433,7 +1571,7 @@ function render() {
   $("tags").dataset.plain = tags.join(",");
 
   $("out").classList.add("show");
-  $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!quiet) $("out").scrollIntoView({ behavior: "smooth", block: "start" });
   save();
 }
 
@@ -1632,6 +1770,55 @@ function rememberAuto() {
 /* force=true — 다른 가게를 고른 것이다. 앞 글의 역·인접 지역은 쓸모가 없으므로
    손으로 고친 값이라도 갈아 끼운다. 그러지 않으면 저장돼 있던 옛 값이
    '사용자가 고친 값'으로 취급돼 영영 안 바뀐다. */
+/* 동네 하나에 역과 인접 지역을 하나씩만 못 박아 두었더니, 합정동 안에서도
+   상수역 쪽에 있는 가게가 말없이 '망원동'으로 채워졌다. 고쳐야 하는 줄
+   모르고 그대로 돌리면 엉뚱한 동네로 글이 나간다.
+
+   좌표가 없어 어느 쪽인지 우리가 알 수는 없다(수집 원본에 X·Y가 있지만
+   아직 안 받아 둔다). 그러니 우리가 고르지 말고, 이웃한 후보를 다 보여
+   주고 고르게 한다. 표를 양쪽으로 훑어 후보를 만든다 —
+   합정동은 자기 짝(망원동)과, 합정동을 이웃으로 적어 둔 동네(상수동)를 함께 낸다. */
+function areaCandidates(area) {
+  const stations = [], nears = [];
+  const add = (list, x) => { if (x && !list.includes(x)) list.push(x); };
+  const own = AREA_MAP[area];
+  if (own) { add(stations, own[0]); add(nears, own[1]); }
+  Object.keys(AREA_MAP).forEach(other => {
+    if (other === area) return;
+    const [st, nr] = AREA_MAP[other];
+    if (nr === area || (own && own[1] === other)) {
+      add(nears, other);
+      add(stations, st);
+    }
+  });
+  return { stations: stations.slice(0, 4), nears: nears.slice(0, 4) };
+}
+
+function drawAreaPicks(area) {
+  const { stations, nears } = areaCandidates(area);
+  [["stationPick", "fStation", stations], ["nearPick", "fNear", nears]]
+    .forEach(([boxId, inputId, list]) => {
+      const box = $(boxId);
+      box.innerHTML = "";
+      // 후보가 하나뿐이면 고를 것이 없으니 굳이 안 보여 준다.
+      if (list.length < 2) return;
+      list.forEach(word => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip" + ($(inputId).value.trim() === word ? " hot" : "");
+        b.textContent = word;
+        b.addEventListener("click", () => {
+          $(inputId).value = word;
+          autoFilled[inputId === "fStation" ? "station" : "near"] = word;
+          rememberAuto();
+          save();
+          drawAreaPicks($("fArea").value.trim());
+        });
+        box.append(b);
+      });
+    });
+}
+
 function fillAreaExtras(area, force) {
   const found = AREA_MAP[area];
   if (!found) {
@@ -1666,6 +1853,7 @@ function fillAreaExtras(area, force) {
   put("fStation", station, "station");
   put("fNear", near, "near");
   if (touched) rememberAuto();
+  drawAreaPicks(area);
   return touched;
 }
 
@@ -1689,8 +1877,13 @@ function fillFromShop(row) {
   const filledExtras = fillAreaExtras(area, true);
   $("ac").hidden = true;
   save();
-  $("parseMsg").textContent = `레이더에서 찾았습니다 — ${address}`
-    + (filledExtras ? " · 가까운 역과 인접 지역도 채웠습니다" : "");
+  /* 주소를 크게 보여 준다. 역·인접 지역은 동네 이름만 보고 찍는 것이라
+     같은 동네 안에서도 틀릴 수 있다. 주소를 봐야 고쳐야 할지 알 수 있다. */
+  $("parseMsg").innerHTML = `레이더에서 찾았습니다 — <b>${address}</b>`
+    + (filledExtras
+        ? "<br>역과 인접 지역은 <b>동네 이름만 보고 찍은 값</b>입니다"
+          + "(좌표가 없어 어느 쪽인지 모릅니다). 주소를 보고 아래 후보에서 골라 주세요."
+        : "");
 }
 
 function renderAc(hits) {
@@ -2125,6 +2318,13 @@ async function makeDraft() {
     // 이제 제목은 이 글을 읽고 지을 수 있다. 단추 이름과 값이 바뀐다.
     refreshTitleCost();
     $("copyDraft").hidden = false;
+    // 다시 돌려서 더 나쁘면 이걸로 돌아올 수 있어야 한다.
+    pushHistory({
+      id: String(Date.now()), at: new Date().toISOString(), kind: "draft",
+      shop: readForm().name, model: $("apiModel").value,
+      chars, cost: realCost, draft: out,
+    });
+    save();
   } catch (err) {
     setStatus(`부르지 못했습니다 — ${err.message}`);
   } finally {
@@ -2353,11 +2553,16 @@ async function makeTitles() {
         outChars: text.length, cost: cost || 0,
       });
     }
+    pushHistory({
+      id: String(Date.now()), at: new Date().toISOString(), kind: "titles",
+      shop: v.name, model: $("apiModel").value, cost, titles,
+    });
     $("titleStatus").textContent = "다 됐습니다"
       + (cost != null ? ` — 실제 ${won(cost)}원` : "")
-      + " · 마음에 안 들면 다시 누르세요 · ‘만들기’를 누르면 규칙으로 지은 제목으로 돌아갑니다";
+      + " · 마음에 안 들면 다시 누르세요 · 지난 것은 아래 ‘지난 API 결과’에 남습니다";
     refreshTitleCost();
     refreshCostGuess();
+    save();
   } catch (err) {
     $("titleStatus").textContent = `부르지 못했습니다 — ${err.message}`;
   } finally {
@@ -2382,12 +2587,20 @@ $("askApi").addEventListener("click", makeDraft);
 $("copyDraft").addEventListener("click", e => copy($("draft").textContent, e.target, "초안 복사"));
 
 $("go").addEventListener("click", render);
+/* 지우는 것은 오직 이 단추다. 새로고침으로는 아무것도 안 없어진다.
+   초안까지 지우므로 한 번 묻는다 — 돈 주고 받은 것이기 때문이다.
+   '지난 API 결과'는 여기서도 안 지운다. 거기서 하나씩 지우면 된다. */
 $("clear").addEventListener("click", () => {
+  const hasDraft = ($("draft").textContent || "").trim().length > 0;
+  if (hasDraft && !confirm("입력과 초안을 비웁니다. '지난 API 결과'는 그대로 남습니다. 비울까요?")) return;
   F.forEach(id => { $(id).value = ""; });
   autoFilled = { station: "", near: "" };
   PICS = [];
   $("picList").innerHTML = "";
   $("parseMsg").textContent = "";
+  $("draft").textContent = "";
+  $("draftStatus").textContent = "";
+  $("cands").innerHTML = "";
   // API 키와 말투 예시는 남긴다. 글마다 다시 넣을 것이 아니다.
   try {
     localStorage.removeItem(KEY);
@@ -2395,6 +2608,8 @@ $("clear").addEventListener("click", () => {
   } catch (e) {}
   $("out").classList.remove("show");
   $("draftBox").hidden = true;
+  $("copyDraft").hidden = true;
+  refreshTitleCost();
   $("fName").focus();
 });
 $("copyPrompt").addEventListener("click", e => copy($("prompt").textContent, e.target, "지시문 복사"));
