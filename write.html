@@ -295,6 +295,13 @@
         <input id="fVisit" placeholder="2026년 9월">
       </div>
       <div class="field wide">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="fBar" style="width:auto;margin:0" checked>
+          제목에 <b>ㅣ</b> 구분 기호 넣기
+          <span class="hint">(상위 노출 75편 중 40%가 씁니다 — 저품질과 무관합니다)</span>
+        </label>
+      </div>
+      <div class="field wide">
         <label for="fMenu">대표 메뉴 <span class="hint">(쉼표로 구분 · 검색어와 태그에 씁니다)</span></label>
         <input id="fMenu" placeholder="양갱, 빙수, 크림라떼">
       </div>
@@ -378,12 +385,12 @@
 
   <div class="out" id="out">
     <section>
-      <h2>제목 후보 <span class="sub">상위 노출 60편은 검색어 3~6개였고 7개 이상은 한 편도 없었습니다 · 65%가 ‘동네+업종’을 붙여서 씁니다</span></h2>
+      <h2>제목 후보 <span class="sub">상위 노출 75편 기준 — 검색어 3~6개, 길이 32~45자(중앙 38자), 65%가 ‘동네+업종’을 붙여서 씁니다</span></h2>
       <div id="cands"></div>
     </section>
 
     <section>
-      <h2>키워드 경쟁도 <span class="sub">그 검색어에 이미 쓰인 블로그 글 수 — 적을수록 1위가 쉽습니다</span></h2>
+      <h2>키워드 경쟁도 <span class="sub">찾는 사람(관심도)을 이미 쓰인 글 수로 나눈 순 — 위에 있을수록 파고들 틈이 큽니다</span></h2>
       <div id="compet"></div>
     </section>
 
@@ -491,10 +498,12 @@ function load() {
   let saved;
   try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return; }
   F.forEach(id => { if (saved[id] != null) $(id).value = saved[id]; });
+  if (saved.fBar != null) $("fBar").checked = Boolean(saved.fBar);
 }
 function save() {
   const d = {};
   F.forEach(id => { d[id] = $(id).value; });
+  d.fBar = $("fBar").checked;
   try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
 }
 
@@ -538,6 +547,8 @@ function readForm() {
   const v = {};
   F.forEach(id => { v[id.slice(1).toLowerCase()] = $(id).value.trim(); });
   if (!v.visit) v.visit = thisMonth();
+  // 제목·태그·지시문 어디에도 영문 상호를 덧붙이지 않는다.
+  v.name = koreanName(v.name);
   v.station = tidyWord(v.station);
   v.area = tidyWord(v.area);
   v.near = tidyWord(v.near);
@@ -562,6 +573,25 @@ const INTENT_RE = /후기|추천|내돈내산|솔직|데이트|코스|가볼만�
 const GOOD_MIN = 3;
 const GOOD_MAX = 6;
 
+/* 글자 수는 검색어 개수와 다른 잣대다. 2026-09-09에 상위 노출 75편을 재보니
+   중앙값 38자, 가운데 절반이 32~45자였다. 내 글 20편은 중앙값 26자로 열두 자
+   짧았다. 검색어를 3~6개로 줄였다고 제목까지 짧아지면 안 된다 — 남는 자리는
+   검색어가 아니라 '통창 뷰가 멋진'처럼 설명하는 말로 채운다. */
+const LEN_MIN = 32;
+const LEN_MAX = 45;
+
+/* 가게 이름은 한글 상호만 쓴다. 레이더가 채워 주는 이름에는 '에드 로스트웍스
+   Ed roastworks'처럼 영문 상호가 뒤에 붙어 오는데, 그대로 제목에 넣으면
+   같은 이름을 두 번 말하면서 열세 자를 잡아먹는다.
+   'GPP'나 '3025'처럼 한글이 아예 없는 이름은 건드리지 않는다. */
+function koreanName(name) {
+  const s = (name || "").replace(/\([^)]*\)\s*$/, "").trim();
+  if (!/[가-힣]/.test(s)) return s;
+  const words = s.split(/\s+/);
+  while (words.length > 1 && !/[가-힣]/.test(words[words.length - 1])) words.pop();
+  return words.join(" ") || s;
+}
+
 function countKeywords(title) {
   let n = 0;
   if (/[가-힣]{2,7}역/.test(title)) n += 1;
@@ -585,17 +615,52 @@ function pickDistinctMenu(menus) {
   return menus.find(m => !COMMON_MENUS.has(m.replace(/\s/g, ""))) || "";
 }
 
+/* 적어 둔 문장을 제목 앞에 세울 수 있는 꾸밈꼴로 바꾼다.
+   '혼자 책 읽기 좋다' → '혼자 책 읽기 좋은'. 못 바꾸는 것은 아예 안 쓴다 —
+   '직원이 직접 구워줌' 같은 말이 제목에 박히는 일이 있었다. */
+const MODIFIER_MAP = [
+  [/좋(다|았다|아요|습니다)$/, "좋은"], [/괜찮(다|았다)$/, "괜찮은"],
+  [/편(하다|했다)$/, "편한"], [/조용(하다|했다)$/, "조용한"],
+  [/한적(하다|했다)$/, "한적한"], [/넓(다|었다)$/, "넓은"],
+  [/아늑(하다|했다)$/, "아늑한"], [/예(쁘다|뻤다)$/, "예쁜"],
+  [/멋(지다|졌다)$/, "멋진"], [/맛있(다|었다)$/, "맛있는"],
+  [/진(하다|했다)$/, "진한"], [/부드(럽다|러웠다)$/, "부드러운"],
+  [/많(다|았다)$/, "많은"], [/잘 (든다|들었다)$/, "잘 드는"],
+  [/(이|가) 크다$/, "이 큰"], [/있(다|었다)$/, "있는"],
+];
+function asModifier(s, max) {
+  let x = (s || "").trim().replace(/[.!?]+$/, "");
+  if (!x || x.length > max) return "";
+  for (const [re, to] of MODIFIER_MAP) if (re.test(x)) return x.replace(re, to);
+  // 이미 꾸밈꼴이거나 이름씨로 끝나면 그대로 쓴다.
+  return /다$/.test(x) ? "" : x;
+}
+
 function titleCandidates(v) {
   const t = v.type || "카페";
+  const name = v.name;                       // readForm에서 이미 한글만 남겼다
   const menu1 = v.menus[0] || "";
-  const menu2 = v.menus[1] || "";
   const trait1 = v.traits[0] || "";
   const special = pickDistinctMenu(v.menus);
+  const bar = $("fBar") && $("fBar").checked;
+
+  /* 설명하는 말 주머니. 검색어가 아니라 글자를 채우는 쪽이다.
+     상위 1위 글들이 쓰는 방식이다 — '통창 뷰가 멋진', '커피 맛있고 분위기 좋은'. */
+  const firstClause = s => (s || "").split(/[.\n]/)[0].trim();
+  const describers = [
+    asModifier(firstClause(v.who), 16),
+    asModifier(firstClause(v.mood), 16),
+    asModifier(firstClause(v.seat), 16),
+    asModifier(firstClause(v.taste), 16),
+    ...v.traits,
+  ].filter(Boolean);
+  const situation = describers[0] || trait1;
+
   const out = [];
   /* 같은 말이 두 번 들어가면 지운다. 역명이 겹쳐 '문래역문래역'이 되거나
      특징이 줄줄이 붙어 제목이 본문처럼 되는 일이 있었다. */
-  const push = s => {
-    const words = s.replace(/\s+/g, " ").trim().split(" ");
+  const clean = parts => {
+    const words = parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim().split(" ");
     const seen = new Set();
     const kept = words.filter(w => {
       const bare = w.replace(/[|ㅣ\[\]—]/g, "");
@@ -604,57 +669,77 @@ function titleCandidates(v) {
       seen.add(bare);
       return true;
     });
-    const x = kept.join(" ").replace(/\s+/g, " ").trim();
-    if (x && !out.includes(x)) out.push(x);
+    return kept.join(" ").replace(/\s+/g, " ").trim();
   };
 
-  // 그 집만의 메뉴가 있으면 그것을 맨 앞에 세운 후보를 먼저 준다.
-  /* 다섯 후보가 같은 말의 순서만 바꾼 꼴이 되지 않게 한다.
-     상위 노출 1위 글들을 보면 시작하는 방식이 저마다 다르다 —
-     메뉴로 열거나, 대괄호로 동네를 못 박거나, 상황을 먼저 말하거나. */
-  const who = (v.who || "").split(/[.\n]/)[0].trim();          // '혼자 책 읽기 좋다'
-  const moodBit = (v.mood || "").split(/[.\n]/)[0].trim();     // '우드톤에 조명이 낮았다'
-  const shorten = (s, n) => (s && s.length <= n ? s : "");
-  /* '혼자 책 읽기 좋다'를 제목 앞에 그대로 두면 말이 안 붙는다.
-     흔한 서술 어미만 꾸밈꼴로 바꾸고, 못 바꾸는 것은 쓰지 않는다. */
-  const asModifier = s => {
-    if (!s) return "";
-    const map = [
-      [/좋다$/, "좋은"], [/좋아보인다$/, "좋은"], [/괜찮다$/, "괜찮은"],
-      [/편하다$/, "편한"], [/조용하다$/, "조용한"], [/한적하다$/, "한적한"],
-      [/넓다$/, "넓은"], [/아늑하다$/, "아늑한"], [/예쁘다$/, "예쁜"],
-    ];
-    for (const [re, to] of map) if (re.test(s)) return s.replace(re, to);
-    return /(은|는|ㄴ|던|좋은|한|인)$/.test(s) ? s : "";
+  /* 32자에 못 미치면 남은 메뉴·특징·설명을 덧붙여 채운다. 이때 붙이는 말은
+     업종어도 의도어도 아니어서 검색어 개수는 늘지 않는다. */
+  /* 채우는 순서가 곧 값어치다. 설명하는 말과 특징이 먼저고, 메뉴는 그다음이다.
+     아메리카노처럼 어디에나 있는 메뉴로 자리를 메우면 길이만 늘고 얻는 게 없다. */
+  const spare = [
+    ...describers.slice(1),
+    ...v.menus.slice(1).filter(m => !COMMON_MENUS.has(m.replace(/\s/g, ""))),
+  ];
+  /* 꾸밈말은 꾸밀 이름씨 앞에 놓아야 말이 된다. 그냥 뒤에 붙이면
+     '에드 로스트웍스 2층 창가 자리가 좋은'처럼 허공에 걸린다.
+     그래서 꾸밈꼴은 가게 이름 바로 앞에, 이름씨는 끝에 넣는다. */
+  const isModifier = s => /(은|는|한|인|던|의|좋은|드는)$/.test(s) && s.length > 3;
+  // 후보마다 채우는 말의 차례를 한 칸씩 돌린다. 안 그러면 다섯 후보에
+  // 똑같은 '2층 창가 자리가 좋은'이 네 번 들어간다.
+  let turn = 0;
+  const push = (why, head, tail) => {
+    const pool = spare.length
+      ? spare.slice(turn % spare.length).concat(spare.slice(0, turn % spare.length))
+      : [];
+    turn += 1;
+    let x = clean([...head, ...tail]);
+    for (const bit of pool) {
+      if (x.length >= LEN_MIN) break;
+      if (x.replace(/\s/g, "").includes(bit.replace(/\s/g, ""))) continue;
+      const at = isModifier(bit) ? head.indexOf(name) : head.length;
+      const wider = [...head];
+      wider.splice(at < 0 ? head.length : at, 0, bit);
+      const joined = clean([...wider, ...tail]);
+      if (joined.length > LEN_MAX || countKeywords(joined) > GOOD_MAX) continue;
+      x = joined;
+      head = wider;
+    }
+    // 구분 기호는 꼬리(내돈내산 후기 같은 말) 앞에 한 번만 넣는다.
+    if (bar && tail.length && x.length + 2 <= LEN_MAX) {
+      x = clean(head) + " ㅣ " + clean(tail);
+    }
+    if (x && !out.some(o => o.title === x)) out.push({ title: x, why });
   };
-  const situation = asModifier(shorten(who, 16)) || asModifier(shorten(moodBit, 16)) || trait1;
 
   /* 조각을 3~6개로 맞춘다. 상위 노출 60편이 그 범위 안에 다 들어 있었고,
-     7개 이상은 한 편도 없었다. 꽉 채우는 것이 아니라 고르는 것이 맞다. */
+     7개 이상은 한 편도 없었다. 꽉 채우는 것이 아니라 고르는 것이 맞다.
+     다섯 후보가 같은 말의 순서만 바꾼 꼴이 되지 않게, 여는 방식을 달리한다. */
   // ① 그 집만의 메뉴로 연다 — 그 메뉴를 찾는 사람이 정확히 걸린다
-  if (special) push(`${special} 있는 ${v.area} ${t} ${v.name}`);
+  if (special) push("메뉴로 열기", [special, "있는", v.area, t, name], []);
   // ② 대괄호로 동네를 못 박는다 — 1위 글의 23%가 쓰는 형태
-  push(`[${v.area} ${t}] ${v.name} ${menu1} 내돈내산 후기`);
+  push("동네 못 박기", [`[${v.area} ${t}]`, name, menu1], ["내돈내산 후기"]);
   // ③ 상황으로 연다 — '혼자 책 읽기 좋은' 처럼 사람이 찾는 맥락
-  if (situation) push(`${situation} ${v.area} ${t} ${v.name} 후기`);
+  if (situation) push("상황으로 열기", [situation, v.area, t, name], ["후기"]);
   // ④ 역명으로 연다 — 역 이름으로 찾는 사람을 잡는다
-  if (v.station) push(`${v.station} ${t} ${v.name} ${menu1} 솔직후기`);
+  if (v.station) push("역명으로 열기", [v.station, t, name, menu1], ["솔직후기"]);
   // ⑤ 인접 지역까지 묶는다 — 옆 동네로 찾는 사람도 걸린다
-  if (v.near) push(`${v.area} ${v.near} ${t} ${v.name} ${trait1} 추천`);
-  // ⑥ 기본형 — 위에서 못 채웠을 때를 위한 자리
-  push(`${v.area} ${t} 추천 ${v.name} ${menu1} 후기`);
-  push(`${v.name} ${v.area} ${t} ㅣ ${menu1} 데이트 코스`);
+  if (v.near) push("옆 동네까지", [v.area, v.near, t, name], ["추천"]);
+  /* ⑥ '신상'은 업종어에 붙여 쓴다. '합정동 카페 신상'을 찾는 사람은 집계에
+     잡히지도 않지만('○○ 신상' 216개 중 0개), 한 낱말 '신상카페'는 관심도 26이다. */
+  push("신상으로 열기", [v.area, "신상", t, name, menu1], ["후기"]);
+  push("기본형", [v.area, t, "추천", name, menu1], ["후기"]);
 
   const target = v.area && t ? `${v.area}${t}` : "";
   // 조각이 너무 많은 후보는 아예 내놓지 않는다.
-  const within = out.filter(x => countKeywords(x) <= GOOD_MAX);
-  return (within.length ? within : out).slice(0, 5).map(title => ({
-    title,
-    n: countKeywords(title),
-    len: title.length,
+  const within = out.filter(x => countKeywords(x.title) <= GOOD_MAX);
+  return (within.length ? within : out).slice(0, 5).map(c => ({
+    title: c.title,
+    why: c.why,
+    n: countKeywords(c.title),
+    len: c.title.length,
     // 상위 노출 글의 65%는 '동네+업종'을 붙여서 그대로 담고 있다.
     // 사이에 다른 말이 끼면 구절이 끊긴다. 그걸 표시해 준다.
-    hasPhrase: Boolean(target) && title.replace(/\s/g, "").includes(target),
+    hasPhrase: Boolean(target) && c.title.replace(/\s/g, "").includes(target),
   }));
 }
 
@@ -909,14 +994,28 @@ function renderThemes() {
   $("themeBox").hidden = !(hot.length || steady.length);
 }
 
-/* 글이 적다고 다 좋은 자리는 아니다. 아무도 안 찾는 말일 수 있다.
-   그래서 공급(문서 수)과 수요(관심도)를 같이 보고 판정한다. */
+/* 글 수만 봐서는 아무것도 모른다. 글이 적은 건 아무도 안 찾아서일 수 있다.
+   실제로 '○○ 카페 신상'은 글이 제일 적어 늘 맨 위에 올라왔는데,
+   2026-09-09 수집에서 '○○ 신상' 꼴 216개 중 검색량이 잡힌 것은 0개였다.
+
+   그래서 수요를 공급으로 나눈 값으로 줄을 세운다.
+   기회 = 관심도 ÷ 글 수 × 1만 = 글 1만 건당 얼마나 찾는가.
+   같은 날 잰 332개의 분포로 문턱을 잡았다: 중앙값 0.73, 상위 25%가 2.47. */
+const OPP_GOOD = 2.5;
+const OPP_FAIR = 0.7;
+
+function opportunity(total, want) {
+  if (total == null || want == null || total <= 0) return null;
+  return want / total * 10000;
+}
+
 function grade(total, want) {
   if (total == null) return { cls: "unknown", label: "모름" };
-  if (want != null && want < 5) return { cls: "unknown", label: "찾는 사람 적음" };
-  if (total < 3000) return { cls: "easy", label: "노려볼 만함" };
-  if (total < 20000) return { cls: "", label: "보통" };
-  return { cls: "", label: "어려움" };
+  if (want == null) return { cls: "unknown", label: "찾는 사람 거의 없음" };
+  const opp = opportunity(total, want);
+  if (opp >= OPP_GOOD) return { cls: "easy", label: "노려볼 만함" };
+  if (opp >= OPP_FAIR) return { cls: "", label: "보통" };
+  return { cls: "", label: "불리" };
 }
 
 function renderCompetition(v) {
@@ -930,13 +1029,12 @@ function renderCompetition(v) {
   const trait1 = v.traits[0] || "";
   const stationArea = (v.station || "").replace(/역$/, "");
 
-  const queries = [
-    `${v.area} ${t}`,
-    `${v.area} ${t} 추천`,
-    `${v.area} ${t} 신상`,
+  /* '○○ 신상'은 아예 빼둔다. 글이 적어서 늘 맨 위에 올라오지만
+     216개 전부 검색량이 집계 최저선 아래였다 — 아무도 안 치는 말이다. */
+  const core = [`${v.area} ${t}`, `${v.area} ${t} 추천`].filter(Boolean);
+  const extra = [
     v.near ? `${v.near} ${t}` : "",
     v.near ? `${v.near} ${t} 추천` : "",
-    v.near ? `${v.near} ${t} 신상` : "",
     stationArea ? `${stationArea} ${t}` : "",
     trait1 ? `${v.area} ${trait1}` : "",
     `${v.area} 맛집`,
@@ -954,11 +1052,19 @@ function renderCompetition(v) {
     return;
   }
 
-  // 재어 두지 않은 검색어는 아예 빼고, 쉬운 것부터 보여 준다.
-  const measured = [...new Set(queries)]
-    .filter(q => KW.counts && KW.counts[q] != null)
-    .sort((a, b) => KW.counts[a] - KW.counts[b])
-    .slice(0, 6);
+  /* 내가 쓰려는 동네·업종 두 줄은 결과가 어떻든 늘 보여 준다. 예전에는
+     글 수가 적은 순으로만 잘라서 '합정동 카페 추천'처럼 정작 쓸 말이
+     잘려 나갔다. 나머지는 기회가 큰 순으로 채운다. */
+  const has = q => KW.counts && KW.counts[q] != null;
+  const opp = q => {
+    const o = opportunity(KW.counts[q], KW.demand ? KW.demand[q] : null);
+    return o == null ? -1 : o;                 // 수요가 안 잡힌 것은 맨 뒤로
+  };
+  const kept = core.filter(has);
+  const rest = [...new Set(extra)]
+    .filter(q => has(q) && !kept.includes(q))
+    .sort((a, b) => opp(b) - opp(a));
+  const measured = [...kept, ...rest].slice(0, 8);
 
   if (!measured.length) {
     const p = document.createElement("div");
@@ -977,9 +1083,13 @@ function renderCompetition(v) {
     el.className = "kw";
     const left = document.createElement("div");
     const flow = KW.hot ? KW.hot[q] : undefined;
+    const o = opportunity(total, want == null ? null : want);
     const bits = [];
     bits.push(total == null ? "문서 수 모름" : `글 ${total.toLocaleString()}건`);
     if (want != null) bits.push(`관심도 ${want}`);
+    // 줄을 세운 기준을 그대로 보여 준다. 이 숫자가 클수록 파고들 틈이 크다.
+    if (o != null) bits.push(`<b>기회 ${o.toFixed(1)}</b>`);
+    else bits.push("검색량이 집계 최저선 아래");
     if (flow != null) {
       bits.push(flow >= 1.15 ? `🔥 지난달 ${flow}배` : `흐름 ${flow}배`);
     }
@@ -991,15 +1101,20 @@ function renderCompetition(v) {
     box.append(el);
   });
 
-  const allHard = measured.every(q => KW.counts[q] >= 20000);
+  const best = measured.map(q => opportunity(KW.counts[q],
+    KW.demand ? KW.demand[q] : null)).filter(x => x != null);
   const tip = document.createElement("div");
   tip.className = "note";
-  tip.innerHTML = `관심도는 <b>${KW.anchor || "성수동 카페"}</b>를 100으로 놓은 상대값입니다.`
-    + (allHard
-        ? " <b>여기는 전부 경쟁이 셉니다.</b> 이 동네는 큰 검색어밖에 없으니, "
-          + "가게 이름과 그 집만의 메뉴를 제목 앞쪽에 두세요 — 경쟁자가 없는 고유명은 "
-          + "지수가 낮아도 1위를 먹습니다. 위 ‘노려볼 만한 검색어’ 구역도 함께 보세요."
-        : " 글 수가 적은 쪽을 제목에 넣으면 1위를 노려볼 만합니다.");
+  tip.innerHTML = "<b>기회</b>는 글 1만 건당 관심도입니다 — 찾는 사람 ÷ 이미 쓴 글. "
+    + `관심도는 <b>${KW.anchor || "성수동 카페"}</b>를 100으로 놓은 상대값이라 `
+    + "숫자 자체보다 줄 사이의 차이를 보세요. 위에 있을수록 파고들 틈이 큽니다."
+    + (best.length && Math.max(...best) < OPP_FAIR
+        ? " <b>여기는 전부 불리합니다.</b> 큰 검색어밖에 없으니 가게 이름과 "
+          + "그 집만의 메뉴를 제목 앞쪽에 두세요 — 경쟁자가 없는 고유명은 "
+          + "지수가 낮아도 1위를 먹습니다."
+        : "")
+    + " <span style=\"color:var(--ink-faint)\">‘○○ 카페 신상’은 뺐습니다 — "
+    + "216개를 재보니 검색량이 잡히는 것이 하나도 없었습니다.</span>";
   box.append(tip);
 }
 
@@ -1028,7 +1143,11 @@ function render() {
     // 상위 노출 60편은 3~6개 안에 다 있었다. 벗어나면 알려 준다.
     const fit = c.n < GOOD_MIN ? ` <span style="color:var(--ink-faint)">(적음)</span>`
       : c.n > GOOD_MAX ? ` <span style="color:var(--ink-faint)">(많음)</span>` : "";
-    me.innerHTML = `검색어 <b>${c.n}개</b>${fit} · ${c.len}자 ${phrase}`;
+    // 글자 수도 같이 본다. 상위 75편의 가운데 절반이 32~45자였다.
+    const lenNote = c.len < LEN_MIN
+      ? ` <span style="color:var(--ink-faint)">(짧음 · 32~45자가 알맞습니다)</span>`
+      : c.len > LEN_MAX ? ` <span style="color:var(--ink-faint)">(김)</span>` : " ✓";
+    me.innerHTML = `<b>${c.why}</b> · 검색어 ${c.n}개${fit} · ${c.len}자${lenNote} ${phrase}`;
     txt.append(ti, me);
     const acts = document.createElement("div");
     acts.className = "acts";
@@ -1297,7 +1416,8 @@ const BIZ_TO_TYPE = {
 
 function fillFromShop(row) {
   const [name, address, biz] = row;
-  $("fName").value = name.replace(/\([^)]*\)\s*$/, "").trim() || name;
+  // 영문 상호가 뒤에 붙어 오면 떼어 낸다 — '에드 로스트웍스 Ed roastworks'.
+  $("fName").value = koreanName(name) || name;
   const area = areaFromAddress(address);
   if (area) $("fArea").value = area;
   const guess = BIZ_TO_TYPE[biz];
