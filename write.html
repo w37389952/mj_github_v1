@@ -303,8 +303,10 @@
         <input id="fTrait" placeholder="신상, 2호점, 통창">
       </div>
       <div class="field">
-        <label for="fHours">영업시간</label>
-        <input id="fHours" placeholder="12:00 - 21:00 (월 휴무)">
+        <label for="fHours">영업시간 <span class="hint">(요일마다 다르면 줄을 바꿔 적으세요)</span></label>
+        <textarea id="fHours" style="min-height:58px" placeholder="평일 10:00 - 19:00
+주말 10:00 - 20:00
+화요일 휴무"></textarea>
       </div>
       <div class="field">
         <label for="fPark">주차</label>
@@ -315,8 +317,8 @@
         <input id="fInsta" placeholder="@tilde_seoul">
       </div>
       <div class="field">
-        <label for="fPhotos">사진 장수 <span class="hint">(대표 1 + 나머지)</span></label>
-        <input id="fPhotos" type="number" min="1" placeholder="40">
+        <label for="fSound">음악 · 소리 <span class="hint">(장르 · 볼륨 · 조용한지)</span></label>
+        <input id="fSound" placeholder="재즈, 볼륨 낮음. 대화 소리가 잘 안 들림">
       </div>
       <div class="field wide">
         <label>본 것과 느낀 것 <span class="hint">— 채운 만큼 글이 길고 구체적으로 나옵니다. 비운 칸은 글에 안 나옵니다</span></label>
@@ -474,14 +476,14 @@
 <script>
 const KEY = "seoul-radar:write";
 const F = ["fPaste","fName","fArea","fStation","fNear","fType","fVisit","fMenu","fTrait",
-           "fHours","fPark","fInsta","fPhotos",
+           "fHours","fPark","fInsta","fSound",
            "fTaste","fMood","fSeat","fWait","fPrice","fWho","fMemo"];
 
 // 채운 칸만 지시문에 넣는다. 비운 칸은 아예 언급하지 않아야 지어내지 않는다.
 const NOTE_FIELDS = [
-  ["taste", "맛"], ["mood", "분위기·인테리어"], ["seat", "좌석·자리"],
-  ["wait", "웨이팅·붐빔·주차"], ["price", "가격"], ["who", "누구에게 맞나·재방문"],
-  ["memo", "그 밖에"],
+  ["taste", "맛"], ["mood", "분위기·인테리어"], ["sound", "음악·소리"],
+  ["seat", "좌석·자리"], ["wait", "웨이팅·붐빔·주차"], ["price", "가격"],
+  ["who", "누구에게 맞나·재방문"], ["memo", "그 밖에"],
 ];
 const $ = id => document.getElementById(id);
 
@@ -600,13 +602,27 @@ function titleCandidates(v) {
   };
 
   // 그 집만의 메뉴가 있으면 그것을 맨 앞에 세운 후보를 먼저 준다.
-  if (special) push(`${special} 있는 ${v.area} ${t} ${v.name} | ${v.station} ${trait1} 후기`);
-  push(`${v.area} ${t} ${v.name} ${v.station} | ${menu1} ${menu2} ${trait1} ${t} 후기`);
-  push(`[${v.area} ${t}] ${v.name} — ${menu1} 맛있는 ${trait1} ${t} 내돈내산 후기`);
-  push(`${v.area} ${t} 추천 ${v.name} | ${v.station} ${menu1} ${t} 솔직후기`);
-  push(`${v.name} ${v.area} ${t} ㅣ ${menu1} ${menu2} ${v.station} 데이트 코스 추천`);
-  if (v.near) push(`${v.area} ${v.near} ${t} ${v.name} ${trait1} ${menu1} 후기`);
-  push(`${v.station} ${trait1} ${t} ${v.name} ${menu1} 내돈내산`);
+  /* 다섯 후보가 같은 말의 순서만 바꾼 꼴이 되지 않게 한다.
+     상위 노출 1위 글들을 보면 시작하는 방식이 저마다 다르다 —
+     메뉴로 열거나, 대괄호로 동네를 못 박거나, 상황을 먼저 말하거나. */
+  const who = (v.who || "").split(/[.\n]/)[0].trim();          // '혼자 책 읽기 좋다'
+  const moodBit = (v.mood || "").split(/[.\n]/)[0].trim();     // '우드톤에 조명이 낮았다'
+  const shorten = (s, n) => (s && s.length <= n ? s : "");
+  const situation = shorten(who, 16) || shorten(moodBit, 16) || trait1;
+
+  // ① 그 집만의 메뉴로 연다 — 그 메뉴를 찾는 사람이 정확히 걸린다
+  if (special) push(`${special} 있는 ${v.area} ${t} ${v.name} | ${v.station} 후기`);
+  // ② 대괄호로 동네를 못 박는다 — 1위 글의 23%가 쓰는 형태
+  push(`[${v.area} ${t}] ${v.name} — ${menu1} ${trait1} 내돈내산 후기`);
+  // ③ 상황으로 연다 — '혼자 책 읽기 좋은' 처럼 사람이 찾는 맥락
+  if (situation) push(`${situation} ${v.area} ${t} ${v.name} | ${v.station} ${menu1}`);
+  // ④ 역명으로 연다 — 역 이름으로 찾는 사람을 잡는다
+  if (v.station) push(`${v.station} ${t} ${v.name} ${v.area} ${menu1} 솔직후기`);
+  // ⑤ 인접 지역까지 묶는다 — 옆 동네로 찾는 사람도 걸린다
+  if (v.near) push(`${v.area} ${v.near} ${t} ${v.name} ${trait1} ${menu2 || menu1} 추천`);
+  // ⑥ 기본형 — 위에서 못 채웠을 때를 위한 자리
+  push(`${v.area} ${t} 추천 ${v.name} | ${v.station} ${menu1} ${t} 후기`);
+  push(`${v.name} ${v.area} ${t} ㅣ ${menu1} ${menu2} ${v.station} 데이트 코스`);
 
   const target = v.area && t ? `${v.area}${t}` : "";
   return out.slice(0, 5).map(title => ({
@@ -687,7 +703,6 @@ function buildTags(v) {
 
 function buildPrompt(v, cands) {
   const t = v.type || "카페";
-  const photos = v.photos || "40";
   return `너는 네이버 블로그 "하란의 카페일지"의 글을 대신 쓴다.
 아래 규칙과 정보를 지켜 완성된 글 한 편을 써라.
 
@@ -699,6 +714,9 @@ function buildPrompt(v, cands) {
     영업시간 ${v.hours || "(입력 없음)"}
     주차 ${v.park || "(입력 없음)"}
     위치 / 인스타 ${v.insta || "(입력 없음)"}
+- 그다음 <요약> 이라 적고 ✔ 로 시작하는 한 줄 요약을 7줄 쓴다.
+  가게 전체를 한 줄씩 압축한다. 본문에 나올 내용만 쓴다.
+  (예: ✔ 필터커피가 맛있는 동교동 조용한 카페)
 - 감탄사와 이모지를 남발하지 않는다. 담백하게 쓴다.
 - 광고처럼 들리는 표현("강추", "인생") 대신 관찰한 사실을 쓴다.
 
@@ -716,10 +734,8 @@ function buildPrompt(v, cands) {
   풀어 쓰고 그때 느낀 것을 붙여 채운다.
 
 [사진]
-- 사진은 ${photos}장이다. 하지만 **사진마다 설명을 붙이지 마라.**
-  "[사진 22] 얼음이 담긴 모습을 클로즈업했다" 같은 문장은 쓸모가 없다.
-- 대신 이야기가 바뀌는 자리에만 [사진] 이라고 한 줄 넣어라. 대여섯 번이면 충분하다.
-- 사진에 무엇이 찍혔는지 짐작해서 쓰지 마라. 내가 메모에 적은 것만 써라.
+- 사진 자리를 표시하지 마라. 사진은 내가 직접 넣는다.
+- 사진에 무엇이 찍혔는지 짐작해서 쓰지 마라. 내가 적은 것만 써라.
 
 [제목]
 아래 후보 중 하나를 고르거나 비슷하게 다듬어 맨 위에 제시하라.
@@ -896,6 +912,7 @@ function renderCompetition(v) {
     `${v.area} ${t} 신상`,
     v.near ? `${v.near} ${t}` : "",
     v.near ? `${v.near} ${t} 추천` : "",
+    v.near ? `${v.near} ${t} 신상` : "",
     stationArea ? `${stationArea} ${t}` : "",
     trait1 ? `${v.area} ${trait1}` : "",
     `${v.area} 맛집`,
@@ -950,11 +967,15 @@ function renderCompetition(v) {
     box.append(el);
   });
 
+  const allHard = measured.every(q => KW.counts[q] >= 20000);
   const tip = document.createElement("div");
   tip.className = "note";
-  tip.innerHTML = `관심도는 <b>${KW.anchor || "성수동 카페"}</b>를 100으로 놓은 상대값입니다. `
-    + "‘어려움’만 있으면 가게 이름과 메뉴를 제목 앞쪽에 두세요 — "
-    + "경쟁자가 없는 고유명은 지수가 낮아도 1위를 먹습니다.";
+  tip.innerHTML = `관심도는 <b>${KW.anchor || "성수동 카페"}</b>를 100으로 놓은 상대값입니다.`
+    + (allHard
+        ? " <b>여기는 전부 경쟁이 셉니다.</b> 이 동네는 큰 검색어밖에 없으니, "
+          + "가게 이름과 그 집만의 메뉴를 제목 앞쪽에 두세요 — 경쟁자가 없는 고유명은 "
+          + "지수가 낮아도 1위를 먹습니다. 위 ‘노려볼 만한 검색어’ 구역도 함께 보세요."
+        : " 글 수가 적은 쪽을 제목에 넣으면 1위를 노려볼 만합니다.");
   box.append(tip);
 }
 
