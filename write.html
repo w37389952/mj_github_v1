@@ -632,6 +632,62 @@ function pickDistinctMenu(menus) {
   return menus.find(m => !COMMON_MENUS.has(m.replace(/\s/g, ""))) || "";
 }
 
+/* 내 제목 120편은 모두 가게 이름 앞에 이모지가 하나 붙어 있다.
+   '파르페 맛집 카페🍨 시메파르페', '북카페📚 소로', '청음 LP 카페💿️ 3025'.
+   아무거나 붙이는 것이 아니라 그 집에서 가장 두드러진 것을 고른다.
+   그래서 메뉴와 특징을 먼저 훑고, 못 찾으면 업종으로 정한다.
+   위에 있는 것이 먼저 걸린다 — 구체적인 것이 앞이다. */
+const EMOJI_BY_WORD = [
+  /* 먼저 '이 집이 무슨 집인가'를 본다. 커피는 어느 카페에나 있어서
+     그것으로 고르면 다 똑같아진다. 실제로 '봉천동 … 북카페📚 소로'처럼
+     그 집을 규정하는 것이 앞선다. */
+  [/북카페|서점|책|독서/, "📚"],
+  [/LP|엘피|청음|턴테이블|바이닐/, "💿"],
+  [/재즈|음악|스피커|사운드|플레이리스트/, "🔊"],
+  [/고양이|냥이/, "🐈"], [/강아지|반려견|반려동물|애견/, "🐕"],
+  [/식물|플랜테리어|화분|온실|그린/, "🌿"], [/꽃|플라워/, "💐"],
+  [/한옥|고택/, "🏯"], [/미술|갤러리|전시|아트/, "🖼️"],
+  [/도자기|공방|그릇/, "🏺"], [/소품|쇼룸|가구|빈티지/, "🪑"],
+  [/루프탑|옥상/, "🏙️"], [/한강|강뷰|바다|호수|워터/, "🌊"],
+  [/통창|햇살|채광|볕/, "⛅"], [/야경|노을/, "🌙"],
+  [/테라스|정원|마당|야외/, "🌳"],
+  // 그다음이 그 집만의 메뉴다.
+  [/파르페/, "🍨"], [/젤라또|아이스크림|소프트콘/, "🍦"], [/빙수/, "🍧"],
+  [/도넛/, "🍩"], [/쿠키/, "🍪"], [/푸딩/, "🍮"], [/약과|한과|정과/, "🍯"],
+  [/케이크|타르트|파블로바|티라미수|몽블랑/, "🍰"],
+  [/소금빵|크루아상|바게트|베이글|스콘|빵|베이커리/, "🥐"],
+  [/말차|녹차|홍차|찻집|티룸|다도/, "🍵"],
+  [/와인/, "🍷"], [/위스키|하이볼|칵테일/, "🥃"], [/맥주|생맥|에일/, "🍺"],
+  [/막걸리|사케|청주|전통주/, "🍶"],
+  [/파스타|리조또/, "🍝"], [/피자/, "🍕"], [/라멘|칼국수|우동|국수/, "🍜"],
+  [/초밥|스시|사시미/, "🍣"], [/바베큐|삼겹|숯불|스테이크|고깃/, "🍖"],
+  [/치킨|닭강정/, "🍗"], [/버거/, "🍔"], [/샌드위치/, "🥪"],
+  [/브런치|에그|오믈렛/, "🍳"], [/샐러드/, "🥗"],
+  // 커피는 맨 마지막이다. 여기까지 걸린 것이 없을 때만 쓴다.
+  [/핸드드립|융드립|드립|로스터리|에스프레소|원두|커피/, "☕"],
+];
+const EMOJI_BY_TYPE = {
+  "카페": "☕", "베이커리": "🥐", "디저트": "🍰", "브런치": "🍳",
+  "술집": "🍶", "바": "🍸", "이자카야": "🍶", "파스타": "🍝",
+  "고기집": "🍖", "한식": "🍚", "일식": "🍣", "맛집": "🍽️",
+};
+
+function pickEmoji(v) {
+  const near = [...v.menus, ...v.traits].join(" ");
+  for (const [re, e] of EMOJI_BY_WORD) if (re.test(near)) return e;
+  const far = [v.mood, v.seat, v.taste, v.sound, v.who, v.memo].filter(Boolean).join(" ");
+  for (const [re, e] of EMOJI_BY_WORD) if (re.test(far)) return e;
+  return EMOJI_BY_TYPE[v.type || "카페"] || "☕";
+}
+
+/* 이모지는 가게 이름 바로 앞 낱말에 붙인다 — '카페🍨 시메파르페'. */
+function withEmoji(title, name, emoji) {
+  if (!emoji || !name) return title;
+  const at = title.lastIndexOf(" " + name);
+  if (at < 0) return title;                    // 이름이 맨 앞이면 붙일 자리가 없다
+  return title.slice(0, at) + emoji + title.slice(at);
+}
+
 /* 카페 글을 쓰는데 '합정동 술집'이 경쟁도에 올라오면 볼 이유가 없다.
    업종마다 같이 볼 만한 이웃 업종을 정해 둔다. 수집기가 재는 여섯 가지
    (카페·맛집·베이커리·브런치·디저트·술집) 안에서만 고른다. */
@@ -714,6 +770,7 @@ function titleCandidates(v) {
   const trait1 = v.traits[0] || "";
   const special = pickDistinctMenu(v.menus);
   const bar = $("fBar") && $("fBar").checked;
+  const emoji = pickEmoji(v);
 
   /* 쌓을 이름씨 주머니. 쉼표로 끊어 적은 칸에서만 가져오므로 낱말이고,
      낱말을 쌓는 한 비문이 나올 수 없다. 여덟 자가 넘으면 낱말이 아니라
@@ -750,7 +807,7 @@ function titleCandidates(v) {
     const pool = fresh.length ? fresh.concat(spare) : spare;
     let x = clean([...head, ...tail]);
     for (const bit of pool) {
-      if (x.length >= LEN_MIN) break;
+      if (x.length >= LEN_FILL) break;
       if (x.replace(/\s/g, "").includes(bit.replace(/\s/g, ""))) continue;
       /* 채우는 말은 업종어 앞에 넣는다. 내 제목은 늘 가게 이름으로 끝나는데
          뒤에 붙이면 '에드 로스트웍스 로스터리 햇살맛집'처럼 이름 뒤로
@@ -759,8 +816,10 @@ function titleCandidates(v) {
         : head.indexOf(name) >= 0 ? head.indexOf(name) : head.length;
       const wider = [...head];
       wider.splice(at, 0, bit);
+      // 이모지도 글자 수에 들어가므로 미리 빼 두고 잰다.
       const joined = clean([...wider, ...tail]);
-      if (joined.length > LEN_MAX || countKeywords(joined) > GOOD_MAX) continue;
+      if (joined.length + emoji.length > LEN_MAX
+          || countKeywords(joined) > GOOD_MAX) continue;
       x = joined;
       head = wider;
       taken.add(bit);
@@ -773,6 +832,7 @@ function titleCandidates(v) {
         x = left + " ㅣ " + right;
       }
     }
+    x = withEmoji(x, name, emoji);
     if (x && !out.some(o => o.title === x)) out.push({ title: x, why });
   };
 
@@ -784,6 +844,7 @@ function titleCandidates(v) {
 
      조각은 3~6개로 맞춘다. 상위 노출 60편이 그 안에 다 있었고 7개 이상은
      한 편도 없었다. 다섯 후보가 꼬리만 다른 꼴이 되지 않게 여는 자리를 달리한다. */
+  const LEN_FILL = LEN_MIN - emoji.length;     // 이모지 몫을 남겨 두고 채운다
   const useIntent = $("fIntent") && $("fIntent").checked;
   const tails = useIntent
     ? ["후기", "추천", "내돈내산 후기", "솔직후기", ""]
@@ -2033,14 +2094,20 @@ ${line("이름", v.name)}${line("동네", v.area)}${line("가까운 역", v.stat
 [이 블로그 주인의 제목 결 — 최근 120편을 실제로 재서 얻은 것]
 이 사람은 제목 꼴이 아주 일정하다. 그 결을 벗어나면 안 된다.
 
-  꼴: {동네} {꾸밈말} {업종} {가게이름}   ← 가게 이름이 늘 맨 끝이다
+  꼴: {동네} {꾸밈말} {업종}{이모지} {가게이름}   ← 가게 이름이 늘 맨 끝이다
   보기:
-    문래동 천장에서 햇살이 내려오는 파블로바 맛집 카페 틈틈틈
-    봉천동 차분히 독서하기 좋은 북카페 소로
-    망원동 가구 쇼룸에 온 듯한 세련된 카페 퍼슨
-    마포 커피가 맛있는 편안한 감성 카페 탁트커피로스터스
-    한남동 청음하기 좋은 차분한 LP카페 바 애니메이
-    후암동에 2호점을 오픈한 빙수 맛집 카페 틸데
+    문래동 천장에서 햇살이 내려오는 파블로바 맛집 카페⛅ 틈틈틈
+    봉천동 차분히 독서하기 좋은 북카페📚 소로
+    망원동 가구 쇼룸에 온 듯한 세련된 카페🪑 퍼슨
+    마포 커피가 맛있는 편안한 감성 카페🎹 탁트커피로스터스
+    한남동 청음하기 좋은 차분한 LP카페 바🔊 애니메이
+    문래동 삿포로 파르페 맛집 카페🍨 시메파르페
+
+  이모지는 120편 모두에 있다. 가게 이름 바로 앞 낱말에 띄어쓰기 없이
+  붙이고, 그 뒤에 한 칸 띄고 가게 이름을 쓴다. 아무거나 쓰지 않고
+  그 집에서 가장 두드러진 것을 고른다 — 파르페면 🍨, 책이면 📚,
+  LP면 💿, 식물이면 🌿, 통창 햇살이면 ⛅. 다섯 후보가 저마다 다른
+  이모지를 쓸 필요는 없지만, 그 가게와 상관없는 것은 쓰지 마라.
 
   120편 중 실제 비율:
   - '후기 / 추천 / 내돈내산 / 솔직후기'를 쓴 제목: 1편(1%)
