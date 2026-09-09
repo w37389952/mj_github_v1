@@ -562,11 +562,26 @@ function countKeywords(title, v) {
   return hit.size;
 }
 
+/* 어디에나 있는 메뉴는 태그로 넣어도 경쟁이 수백만 건이라 값어치가 없다.
+   반대로 그 집만의 메뉴는 찾는 사람이 적어도 정확히 그것을 찾아서 온다.
+   그래서 특이한 메뉴는 제목 앞에 세운다. */
+const COMMON_MENUS = new Set([
+  "아메리카노", "라떼", "카페라떼", "커피", "에스프레소", "카푸치노",
+  "빙수", "케이크", "쿠키", "크루아상", "샌드위치", "베이글", "스콘",
+  "돈까스", "파스타", "피자", "라멘", "우동", "김밥", "떡볶이", "치킨",
+  "삼겹살", "된장찌개", "김치찌개", "냉면", "국수", "회", "초밥",
+]);
+
+function pickDistinctMenu(menus) {
+  return menus.find(m => !COMMON_MENUS.has(m.replace(/\s/g, ""))) || "";
+}
+
 function titleCandidates(v) {
   const t = v.type || "카페";
   const menu1 = v.menus[0] || "";
   const menu2 = v.menus[1] || "";
   const trait1 = v.traits[0] || "";
+  const special = pickDistinctMenu(v.menus);
   const out = [];
   /* 같은 말이 두 번 들어가면 지운다. 역명이 겹쳐 '문래역문래역'이 되거나
      특징이 줄줄이 붙어 제목이 본문처럼 되는 일이 있었다. */
@@ -584,6 +599,8 @@ function titleCandidates(v) {
     if (x && !out.includes(x)) out.push(x);
   };
 
+  // 그 집만의 메뉴가 있으면 그것을 맨 앞에 세운 후보를 먼저 준다.
+  if (special) push(`${special} 있는 ${v.area} ${t} ${v.name} | ${v.station} ${trait1} 후기`);
   push(`${v.area} ${t} ${v.name} ${v.station} | ${menu1} ${menu2} ${trait1} ${t} 후기`);
   push(`[${v.area} ${t}] ${v.name} — ${menu1} 맛있는 ${trait1} ${t} 내돈내산 후기`);
   push(`${v.area} ${t} 추천 ${v.name} | ${v.station} ${menu1} ${t} 솔직후기`);
@@ -631,8 +648,11 @@ function buildTags(v) {
     .sort((a, b) => Number(b.known) - Number(a.known))
     .map(x => x.tag);
 
+  // 그 집만의 메뉴는 가게 이름 다음으로 값어치가 크다. 앞쪽에 둔다.
+  const special = pickDistinctMenu(v.menus);
+
   const base = [
-    v.name, v.area, v.station, v.near,
+    v.name, special, v.area, v.station, v.near,
     ...areaCombos,
     `${v.station}${t}`, `${v.area} ${t}`, `서울${t}`, `${t}추천`, `${v.area}${t}추천`,
     ...v.menus, ...v.traits,
@@ -650,11 +670,16 @@ function buildTags(v) {
     tags.push(c);
   });
 
-  // 검색량이 확인된 말을 앞으로. 30개가 넘칠 때 뒤가 잘리므로 순서가 중요하다.
+  /* 30개가 넘치면 뒤가 잘리므로 순서가 곧 우선순위다.
+     가게 이름과 그 집만의 메뉴가 먼저다 — 경쟁이 없어 그대로 1위를 먹는다.
+     그다음이 검색량이 확인된 조합, 마지막이 나머지다. */
   const known = KW && KW.counts ? KW.counts : {};
+  const bare = s => (s || "").replace(/\s+/g, "");
+  const first = new Set([bare(v.name), bare(special)].filter(Boolean));
   const rank = tag => {
-    const spaced = tag.replace(/([가-힣]+?)(카페|맛집|베이커리|브런치|디저트|술집)$/, "$1 $2");
-    return (known[tag] != null || known[spaced] != null) ? 0 : 1;
+    if (first.has(tag)) return 0;
+    const spaced = tag.replace(/([가-힣]+?)(카페|맛집|베이커리|브런치|디저트|술집|커피|빵집)$/, "$1 $2");
+    return (known[tag] != null || known[spaced] != null) ? 1 : 2;
   };
   tags.sort((a, b) => rank(a) - rank(b));
   return tags.slice(0, 30);
@@ -1165,13 +1190,48 @@ const AREA_MAP = {
   "대현동": ["이대역", "신촌"],
 };
 
+/* 동네가 바뀌면 역과 인접 지역도 따라 바뀌어야 한다. 그런데 사용자가 손으로
+   고친 값은 지켜야 한다. 그래서 '내가 채워 넣은 값'을 기억해 두었다가,
+   칸이 비었거나 내가 넣은 그대로일 때만 갈아 끼운다. */
+const AUTO_STORE = "seoul-radar:autoFilled";
+let autoFilled = { station: "", near: "" };
+try { autoFilled = JSON.parse(localStorage.getItem(AUTO_STORE)) || autoFilled; } catch (e) {}
+function rememberAuto() {
+  try { localStorage.setItem(AUTO_STORE, JSON.stringify(autoFilled)); } catch (e) {}
+}
+
 function fillAreaExtras(area) {
   const found = AREA_MAP[area];
-  if (!found) return false;
+  if (!found) {
+    // 표에 없는 동네다. 앞 동네 것이 남아 있으면 지워 준다. 틀린 값보다 빈칸이 낫다.
+    let cleared = false;
+    ["station", "near"].forEach(key => {
+      const id = key === "station" ? "fStation" : "fNear";
+      if (autoFilled[key] && $(id).value.trim() === autoFilled[key]) {
+        $(id).value = "";
+        autoFilled[key] = "";
+        cleared = true;
+      }
+    });
+    if (cleared) rememberAuto();
+    return false;
+  }
   const [station, near] = found;
   let touched = false;
-  if (station && !$("fStation").value.trim()) { $("fStation").value = station; touched = true; }
-  if (near && !$("fNear").value.trim()) { $("fNear").value = near; touched = true; }
+
+  const put = (id, value, key) => {
+    if (!value) return;
+    const now = $(id).value.trim();
+    if (now && now !== autoFilled[key]) return;   // 사용자가 고친 값은 그대로 둔다
+    if (now === value) return;
+    $(id).value = value;
+    autoFilled[key] = value;
+    touched = true;
+  };
+
+  put("fStation", station, "station");
+  put("fNear", near, "near");
+  if (touched) rememberAuto();
   return touched;
 }
 
