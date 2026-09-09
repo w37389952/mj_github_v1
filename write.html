@@ -296,9 +296,14 @@
       </div>
       <div class="field wide">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="fBar" style="width:auto;margin:0" checked>
+          <input type="checkbox" id="fBar" style="width:auto;margin:0">
           제목에 <b>ㅣ</b> 구분 기호 넣기
-          <span class="hint">(상위 노출 75편 중 40%가 씁니다 — 저품질과 무관합니다)</span>
+          <span class="hint">(상위 노출 75편의 40%가 쓰지만, 내 글 120편에는 0편입니다)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:6px">
+          <input type="checkbox" id="fIntent" style="width:auto;margin:0">
+          제목 끝에 <b>후기·추천</b> 같은 말 넣기
+          <span class="hint">(상위 노출은 자주 쓰지만, 내 글 120편 중 1편뿐입니다)</span>
         </label>
       </div>
       <div class="field wide">
@@ -385,7 +390,7 @@
 
   <div class="out" id="out">
     <section>
-      <h2>제목 후보 <span class="sub">상위 노출 75편 기준 — 검색어 3~6개, 길이 32~45자(중앙 38자), 65%가 ‘동네+업종’을 붙여서 씁니다</span></h2>
+      <h2>제목 후보 <span class="sub">내 글 120편의 꼴 — ‘동네 + 꾸밈말 + 업종 + 가게이름’ · 길이 30~42자 · 검색어 3~6개</span></h2>
       <div id="cands"></div>
       <div class="chip-hint" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px">
         <button type="button" class="btn ghost" id="askTitles">제목 API로 짓기</button>
@@ -509,11 +514,13 @@ function load() {
   try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return; }
   F.forEach(id => { if (saved[id] != null) $(id).value = saved[id]; });
   if (saved.fBar != null) $("fBar").checked = Boolean(saved.fBar);
+  if (saved.fIntent != null) $("fIntent").checked = Boolean(saved.fIntent);
 }
 function save() {
   const d = {};
   F.forEach(id => { d[id] = $(id).value; });
   d.fBar = $("fBar").checked;
+  d.fIntent = $("fIntent").checked;
   try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
 }
 
@@ -583,12 +590,12 @@ const INTENT_RE = /후기|추천|내돈내산|솔직|데이트|코스|가볼만�
 const GOOD_MIN = 3;
 const GOOD_MAX = 6;
 
-/* 글자 수는 검색어 개수와 다른 잣대다. 2026-09-09에 상위 노출 75편을 재보니
-   중앙값 38자, 가운데 절반이 32~45자였다. 내 글 20편은 중앙값 26자로 열두 자
-   짧았다. 검색어를 3~6개로 줄였다고 제목까지 짧아지면 안 된다 — 남는 자리는
-   검색어가 아니라 '통창 뷰가 멋진'처럼 설명하는 말로 채운다. */
-const LEN_MIN = 32;
-const LEN_MAX = 45;
+/* 글자 수는 검색어 개수와 다른 잣대다. 2026-09-09에 상위 노출 75편은
+   중앙값 38자(가운데 절반 32~45자), 내 글 120편은 중앙값 29자(27~32자)였다.
+   상위 노출에 맞춰 45자까지 늘리면 내 결이 무너지고, 29자에 머물면
+   상위 노출보다 아홉 자 짧다. 그 사이인 30~42자를 목표로 잡는다. */
+const LEN_MIN = 30;
+const LEN_MAX = 42;
 
 /* 가게 이름은 한글 상호만 쓴다. 레이더가 채워 주는 이름에는 '에드 로스트웍스
    Ed roastworks'처럼 영문 상호가 뒤에 붙어 오는데, 그대로 제목에 넣으면
@@ -745,46 +752,68 @@ function titleCandidates(v) {
     for (const bit of pool) {
       if (x.length >= LEN_MIN) break;
       if (x.replace(/\s/g, "").includes(bit.replace(/\s/g, ""))) continue;
-      // 이름씨를 이름씨 뒤에 쌓는다. 자리를 고를 일이 없으니 비문이 안 난다.
-      const wider = [...head, bit];
+      /* 채우는 말은 업종어 앞에 넣는다. 내 제목은 늘 가게 이름으로 끝나는데
+         뒤에 붙이면 '에드 로스트웍스 로스터리 햇살맛집'처럼 이름 뒤로
+         꼬리가 생긴다. '합정동 통창 로스터리 카페 에드 로스트웍스'가 내 꼴이다. */
+      const at = head.indexOf(t) >= 0 ? head.indexOf(t)
+        : head.indexOf(name) >= 0 ? head.indexOf(name) : head.length;
+      const wider = [...head];
+      wider.splice(at, 0, bit);
       const joined = clean([...wider, ...tail]);
       if (joined.length > LEN_MAX || countKeywords(joined) > GOOD_MAX) continue;
       x = joined;
       head = wider;
       taken.add(bit);
     }
-    // 구분 기호는 꼬리(내돈내산 후기 같은 말) 앞에 한 번만 넣는다.
-    if (bar && tail.length && x.length + 2 <= LEN_MAX) {
-      x = clean(head) + " ㅣ " + clean(tail);
+    /* 구분 기호는 양쪽이 다 실할 때만 넣는다. 'ㅣ 후기'처럼 뒤에 한 마디만
+       남으면 나눌 이유가 없어 어색하다. */
+    if (bar && tail.length) {
+      const left = clean(head), right = clean(tail);
+      if (left.length >= 12 && right.length >= 6 && x.length + 2 <= LEN_MAX) {
+        x = left + " ㅣ " + right;
+      }
     }
     if (x && !out.some(o => o.title === x)) out.push({ title: x, why });
   };
 
-  /* 조각을 3~6개로 맞춘다. 상위 노출 60편이 그 범위 안에 다 들어 있었고,
-     7개 이상은 한 편도 없었다. 꽉 채우는 것이 아니라 고르는 것이 맞다.
-     다섯 후보가 같은 말의 순서만 바꾼 꼴이 되지 않게, 여는 방식을 달리한다. */
-  // ① 그 집만의 메뉴로 연다 — 그 메뉴를 찾는 사람이 정확히 걸린다
-  if (special) push("메뉴로 열기", [special, "있는", v.area, t, name], []);
-  // ② 대괄호로 동네를 못 박는다 — 1위 글의 23%가 쓰는 형태
-  push("동네 못 박기", [`[${v.area} ${t}]`, name, menu1], ["내돈내산 후기"]);
-  // ③ 특징 낱말로 연다 — '통창 합정동 카페 …'처럼 이름씨를 앞에 세운다
-  if (trait1) push("특징으로 열기", [asWord(trait1), v.area, t, name], ["후기"]);
+  /* 내 글 120편의 꼴을 그대로 따른다: {동네} {꾸밈말} {업종} {가게이름}.
+     '문래동 천장에서 햇살이 내려오는 파블로바 맛집 카페 틈틈틈',
+     '봉천동 차분히 독서하기 좋은 북카페 소로'처럼 가게 이름이 늘 끝에 온다.
+     대괄호로 연 제목과 'ㅣ'를 쓴 제목은 120편 중 0편, '후기·추천' 같은
+     의도어는 1편뿐이었다. 그래서 그 꼴은 기본에서 빼고 칸을 켤 때만 쓴다.
+
+     조각은 3~6개로 맞춘다. 상위 노출 60편이 그 안에 다 있었고 7개 이상은
+     한 편도 없었다. 다섯 후보가 꼬리만 다른 꼴이 되지 않게 여는 자리를 달리한다. */
+  const useIntent = $("fIntent") && $("fIntent").checked;
+  const tails = useIntent
+    ? ["후기", "추천", "내돈내산 후기", "솔직후기", ""]
+    : ["", "", "", "", ""];
+  const T = i => (tails[i] ? [tails[i]] : []);
+
+  // ① 특징을 꾸밈말 자리에 — 내가 가장 자주 쓰는 꼴이다
+  if (trait1) push("특징을 앞세움", [v.area, asWord(trait1), t, name], T(0));
+  // ② 그 집만의 메뉴를 꾸밈말 자리에 — '파블로바 맛집 카페 틈틈틈'
+  if (special) push("메뉴를 앞세움", [v.area, special, "맛집", t, name], T(1));
+  /* ③ '동네+업종'을 붙여서 담는 꼴을 하나는 남긴다. 상위 노출 글의 65%가
+     이렇게 쓰는데, 내 꼴은 가운데에 꾸밈말이 들어가 그 구절이 끊긴다.
+     둘 다 볼 수 있어야 고를 수 있다. */
+  push("‘동네+업종’ 붙여 쓰기", [`${v.area} ${t}`, name, menu1], T(2));
   // ④ 역명으로 연다 — 역 이름으로 찾는 사람을 잡는다
-  if (v.station) push("역명으로 열기", [v.station, t, name, menu1], ["솔직후기"]);
+  if (v.station) push("역명으로 열기", [v.station, asWord(trait1), t, name], T(3));
   /* ⑤ 밤에 재어 둔 것 중 기회가 가장 큰 검색어로 연다.
      내가 실제로 적은 분류어만 쓴다 — 빵 얘기를 안 했는데 '베이커리'로
      열면 헛다리다. 경쟁도 표에서 맨 위에 있는 말이 여기로 온다. */
   const bestKw = bestQuery(v);
   if (bestKw && bestKw.query !== `${v.area} ${t}`) {
     push(`기회 ${bestKw.opp.toFixed(1)}짜리 검색어로 열기`,
-         [bestKw.query, name, menu1], ["내돈내산 후기"]);
+         [bestKw.query, asWord(trait1), name], T(4));
   }
-  // ⑥ 인접 지역까지 묶는다 — 옆 동네로 찾는 사람도 걸린다
-  if (v.near) push("옆 동네까지", [v.area, v.near, t, name], ["추천"]);
   /* ⑥ '신상'은 업종어에 붙여 쓴다. '합정동 카페 신상'을 찾는 사람은 집계에
      잡히지도 않지만('○○ 신상' 216개 중 0개), 한 낱말 '신상카페'는 관심도 26이다. */
-  push("신상으로 열기", [v.area, "신상", t, name, menu1], ["후기"]);
-  push("기본형", [v.area, t, "추천", name, menu1], ["후기"]);
+  push("신상을 앞세움", [v.area, "신상", t, name, menu1], []);
+  // ⑥ 인접 지역까지 묶는다 — 옆 동네로 찾는 사람도 걸린다
+  if (v.near) push("옆 동네까지", [v.area, v.near, t, name], []);
+  push("기본형", [v.area, t, name, menu1], []);
 
   const target = v.area && t ? `${v.area}${t}` : "";
   const ranked = measuredQueries(v);
@@ -2001,13 +2030,35 @@ ${draft}${draft.length >= DRAFT_FOR_TITLE ? "\n(뒷부분 줄임)" : ""}
 ` : ""}
 [가게]
 ${line("이름", v.name)}${line("동네", v.area)}${line("가까운 역", v.station)}${line("인접 지역", v.near)}${line("업종", t)}${line("대표 메뉴", v.menus.join(", "))}${line("특징", v.traits.join(", "))}${line("맛", v.taste)}${line("분위기·인테리어", v.mood)}${line("좌석", v.seat)}${line("음악·소리", v.sound)}${line("누구에게 맞나", v.who)}${line("그 밖에", v.memo)}
+[이 블로그 주인의 제목 결 — 최근 120편을 실제로 재서 얻은 것]
+이 사람은 제목 꼴이 아주 일정하다. 그 결을 벗어나면 안 된다.
+
+  꼴: {동네} {꾸밈말} {업종} {가게이름}   ← 가게 이름이 늘 맨 끝이다
+  보기:
+    문래동 천장에서 햇살이 내려오는 파블로바 맛집 카페 틈틈틈
+    봉천동 차분히 독서하기 좋은 북카페 소로
+    망원동 가구 쇼룸에 온 듯한 세련된 카페 퍼슨
+    마포 커피가 맛있는 편안한 감성 카페 탁트커피로스터스
+    한남동 청음하기 좋은 차분한 LP카페 바 애니메이
+    후암동에 2호점을 오픈한 빙수 맛집 카페 틸데
+
+  120편 중 실제 비율:
+  - '후기 / 추천 / 내돈내산 / 솔직후기'를 쓴 제목: 1편(1%)
+  - 'ㅣ' 나 '|' 를 쓴 제목: 0편(0%)
+  - '[대괄호]'로 연 제목: 0편(0%)
+  - 글자 수 중앙값 29자 (가운데 절반 27~32자)
+
+  가운데 꾸밈말이 이 사람 제목의 핵심이다. '차분히 독서하기 좋은',
+  '아기고양이가 반겨주는', '천장에서 햇살이 내려오는'처럼 그 가게에서만
+  할 수 있는 말을 한 구절로 쓴다. 흔한 말로 때우지 마라.
+
 [제목 규칙 — 상위 노출 75편을 재서 얻은 것]
-- 길이 32~45자. 중앙값이 38자다. 짧으면 안 된다.
+- 길이 30~42자. 이 사람은 29자로 쓰고 상위 노출은 38자다. 그 사이로 맞춰라.
 - 검색어 조각 3~6개. 7개 이상은 상위 노출에 한 편도 없었다.
-  (조각 = 역명·동네·업종어·의도어. 의도어는 후기/추천/내돈내산/솔직/데이트/코스/가볼만한곳/가성비/웨이팅/주차/핫플/신상 따위)
+  (조각 = 역명·동네·업종어·의도어)
 - 65%가 '${v.area} ${t}'를 붙여서 그대로 담고 있다. 사이에 다른 말을 끼우지 마라.
 - 가게 이름은 반드시 넣는다. 한글 상호만 쓰고 영문 상호는 붙이지 마라.
-${$("fBar").checked ? "- 다섯 중 두셋은 ㅣ 로 앞뒤를 나눠라. 상위 노출 75편의 40%가 쓴다.\n" : "- ㅣ 나 | 같은 구분 기호는 쓰지 마라.\n"}
+${$("fBar").checked ? "- 다섯 중 두셋은 ㅣ 로 앞뒤를 나눠라. 나눌 때는 양쪽이 다 실해야 한다 — 'ㅣ 후기'처럼 뒤에 한 마디만 남기지 마라.\n" : "- ㅣ 나 | 같은 구분 기호는 쓰지 마라. 이 사람은 120편 중 한 번도 안 썼다.\n"}${$("fIntent").checked ? "- 다섯 중 두셋은 끝에 '후기'나 '추천'을 붙여라. 다섯 개 모두에 붙이지는 마라.\n" : "- '후기 / 추천 / 내돈내산 / 솔직후기'로 끝맺지 마라. 이 사람은 120편 중 1편만 썼다.\n"}
 [꼭 지킬 것]
 - 낱말을 나열하지 마라. '통창 합정동 카페 에드 로스트웍스 필터커피 로스터리'처럼
   이름씨만 늘어놓으면 아무도 안 치는 말이 된다. 사람이 읽어서 말이 되는
@@ -2016,8 +2067,10 @@ ${$("fBar").checked ? "- 다섯 중 두셋은 ㅣ 로 앞뒤를 나눠라. 상�
   산책하는 주민' 같은 조각이 제목에 박히면 비문이다. 뜻을 살려 새로 써라.
 - 안 적은 것을 지어내지 마라. 위에 없는 메뉴·분위기·사실을 만들지 마라.
 - 과장하지 마라. '인생', '최고', '역대급'은 쓰지 않는다.
-- 다섯 개가 서로 다른 방식으로 열려야 한다 — 메뉴로, 분위기로, 상황으로,
-  역 이름으로, 동네를 대괄호로 못 박고.
+- 다섯 개가 서로 다른 방식으로 열려야 한다. 꼬리만 바꾸는 것은 다른 게
+  아니다 — 가운데 꾸밈말이 저마다 달라야 한다. 하나는 분위기로, 하나는
+  메뉴 맛으로, 하나는 누가 오면 좋을지로, 하나는 역 이름으로, 하나는
+  옆 동네나 기회가 큰 검색어로.
 ${ranked.length ? `\n[이 동네에서 재어 둔 검색어 — 기회가 큰 순]\n`
   + ranked.map(r => `- ${r.query} (기회 ${r.opp.toFixed(1)})`).join("\n")
   + `\n기회가 큰 것을 적어도 한 후보에는 제목 앞쪽에 넣어라.` : ""}
