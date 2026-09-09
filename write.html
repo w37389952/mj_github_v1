@@ -615,6 +615,36 @@ function pickDistinctMenu(menus) {
   return menus.find(m => !COMMON_MENUS.has(m.replace(/\s/g, ""))) || "";
 }
 
+/* 카페 글을 쓰는데 '합정동 술집'이 경쟁도에 올라오면 볼 이유가 없다.
+   업종마다 같이 볼 만한 이웃 업종을 정해 둔다. 수집기가 재는 여섯 가지
+   (카페·맛집·베이커리·브런치·디저트·술집) 안에서만 고른다. */
+const TYPE_FAMILY = {
+  "카페": ["카페", "디저트", "베이커리", "브런치"],
+  "베이커리": ["베이커리", "카페", "디저트", "브런치"],
+  "디저트": ["디저트", "카페", "베이커리", "브런치"],
+  "브런치": ["브런치", "카페", "베이커리", "맛집"],
+  "맛집": ["맛집", "브런치", "카페"],
+  "술집": ["술집", "맛집"],
+  "바": ["술집", "맛집"],
+  "이자카야": ["술집", "맛집"],
+  "파스타": ["맛집", "브런치"],
+  "고기집": ["맛집", "술집"],
+  "한식": ["맛집"],
+  "일식": ["맛집"],
+};
+const familyOf = t => TYPE_FAMILY[t] || ["맛집", "카페"];
+
+/* 내가 실제로 적은 분류어만 쓴다. 빵 얘기를 안 했는데 '베이커리'가
+   붙으면 헛다리다. 태그와 제목이 같은 잣대를 써야 한다. */
+const KIND_POOL = ["카페", "커피", "디저트", "베이커리", "빵집", "브런치",
+                   "맛집", "술집", "호프", "이자카야", "바"];
+function writtenKinds(v) {
+  const t = v.type || "카페";
+  const written = [...v.menus, ...v.traits, v.taste, v.mood, v.memo]
+    .filter(Boolean).join(" ");
+  return [t, ...KIND_POOL.filter(k => k !== t && written.includes(k))];
+}
+
 /* 적어 둔 문장을 제목 앞에 세울 수 있는 꾸밈꼴로 바꾼다.
    '혼자 책 읽기 좋다' → '혼자 책 읽기 좋은'. 못 바꾸는 것은 아예 안 쓴다 —
    '직원이 직접 구워줌' 같은 말이 제목에 박히는 일이 있었다. */
@@ -636,6 +666,33 @@ function asModifier(s, max) {
   return /다$/.test(x) ? "" : x;
 }
 
+/* 이 글에 쓸 만한, 밤에 재어 둔 검색어들. 제목 후보와 경쟁도 표가 같은 값을 본다.
+   동네는 내 동네와 옆 동네까지, 분류어는 내가 실제로 적은 것만 본다. */
+function measuredQueries(v) {
+  if (!KW || !KW.counts) return [];
+  const out = [];
+  [v.area, v.near].filter(Boolean).forEach(a => {
+    writtenKinds(v).forEach(k => ["", "추천"].forEach(mod => {
+      const q = `${a} ${k} ${mod}`.trim();
+      const o = opportunity(KW.counts[q], KW.demand ? KW.demand[q] : null);
+      if (o != null) out.push({ query: q, opp: o });
+    }));
+  });
+  return out.sort((a, b) => b.opp - a.opp);
+}
+
+function bestQuery(v) {
+  return measuredQueries(v)[0] || null;
+}
+
+/* 제목이 물고 있는 검색어 중 가장 기회가 큰 값. 후보마다 이걸 붙여 주면
+   '어느 후보가 실제로 값어치 있나'를 눈으로 견줄 수 있다. */
+function titleOpp(title, ranked) {
+  const flat = title.replace(/\s/g, "");
+  const hit = ranked.find(r => flat.includes(r.query.replace(/\s/g, "")));
+  return hit ? hit.opp : null;
+}
+
 function titleCandidates(v) {
   const t = v.type || "카페";
   const name = v.name;                       // readForm에서 이미 한글만 남겼다
@@ -645,15 +702,17 @@ function titleCandidates(v) {
   const bar = $("fBar") && $("fBar").checked;
 
   /* 설명하는 말 주머니. 검색어가 아니라 글자를 채우는 쪽이다.
-     상위 1위 글들이 쓰는 방식이다 — '통창 뷰가 멋진', '커피 맛있고 분위기 좋은'. */
-  const firstClause = s => (s || "").split(/[.\n]/)[0].trim();
-  const describers = [
-    asModifier(firstClause(v.who), 16),
-    asModifier(firstClause(v.mood), 16),
-    asModifier(firstClause(v.seat), 16),
-    asModifier(firstClause(v.taste), 16),
+     상위 1위 글들이 쓰는 방식이다 — '통창 뷰가 멋진', '커피 맛있고 분위기 좋은'.
+
+     한 칸에서 한 마디만 뽑으면 주머니가 두세 개밖에 안 차고, 그러면
+     다섯 후보에 똑같은 말이 돌아가며 박힌다. 칸마다 두 마디까지 뽑는다. */
+  const clauses = s => (s || "").split(/[.\n]/).map(x => x.trim()).filter(Boolean);
+  const fromField = s => clauses(s).slice(0, 2).map(x => asModifier(x, 16)).filter(Boolean);
+  const describers = [...new Set([
+    ...fromField(v.who), ...fromField(v.mood), ...fromField(v.seat),
+    ...fromField(v.taste), ...fromField(v.wait), ...fromField(v.memo),
     ...v.traits,
-  ].filter(Boolean);
+  ])];
   const situation = describers[0] || trait1;
 
   const out = [];
@@ -676,22 +735,21 @@ function titleCandidates(v) {
      업종어도 의도어도 아니어서 검색어 개수는 늘지 않는다. */
   /* 채우는 순서가 곧 값어치다. 설명하는 말과 특징이 먼저고, 메뉴는 그다음이다.
      아메리카노처럼 어디에나 있는 메뉴로 자리를 메우면 길이만 늘고 얻는 게 없다. */
-  const spare = [
+  const spare = [...new Set([
     ...describers.slice(1),
     ...v.menus.slice(1).filter(m => !COMMON_MENUS.has(m.replace(/\s/g, ""))),
-  ];
+  ])];
   /* 꾸밈말은 꾸밀 이름씨 앞에 놓아야 말이 된다. 그냥 뒤에 붙이면
      '에드 로스트웍스 2층 창가 자리가 좋은'처럼 허공에 걸린다.
      그래서 꾸밈꼴은 가게 이름 바로 앞에, 이름씨는 끝에 넣는다. */
   const isModifier = s => /(은|는|한|인|던|의|좋은|드는)$/.test(s) && s.length > 3;
-  // 후보마다 채우는 말의 차례를 한 칸씩 돌린다. 안 그러면 다섯 후보에
-  // 똑같은 '2층 창가 자리가 좋은'이 네 번 들어간다.
-  let turn = 0;
+  /* 한 후보가 쓴 말은 다음 후보에서 안 쓴다. 차례만 돌려서는 모자란다 —
+     주머니가 둘뿐이면 '2층 창가 자리가 좋은'이 네 후보에 그대로 박힌다.
+     주머니가 마르면 그때만 다시 꺼내 쓴다. */
+  const taken = new Set();
   const push = (why, head, tail) => {
-    const pool = spare.length
-      ? spare.slice(turn % spare.length).concat(spare.slice(0, turn % spare.length))
-      : [];
-    turn += 1;
+    const fresh = spare.filter(b => !taken.has(b));
+    const pool = fresh.length ? fresh.concat(spare) : spare;
     let x = clean([...head, ...tail]);
     for (const bit of pool) {
       if (x.length >= LEN_MIN) break;
@@ -703,6 +761,7 @@ function titleCandidates(v) {
       if (joined.length > LEN_MAX || countKeywords(joined) > GOOD_MAX) continue;
       x = joined;
       head = wider;
+      taken.add(bit);
     }
     // 구분 기호는 꼬리(내돈내산 후기 같은 말) 앞에 한 번만 넣는다.
     if (bar && tail.length && x.length + 2 <= LEN_MAX) {
@@ -722,7 +781,15 @@ function titleCandidates(v) {
   if (situation) push("상황으로 열기", [situation, v.area, t, name], ["후기"]);
   // ④ 역명으로 연다 — 역 이름으로 찾는 사람을 잡는다
   if (v.station) push("역명으로 열기", [v.station, t, name, menu1], ["솔직후기"]);
-  // ⑤ 인접 지역까지 묶는다 — 옆 동네로 찾는 사람도 걸린다
+  /* ⑤ 밤에 재어 둔 것 중 기회가 가장 큰 검색어로 연다.
+     내가 실제로 적은 분류어만 쓴다 — 빵 얘기를 안 했는데 '베이커리'로
+     열면 헛다리다. 경쟁도 표에서 맨 위에 있는 말이 여기로 온다. */
+  const bestKw = bestQuery(v);
+  if (bestKw && bestKw.query !== `${v.area} ${t}`) {
+    push(`기회 ${bestKw.opp.toFixed(1)}짜리 검색어로 열기`,
+         [bestKw.query, name, menu1], ["내돈내산 후기"]);
+  }
+  // ⑥ 인접 지역까지 묶는다 — 옆 동네로 찾는 사람도 걸린다
   if (v.near) push("옆 동네까지", [v.area, v.near, t, name], ["추천"]);
   /* ⑥ '신상'은 업종어에 붙여 쓴다. '합정동 카페 신상'을 찾는 사람은 집계에
      잡히지도 않지만('○○ 신상' 216개 중 0개), 한 낱말 '신상카페'는 관심도 26이다. */
@@ -730,6 +797,7 @@ function titleCandidates(v) {
   push("기본형", [v.area, t, "추천", name, menu1], ["후기"]);
 
   const target = v.area && t ? `${v.area}${t}` : "";
+  const ranked = measuredQueries(v);
   // 조각이 너무 많은 후보는 아예 내놓지 않는다.
   const within = out.filter(x => countKeywords(x.title) <= GOOD_MAX);
   return (within.length ? within : out).slice(0, 5).map(c => ({
@@ -737,6 +805,7 @@ function titleCandidates(v) {
     why: c.why,
     n: countKeywords(c.title),
     len: c.title.length,
+    opp: titleOpp(c.title, ranked),
     // 상위 노출 글의 65%는 '동네+업종'을 붙여서 그대로 담고 있다.
     // 사이에 다른 말이 끼면 구절이 끊긴다. 그걸 표시해 준다.
     hasPhrase: Boolean(target) && c.title.replace(/\s/g, "").includes(target),
@@ -1030,19 +1099,18 @@ function renderCompetition(v) {
   const stationArea = (v.station || "").replace(/역$/, "");
 
   /* '○○ 신상'은 아예 빼둔다. 글이 적어서 늘 맨 위에 올라오지만
-     216개 전부 검색량이 집계 최저선 아래였다 — 아무도 안 치는 말이다. */
+     216개 전부 검색량이 집계 최저선 아래였다 — 아무도 안 치는 말이다.
+
+     그리고 내 업종과 이웃한 업종만 본다. 카페 글을 쓰는데 '합정동 술집'이
+     자리를 차지하면 볼 이유가 없다. 대신 동네를 옆 동네·역 이름까지
+     넓혀서 볼 만한 줄을 넉넉히 만든다. */
   const core = [`${v.area} ${t}`, `${v.area} ${t} 추천`].filter(Boolean);
-  const extra = [
-    v.near ? `${v.near} ${t}` : "",
-    v.near ? `${v.near} ${t} 추천` : "",
-    stationArea ? `${stationArea} ${t}` : "",
-    trait1 ? `${v.area} ${trait1}` : "",
-    `${v.area} 맛집`,
-    `${v.area} 디저트`,
-    `${v.area} 베이커리`,
-    `${v.area} 브런치`,
-    `${v.area} 술집`,
-  ].filter(Boolean);
+  const areas = [v.area, v.near, stationArea].filter(Boolean);
+  const extra = [];
+  areas.forEach(a => familyOf(t).forEach(k => ["", "추천"].forEach(mod => {
+    extra.push(`${a} ${k} ${mod}`.trim());
+  })));
+  if (trait1) extra.push(`${v.area} ${trait1}`);
 
   if (!KW) {
     const p = document.createElement("div");
@@ -1147,7 +1215,10 @@ function render() {
     const lenNote = c.len < LEN_MIN
       ? ` <span style="color:var(--ink-faint)">(짧음 · 32~45자가 알맞습니다)</span>`
       : c.len > LEN_MAX ? ` <span style="color:var(--ink-faint)">(김)</span>` : " ✓";
-    me.innerHTML = `<b>${c.why}</b> · 검색어 ${c.n}개${fit} · ${c.len}자${lenNote} ${phrase}`;
+    // 이 제목이 물고 있는 검색어의 기회 점수. 후보끼리 견주라고 붙인다.
+    const oppNote = c.opp == null ? ""
+      : ` · 기회 <b>${c.opp.toFixed(1)}</b>`;
+    me.innerHTML = `<b>${c.why}</b> · 검색어 ${c.n}개${fit} · ${c.len}자${lenNote}${oppNote} ${phrase}`;
     txt.append(ti, me);
     const acts = document.createElement("div");
     acts.className = "acts";
