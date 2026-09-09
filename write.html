@@ -299,7 +299,7 @@
         <input id="fMenu" placeholder="양갱, 빙수, 크림라떼">
       </div>
       <div class="field wide">
-        <label for="fTrait">특징 <span class="hint">(쉼표로 구분 · 신상/2호점/루프탑/반려동물 동반 등)</span></label>
+        <label for="fTrait">특징 <span class="hint">(쉼표로 구분 · 여기 적은 말이 제목·태그에 들어갑니다. 짧은 검색어로)</span></label>
         <input id="fTrait" placeholder="신상, 2호점, 통창">
       </div>
       <div class="field">
@@ -496,7 +496,35 @@ function save() {
   try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
 }
 
-const splitList = s => (s || "").split(/[,·]/).map(x => x.trim()).filter(Boolean);
+// 슬래시로 이어 쓴 것도 갈라야 한다. '숯불구이/지리산흑돼지/직원이직접구워줌'이
+// 한 덩어리로 들어와 제목과 태그에 통째로 박히는 일이 있었다.
+const splitList = s => (s || "").split(/[,·/|]/).map(x => x.trim()).filter(Boolean);
+
+/* 사람들이 실제로 검색창에 칠 만한 말인가.
+   '직원이직접구워줌', '외국인들많음' 같은 서술은 본문에 쓸 말이지 검색어가 아니다.
+   그런 말이 제목과 태그에 들어가면 아무도 찾지 않는 자리를 노리게 된다. */
+const TELLING_TAIL = /(줌|함|됨|있음|없음|많음|적음|좋음|나쁨|같음|이다|해요|합니다|입니다|했다|한다|음식|먹음)$/;
+
+function isSearchable(word) {
+  const w = (word || "").trim();
+  if (!w) return false;
+  if (w.length < 2 || w.length > 12) return false;   // 너무 길면 아무도 안 친다
+  // '지리산 흑돼지'처럼 두 낱말짜리는 흔한 검색어다. 세 낱말부터는 구절이다.
+  if (w.split(/\s+/).length > 2) return false;
+  if (TELLING_TAIL.test(w)) return false;            // 서술형 어미
+  if (/[.!?~…]/.test(w)) return false;
+  return true;
+}
+
+/* '문래역문래역'처럼 같은 말이 겹쳐 들어온 것을 편다. */
+function tidyWord(word) {
+  const w = (word || "").trim().replace(/\s+/g, " ");
+  const half = Math.floor(w.length / 2);
+  if (w.length >= 4 && w.length % 2 === 0 && w.slice(0, half) === w.slice(half)) {
+    return w.slice(0, half);
+  }
+  return w;
+}
 
 /** 이번 달. 방문 시점을 안 적었을 때 대신 쓴다. */
 function thisMonth() {
@@ -508,8 +536,16 @@ function readForm() {
   const v = {};
   F.forEach(id => { v[id.slice(1).toLowerCase()] = $(id).value.trim(); });
   if (!v.visit) v.visit = thisMonth();
-  v.menus = splitList(v.menu);
-  v.traits = splitList(v.trait);
+  v.station = tidyWord(v.station);
+  v.area = tidyWord(v.area);
+  v.near = tidyWord(v.near);
+
+  const menus = splitList(v.menu);
+  const traits = splitList(v.trait);
+  // 검색어가 될 말과 본문에만 쓸 말을 갈라 둔다.
+  v.menus = menus.filter(isSearchable);
+  v.traits = traits.filter(isSearchable);
+  v.proseBits = [...menus, ...traits].filter(x => !isSearchable(x));
   return v;
 }
 
@@ -532,7 +568,21 @@ function titleCandidates(v) {
   const menu2 = v.menus[1] || "";
   const trait1 = v.traits[0] || "";
   const out = [];
-  const push = s => { const x = s.replace(/\s+/g, " ").trim(); if (x && !out.includes(x)) out.push(x); };
+  /* 같은 말이 두 번 들어가면 지운다. 역명이 겹쳐 '문래역문래역'이 되거나
+     특징이 줄줄이 붙어 제목이 본문처럼 되는 일이 있었다. */
+  const push = s => {
+    const words = s.replace(/\s+/g, " ").trim().split(" ");
+    const seen = new Set();
+    const kept = words.filter(w => {
+      const bare = w.replace(/[|ㅣ\[\]—]/g, "");
+      if (!bare) return true;                 // 구분 기호는 그대로 둔다
+      if (seen.has(bare)) return false;
+      seen.add(bare);
+      return true;
+    });
+    const x = kept.join(" ").replace(/\s+/g, " ").trim();
+    if (x && !out.includes(x)) out.push(x);
+  };
 
   push(`${v.area} ${t} ${v.name} ${v.station} | ${menu1} ${menu2} ${trait1} ${t} 후기`);
   push(`[${v.area} ${t}] ${v.name} — ${menu1} 맛있는 ${trait1} ${t} 내돈내산 후기`);
@@ -552,24 +602,44 @@ function titleCandidates(v) {
   }));
 }
 
+/* 태그는 사람들이 검색창에 칠 말이어야 한다. 전에는 특징 칸에 적은 설명을
+   그대로 붙여 '#신상햇살맛집천장개방' 같은 아무도 안 치는 말이 나갔다.
+   그래서 (1) 검색어처럼 생긴 낱말만 쓰고 (2) 동네와 붙이는 조합은 메뉴 정도만
+   허용하며 (3) 실제로 검색량이 확인된 말을 앞에 둔다. */
 function buildTags(v) {
   const t = v.type || "카페";
+  const menu1 = v.menus[0] || "";
+  const menu2 = v.menus[1] || "";
+
   const base = [
     v.name, v.area, v.station, v.near,
     `${v.area}${t}`, `${v.station}${t}`, `${v.area} ${t}`,
     `${v.area}맛집`, `서울${t}`, `${t}추천`, `${v.area}${t}추천`,
     ...v.menus, ...v.traits,
-    ...v.menus.map(m => `${v.area}${m}`),
-    ...v.traits.map(x => `${v.area}${x}`),
+    // 동네와 붙이는 것은 짧은 메뉴만. '문래동파블로바치즈케이크'는 아무도 안 친다.
+    menu1 && menu1.replace(/\s/g, "").length <= 5 ? `${v.area}${menu1.replace(/\s/g, "")}` : "",
+    menu2 && menu2.replace(/\s/g, "").length <= 5 ? `${v.area}${menu2.replace(/\s/g, "")}` : "",
     "신상카페", "내돈내산", "솔직후기", "서울맛집", "데이트코스",
   ];
+
   const seen = new Set();
   const tags = [];
   base.filter(Boolean).forEach(x => {
     const c = x.replace(/\s+/g, "");
-    if (c.length < 2 || seen.has(c)) return;
-    seen.add(c); tags.push(c);
+    if (seen.has(c)) return;
+    // 가게 이름은 짧아도 길어도 넣는다. 나머지는 검색어 꼴이어야 한다.
+    if (c !== (v.name || "").replace(/\s+/g, "") && !isSearchable(c)) return;
+    seen.add(c);
+    tags.push(c);
   });
+
+  // 검색량이 확인된 말을 앞으로. 30개가 넘칠 때 뒤가 잘리므로 순서가 중요하다.
+  const known = KW && KW.counts ? KW.counts : {};
+  const rank = tag => {
+    const spaced = tag.replace(/([가-힣]+?)(카페|맛집|베이커리|브런치|디저트|술집)$/, "$1 $2");
+    return (known[tag] != null || known[spaced] != null) ? 0 : 1;
+  };
+  tags.sort((a, b) => rank(a) - rank(b));
   return tags.slice(0, 30);
 }
 
@@ -621,7 +691,9 @@ ${cands.map((c, i) => `${i + 1}. ${c.title}  (검색어 ${c.n}개)`).join("\n")}
 - 대표 메뉴: ${v.menus.join(", ") || "(입력 없음)"}
 - 특징: ${v.traits.join(", ") || "(입력 없음)"}
 
-[내가 보고 느낀 것 — 이걸 본문의 뼈대로 삼아라]
+${v.proseBits.length
+  ? `[제목에는 안 넣었지만 본문에 꼭 쓸 것]\n${v.proseBits.map(x => `· ${x}`).join("\n")}\n\n`
+  : ""}[내가 보고 느낀 것 — 이걸 본문의 뼈대로 삼아라]
 ${NOTE_FIELDS.map(([k, label]) => (v[k] ? `· ${label}: ${v[k]}` : ""))
   .filter(Boolean).join("\n") || "(아직 아무것도 안 적었다. 그러면 글을 억지로 쓰지 말고, 무엇을 알려주면 되는지만 물어라.)"}
 
@@ -769,11 +841,26 @@ function renderCompetition(v) {
   const box = $("compet");
   box.innerHTML = "";
   const t = v.type || "카페";
+  /* 늘 같은 세 줄만 나오면 볼 이유가 없다. 그래서 동네·인접·역·메뉴를 섞어
+     후보를 넉넉히 만들고, 실제로 재어 둔 것만 남긴다. */
+  const menu1 = v.menus[0] || "";
+  const menu2 = v.menus[1] || "";
+  const trait1 = v.traits[0] || "";
+  const stationArea = (v.station || "").replace(/역$/, "");
+
   const queries = [
     `${v.area} ${t}`,
     `${v.area} ${t} 추천`,
     `${v.area} ${t} 신상`,
     v.near ? `${v.near} ${t}` : "",
+    v.near ? `${v.near} ${t} 추천` : "",
+    stationArea ? `${stationArea} ${t}` : "",
+    menu1 ? `${v.area} ${menu1}` : "",
+    menu2 ? `${v.area} ${menu2}` : "",
+    trait1 ? `${v.area} ${trait1}` : "",
+    `${v.area} 맛집`,
+    `${v.area} 디저트`,
+    `${v.area} 베이커리`,
   ].filter(Boolean);
 
   if (!KW) {
@@ -784,7 +871,22 @@ function renderCompetition(v) {
     return;
   }
 
-  queries.forEach(q => {
+  // 재어 두지 않은 검색어는 아예 빼고, 쉬운 것부터 보여 준다.
+  const measured = [...new Set(queries)]
+    .filter(q => KW.counts && KW.counts[q] != null)
+    .sort((a, b) => KW.counts[a] - KW.counts[b])
+    .slice(0, 6);
+
+  if (!measured.length) {
+    const p = document.createElement("div");
+    p.className = "note";
+    p.textContent = "이 동네·업종 조합은 아직 재어 두지 않았습니다. "
+      + "밤 수집이 도는 동네만 값이 있어, 그 밖은 비어 보입니다.";
+    box.append(p);
+    return;
+  }
+
+  measured.forEach(q => {
     const total = KW.counts ? KW.counts[q] : undefined;
     const want = KW.demand ? KW.demand[q] : undefined;
     const g = grade(total == null ? null : total, want == null ? null : want);
