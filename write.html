@@ -327,8 +327,8 @@
 화요일 휴무"></textarea>
       </div>
       <div class="field">
-        <label for="fPark">주차</label>
-        <input id="fPark" placeholder="불가 · 인근 공영주차장">
+        <label for="fPark">주차 · 반려동물 <span class="hint">(모르면 주차만 적어도 됩니다)</span></label>
+        <input id="fPark" placeholder="불가 · 인근 공영주차장 / 반려동물 동반 가능">
       </div>
       <div class="field">
         <label for="fInsta">인스타</label>
@@ -394,20 +394,27 @@
     </div>
   </section>
 
+  <!-- 지난 결과는 새 글을 쓰는 동안 볼 것이 아니다. 접어 두고 누를 때만 편다. -->
+  <section id="histBox" hidden style="padding-top:0">
+    <details class="fold" id="histFold">
+      <summary id="histSummary">지난 API 결과</summary>
+      <div class="chip-hint" style="margin-top:8px">
+        돈 주고 받은 것이니 지우기 전까지 남겨 둡니다. 새로고침해도 그대로이고,
+        ‘새 글 쓰기’로도 안 지워집니다.
+      </div>
+      <div id="histList" style="margin-top:8px"></div>
+    </details>
+  </section>
+
   <div class="out" id="out">
     <section>
-      <h2>제목 후보 <span class="sub">내 글 120편의 꼴 — ‘동네 + 꾸밈말 + 업종 + 가게이름’ · 길이 30~42자 · 검색어 3~6개</span></h2>
+      <h2>제목 후보 <span class="sub">내 글 120편의 꼴 — ‘동네 + 꾸밈말 + 업종 + 가게이름’ · 길이 30~45자 · 검색어 3~6개</span></h2>
       <div id="cands"></div>
       <div class="chip-hint" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px">
         <button type="button" class="btn ghost" id="askTitles">제목 API로 짓기</button>
         <span id="titleHint">초안을 먼저 만들면 그 글을 읽고 제목을 붙입니다.</span>
         <span id="titleStatus"></span>
       </div>
-    </section>
-
-    <section id="histBox" hidden>
-      <h2>지난 API 결과 <span class="sub">돈 주고 받은 것이니 지우기 전까지 남겨 둡니다 · 새로고침해도 그대로입니다</span></h2>
-      <div id="histList"></div>
     </section>
 
     <section>
@@ -633,6 +640,8 @@ function drawHistory() {
   if (!box) return;
   const list = loadHistory();
   $("histBox").hidden = list.length === 0;
+  // 접힌 채로도 몇 벌 있는지는 보이게 한다. 안 그러면 있는 줄도 모른다.
+  if (list.length) $("histSummary").textContent = `지난 API 결과 ${list.length}벌 보기`;
   box.innerHTML = "";
   list.forEach(h => {
     const el = document.createElement("div");
@@ -754,7 +763,7 @@ const GOOD_MAX = 6;
 /* 글자 수는 검색어 개수와 다른 잣대다. 2026-09-09에 상위 노출 75편은
    중앙값 38자(가운데 절반 32~45자), 내 글 120편은 중앙값 29자(27~32자)였다.
    상위 노출에 맞춰 45자까지 늘리면 내 결이 무너지고, 29자에 머물면
-   상위 노출보다 아홉 자 짧다. 그 사이인 30~42자를 목표로 잡는다. */
+   상위 노출보다 아홉 자 짧다. 아래쪽은 30자, 위쪽은 상위 노출의 75%선인 45자로 둔다. */
 /* 30자는 채운다. 다만 같은 말을 다시 붙여 채우지는 않는다 — 채울 재료는
    줄글 칸에서 이름씨를 뽑아 넉넉히 마련한다(wordsFromNotes).
    위쪽은 상위 노출의 75%선(45자)까지 본다. */
@@ -1005,6 +1014,24 @@ function wordsFromNotes(v) {
   return out;
 }
 
+/* 어느 칸에서 그 말을 집었는지도 함께 돌려준다. '스페셜티 커피만 판다고
+   적었는데 왜 로스터리가 나오나' 같은 물음에, 어느 칸에 그 말이 적혀 있는지
+   보여 주면 바로 알 수 있다. 앞 글에서 남은 값일 때가 많다. */
+const NOTE_LABEL = [
+  ["menus", "대표 메뉴"], ["traits", "특징"], ["taste", "맛"],
+  ["mood", "분위기"], ["seat", "좌석"], ["sound", "음악"],
+  ["wait", "웨이팅"], ["price", "가격"], ["who", "누구에게"], ["memo", "그 밖에"],
+];
+
+function whereWritten(v, word) {
+  for (const [key, label] of NOTE_LABEL) {
+    const raw = v[key];
+    const text = Array.isArray(raw) ? raw.join(" ") : (raw || "");
+    if (text && saysWord(text, word)) return label;
+  }
+  return "";
+}
+
 function measuredWords(v) {
   if (!KW || !KW.themes) return [];
   const text = allNotes(v);
@@ -1018,7 +1045,7 @@ function measuredWords(v) {
       seen.add(k);
       return true;
     })
-    .map(x => ({ word: x.word, demand: x.demand }));
+    .map(x => ({ word: x.word, demand: x.demand, from: whereWritten(v, x.word) }));
 }
 
 /* 줄글 칸(분위기·좌석·웨이팅·맛·메모)은 제목에 쓰지 않는다.
@@ -1338,6 +1365,8 @@ function buildPrompt(v, cands) {
 - 이어서 정보 블록:
     영업시간 ${v.hours || "(입력 없음)"}
     주차 ${v.park || "(입력 없음)"}
+      (이 칸에 반려동물 이야기가 함께 적혀 있으면 그것도 정보 블록에 같이 적는다.
+       안 적혀 있으면 반려동물은 아예 언급하지 마라.)
     위치 / 인스타 ${v.insta || "(입력 없음)"}
 - 그다음 <요약> 이라 적고 ✔ 로 시작하는 한 줄 요약을 7줄 쓴다.
   가게 전체를 한 줄씩 압축한다. 본문에 나올 내용만 쓴다.
@@ -1788,8 +1817,9 @@ function renderCands(cands, v) {
     note.style.marginBottom = "10px";
     note.innerHTML = "적어 두신 칸에서 <b>검색량이 확인된 말</b>을 끌어다 썼습니다 — "
       + proven.slice(0, 6).map(x =>
-          `<b>${x.word}</b>(관심도 ${Math.round(x.demand)})`).join(" · ")
-      + ". 재어 둔 목록에 있는 말만 씁니다.";
+          `<b>${x.word}</b>(${x.from ? x.from + " 칸 · " : ""}관심도 ${Math.round(x.demand)})`
+        ).join(" · ")
+      + ". 그 칸에 적힌 말만 씁니다 — 뜻이 안 맞으면 그 칸을 고치세요.";
     $("cands").append(note);
   }
 
@@ -2975,11 +3005,23 @@ ${line("이름", v.name)}${line("동네", v.area)}${line("가까운 역", v.stat
     맞다  : 원두를 직접 볶는 로스터리 카페
     맞다  : 핸드드립으로 내려 주는 카페
     맞다  : 혼자 앉기 좋은 카페 / 햇살이 잘 드는 카페
-  즐겨 쓰는 꼴은 '~하기 좋은', '~이 맛있는', '~가 있는', '~로 유명한',
-  '~를 내려 주는', '~를 직접 볶는'이다. '~를 마시는/먹는/즐기는'은 쓰지 마라.
+  즐겨 쓰는 꼴은 '~하기 좋은', '~할 수 있는', '~이 맛있는', '~가 있는',
+  '~로 유명한', '~를 내려 주는', '~를 직접 볶는'이다.
+
+  '~를 마시는/먹는/즐기는 카페'는 쓰지 마라. 손님이 하는 일을 그대로 붙이면
+  카페가 그 일을 하는 꼴이 된다. 굳이 그 뜻을 쓰려면 '~할 수 있는'으로 바꾼다.
+    틀리다: 스페셜티 커피를 편안하게 즐기는 카페
+    맞다  : 스페셜티 커피를 편안하게 즐길 수 있는 카페
+    더 좋다: 스페셜티 커피가 있는 조용한 카페   (짧고 검색어가 살아 있다)
+
+  광고 문구처럼 요약하지 마라. 'A도 B도 모두 가능한', '한 번에 즐기는',
+  '모든 것을 갖춘' 같은 말은 내가 안 쓴다.
+    틀리다: 높낮이 테이블로 수다도 작업도 모두 가능한 코너
+    맞다  : 높낮이 테이블이 있는 작업하기 좋은 카페 코너
+  본 것 하나를 집어서 말하지, 여러 가지를 묶어 뭉뚱그리지 않는다.
 
 [제목 규칙 — 상위 노출 75편을 재서 얻은 것]
-- 길이 30~42자. 이 사람은 29자로 쓰고 상위 노출은 38자다. 그 사이로 맞춰라.
+- 길이 ${LEN_MIN}~${LEN_MAX}자. 이 사람은 29자로 쓰고 상위 노출은 ${LEN_MID}자다. 그 사이로 맞춰라.
 - 검색어 조각 3~6개. 7개 이상은 상위 노출에 한 편도 없었다.
   (조각 = 역명·동네·업종어·의도어)
 - 65%가 '${v.area} ${t}'를 붙여서 그대로 담고 있다. 사이에 다른 말을 끼우지 마라.
