@@ -754,8 +754,12 @@ const GOOD_MAX = 6;
    중앙값 38자(가운데 절반 32~45자), 내 글 120편은 중앙값 29자(27~32자)였다.
    상위 노출에 맞춰 45자까지 늘리면 내 결이 무너지고, 29자에 머물면
    상위 노출보다 아홉 자 짧다. 그 사이인 30~42자를 목표로 잡는다. */
-const LEN_MIN = 30;
-const LEN_MAX = 42;
+/* 아래쪽은 내 글의 25%선(27자)에 맞춘다. 위쪽은 상위 노출의 75%선(45자)까지
+   본다. 예전에 30자를 밑돌면 '짧음'을 띄웠는데, 그 30자를 채우려고 낱말을
+   쌓다가 제목이 검색어 목록이 되었다. 짧고 깔끔한 27자짜리는 흠이 아니다. */
+const LEN_MIN = 26;
+const LEN_MAX = 45;
+const LEN_MID = 38;          // 상위 노출 중앙값. 더 길게 쓰고 싶을 때의 눈금
 
 /* 가게 이름은 한글 상호만 쓴다. 레이더가 채워 주는 이름에는 '에드 로스트웍스
    Ed roastworks'처럼 영문 상호가 뒤에 붙어 오는데, 그대로 제목에 넣으면
@@ -1006,11 +1010,14 @@ function titleCandidates(v) {
      주머니가 마를 때가 문제였다. 특징을 셋만 적으면 다섯 후보가 모두 그 셋을
      통째로 물고 나와 '서울숲 넓은 자리 단체테이블 야외테이블 카페 코너'가
      다섯 줄 반복됐다. 그래서 두 가지를 둔다.
-       - 한 후보가 끌어다 쓰는 말은 두 개까지. 세 개를 쌓으면 나열이 된다.
+       - 한 후보가 끌어다 쓰는 말은 하나까지.
        - 후보마다 주머니를 한 칸씩 돌려 시작점을 달리한다.
-     그 값에 30자를 못 채우면 짧은 채로 둔다. 같은 말을 다시 붙이느니
-     짧은 편이 낫고, 짧다는 것은 어차피 화면에 적어 준다. */
-  const MAX_ADDS = 2;
+
+     둘까지 허락했더니 '넓은 자리 로스터리 스페셜티 커피 카페'가 되었다.
+     낱말을 셋 넘게 쌓으면 제목이 아니라 검색어 목록으로 읽힌다. 길이를
+     채우자고 쌓느니 짧고 깔끔한 편이 낫다 — 내 글 120편도 중앙값이 29자다.
+     길이를 채우는 것은 규칙이 할 일이 아니라 API가 할 일이다. */
+  const MAX_ADDS = 1;
   const taken = new Set();
   let turn = 0;
   const push = (why, head, tail) => {
@@ -1646,15 +1653,19 @@ function renderCands(cands, v) {
     $("cands").append(note);
   }
 
-  const allShort = cands.length && cands.every(c => c.len < LEN_MIN);
-  if (allShort) {
+  /* 규칙으로는 낱말을 고르고 쌓는 것까지가 끝이다. 내 제목의 핵심인
+     '천장에서 햇살이 내려오는' 같은 구절은 뜻을 알아야 쓸 수 있어 규칙이 못 쓴다.
+     그 사실을 숨기지 말고 적어 둔다. 여기서 고르든 API로 다시 짓든 내가 정한다. */
+  if (cands.length && cands[0].why !== "API가 지음"
+      && !String(cands[0].why).includes("에 지음")) {
     const note = document.createElement("div");
     note.className = "note";
     note.style.marginBottom = "10px";
-    note.innerHTML = v.menus.length
-      ? "제목이 다 짧습니다. <b>특징</b>을 두어 개 더 적으면 길어집니다."
-      : "제목이 다 짧습니다. <b>대표 메뉴</b>가 비어 있습니다 — "
-        + "메뉴를 적으면 길이도 차고, 그 메뉴로 찾는 사람도 걸립니다.";
+    note.innerHTML = "여기까지가 규칙으로 되는 자리입니다 — 낱말을 고르고 쌓는 것. "
+      + "<b>‘천장에서 햇살이 내려오는’처럼 말이 이어지는 구절은 규칙이 못 씁니다.</b> "
+      + "그 구절이 내 제목의 핵심이므로, 마음에 안 들면 아래 "
+      + "<b>제목 API로 짓기</b>를 누르세요."
+      + (v.menus.length ? "" : " (<b>대표 메뉴</b>가 비어 있습니다. 채우면 재료가 늡니다.)");
     $("cands").append(note);
   }
   cands.forEach(c => {
@@ -1674,9 +1685,11 @@ function renderCands(cands, v) {
     const fit = c.n < GOOD_MIN ? ` <span style="color:var(--ink-faint)">(적음)</span>`
       : c.n > GOOD_MAX ? ` <span style="color:var(--ink-faint)">(많음)</span>` : "";
     // 글자 수도 같이 본다. 상위 75편의 가운데 절반이 32~45자였다.
+    // 내 결은 29자, 상위 노출은 38자다. 그 사이 어디든 흠이 아니다.
     const lenNote = c.len < LEN_MIN
-      ? ` <span style="color:var(--ink-faint)">(${LEN_MIN}~${LEN_MAX}자보다 짧음)</span>`
-      : c.len > LEN_MAX ? ` <span style="color:var(--ink-faint)">(김)</span>` : " ✓";
+      ? ` <span style="color:var(--ink-faint)">(짧음)</span>`
+      : c.len > LEN_MAX ? ` <span style="color:var(--ink-faint)">(김)</span>`
+      : c.len < LEN_MID ? " ✓" : " ✓✓";
     // 이 제목이 물고 있는 검색어의 기회 점수. 후보끼리 견주라고 붙인다.
     const oppNote = c.opp == null ? ""
       : ` · 기회 <b>${c.opp.toFixed(1)}</b>`;
