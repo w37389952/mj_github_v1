@@ -960,14 +960,28 @@ function titleCandidates(v) {
   /* 32자에 못 미치면 남은 낱말을 덧붙여 채운다. 아메리카노처럼 어디에나
      있는 메뉴로 자리를 메우면 길이만 늘고 얻는 것이 없으므로 뒤로 민다. */
   const spare = words.filter(w => !COMMON_MENUS.has(w.replace(/\s/g, "")));
-  /* 한 후보가 쓴 말은 다음 후보에서 안 쓴다. 주머니가 마르면 그때만 다시 꺼낸다. */
+  /* 한 후보가 쓴 말은 다음 후보에서 안 쓴다. 주머니가 마르면 그때만 다시 꺼낸다.
+
+     주머니가 마를 때가 문제였다. 특징을 셋만 적으면 다섯 후보가 모두 그 셋을
+     통째로 물고 나와 '서울숲 넓은 자리 단체테이블 야외테이블 카페 코너'가
+     다섯 줄 반복됐다. 그래서 두 가지를 둔다.
+       - 한 후보가 끌어다 쓰는 말은 두 개까지. 세 개를 쌓으면 나열이 된다.
+       - 후보마다 주머니를 한 칸씩 돌려 시작점을 달리한다.
+     그 값에 30자를 못 채우면 짧은 채로 둔다. 같은 말을 다시 붙이느니
+     짧은 편이 낫고, 짧다는 것은 어차피 화면에 적어 준다. */
+  const MAX_ADDS = 2;
   const taken = new Set();
+  let turn = 0;
   const push = (why, head, tail) => {
-    const fresh = spare.filter(b => !taken.has(b));
-    const pool = fresh.length ? fresh.concat(spare) : spare;
+    const spin = spare.length ? turn % spare.length : 0;
+    const rolled = spare.slice(spin).concat(spare.slice(0, spin));
+    turn += 1;
+    const fresh = rolled.filter(b => !taken.has(b));
+    const pool = fresh.concat(rolled.filter(b => taken.has(b)));
+    let added = 0;
     let x = clean([...head, ...tail]);
     for (const bit of pool) {
-      if (x.length >= LEN_FILL) break;
+      if (x.length >= LEN_FILL || added >= MAX_ADDS) break;
       if (x.replace(/\s/g, "").includes(bit.replace(/\s/g, ""))) continue;
       /* 채우는 말은 업종어 앞에 넣는다. 내 제목은 늘 가게 이름으로 끝나는데
          뒤에 붙이면 '에드 로스트웍스 로스터리 햇살맛집'처럼 이름 뒤로
@@ -983,6 +997,7 @@ function titleCandidates(v) {
       x = joined;
       head = wider;
       taken.add(bit);
+      added += 1;
     }
     /* 구분 기호는 양쪽이 다 실할 때만 넣는다. 'ㅣ 후기'처럼 뒤에 한 마디만
        남으면 나눌 이유가 없어 어색하다. */
@@ -1560,6 +1575,19 @@ function renderCompetition(v) {
    글자 수·검색어 개수·기회 점수는 어느 쪽이 지었든 똑같이 재야 견줄 수 있다. */
 function renderCands(cands, v) {
   $("cands").innerHTML = "";
+  /* 다들 짧게 나오면 제목 짓는 규칙 탓이 아니라 재료가 모자란 것이다.
+     '짧음'만 다섯 번 띄우지 말고 무엇을 채우면 되는지 말해 준다. */
+  const allShort = cands.length && cands.every(c => c.len < LEN_MIN);
+  if (allShort) {
+    const note = document.createElement("div");
+    note.className = "note";
+    note.style.marginBottom = "10px";
+    note.innerHTML = v.menus.length
+      ? "제목이 다 짧습니다. <b>특징</b>을 두어 개 더 적으면 길어집니다."
+      : "제목이 다 짧습니다. <b>대표 메뉴</b>가 비어 있습니다 — "
+        + "메뉴를 적으면 길이도 차고, 그 메뉴로 찾는 사람도 걸립니다.";
+    $("cands").append(note);
+  }
   cands.forEach(c => {
     const el = document.createElement("div");
     el.className = "cand";
@@ -1578,7 +1606,7 @@ function renderCands(cands, v) {
       : c.n > GOOD_MAX ? ` <span style="color:var(--ink-faint)">(많음)</span>` : "";
     // 글자 수도 같이 본다. 상위 75편의 가운데 절반이 32~45자였다.
     const lenNote = c.len < LEN_MIN
-      ? ` <span style="color:var(--ink-faint)">(짧음 · 32~45자가 알맞습니다)</span>`
+      ? ` <span style="color:var(--ink-faint)">(${LEN_MIN}~${LEN_MAX}자보다 짧음)</span>`
       : c.len > LEN_MAX ? ` <span style="color:var(--ink-faint)">(김)</span>` : " ✓";
     // 이 제목이 물고 있는 검색어의 기회 점수. 후보끼리 견주라고 붙인다.
     const oppNote = c.opp == null ? ""

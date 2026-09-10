@@ -25,14 +25,20 @@ FALSE_E = 200000.0
 FALSE_N = 500000.0
 
 ELLIPSOIDS = {
-    # EPSG:5181 — 요즘 서울 공공데이터가 쓰는 쪽. 위경도가 WGS84와 거의 같아
-    # 따로 측지계를 옮길 일이 없다.
+    # EPSG:5181 — GRS80. 위경도가 WGS84와 거의 같아 따로 옮길 일이 없다.
     "grs80": (6378137.0, 1 / 298.257222101),
-    # EPSG:2097 — 옛 자료. 이쪽이면 위경도로 바꾼 뒤 측지계를 한 번 더 옮겨야 한다.
+    # EPSG:2097 — 베셀(도쿄 측지계). 이쪽은 위경도로 바꾼 뒤 한 번 더 옮겨야 한다.
     "bessel": (6377397.155, 1 / 299.1528128),
 }
 
-DATUM = "grs80"
+# 2026-09-10 첫 실측에서 GRS80으로 풀었더니 네이버가 준 실제 위경도와
+# 가운데값 312m(274~319m) 어긋났다. 한쪽으로 고르게 쏠린 것이라 공식이 아니라
+# 측지계가 다른 것이다. 타원체만 놓고 보면 두 갈래 차이는 7m뿐이므로,
+# 312m는 도쿄 측지계를 WGS84로 옮기지 않아 생긴 값이다.
+DATUM = "bessel"
+
+# 도쿄 측지계 → WGS84 옮김값(미터). 한국에서 널리 쓰는 값이다.
+TOKYO_TO_WGS84 = (-146.43, 507.89, 681.46)
 
 
 def _params(datum):
@@ -51,6 +57,42 @@ def _meridional_arc(lat, a, e2):
         + (15 * e4 / 256 + 45 * e6 / 1024) * math.sin(4 * lat)
         - (35 * e6 / 3072) * math.sin(6 * lat)
     )
+
+
+def molodensky(lat_deg, lon_deg, from_datum="bessel", to_datum="grs80"):
+    """측지계를 옮긴다. 베셀(도쿄)로 잰 위경도를 WGS84 위경도로 바꾼다.
+
+    같은 땅이라도 어느 타원체를 지구라고 보고 쟀느냐에 따라 위경도가 달라진다.
+    한국에서 그 차이는 300~400m쯤이라, 안 옮기면 가장 가까운 역이 뒤바뀐다.
+    """
+    a, e2 = _params(from_datum)
+    a2, e2b = _params(to_datum)
+    f = 1 - math.sqrt(1 - e2)
+    f2 = 1 - math.sqrt(1 - e2b)
+    da = a2 - a
+    df = f2 - f
+    dx, dy, dz = TOKYO_TO_WGS84
+
+    lat = math.radians(lat_deg)
+    lon = math.radians(lon_deg)
+    sin_lat, cos_lat = math.sin(lat), math.cos(lat)
+    sin_lon, cos_lon = math.sin(lon), math.cos(lon)
+    b_over_a = 1 - f
+
+    w = math.sqrt(1 - e2 * sin_lat ** 2)
+    rm = a * (1 - e2) / w ** 3            # 자오선 곡률반지름
+    rn = a / w                            # 묘유선 곡률반지름
+
+    dlat = (
+        -dx * sin_lat * cos_lon
+        - dy * sin_lat * sin_lon
+        + dz * cos_lat
+        + da * (rn * e2 * sin_lat * cos_lat) / a
+        + df * (rm / b_over_a + rn * b_over_a) * sin_lat * cos_lat
+    ) / rm
+    dlon = (-dx * sin_lon + dy * cos_lon) / (rn * cos_lat)
+
+    return math.degrees(lat + dlat), math.degrees(lon + dlon)
 
 
 def to_wgs84(x, y, datum=None):
@@ -101,7 +143,11 @@ def to_wgs84(x, y, datum=None):
         + (5 - 2 * c1 + 28 * t1 - 3 * c1 ** 2 + 8 * ep2 + 24 * t1 ** 2) * d ** 5 / 120
     ) / cos_phi
 
-    return round(math.degrees(lat), 6), round(math.degrees(lon), 6)
+    lat_deg, lon_deg = math.degrees(lat), math.degrees(lon)
+    # 베셀(도쿄)로 잰 값이면 WGS84로 한 번 더 옮긴다. 이걸 빼먹어 312m 어긋났다.
+    if datum == "bessel":
+        lat_deg, lon_deg = molodensky(lat_deg, lon_deg, "bessel", "grs80")
+    return round(lat_deg, 6), round(lon_deg, 6)
 
 
 def to_tm(lat_deg, lon_deg, datum=None):
