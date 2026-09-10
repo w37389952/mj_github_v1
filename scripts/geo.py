@@ -40,6 +40,16 @@ DATUM = "bessel"
 # 도쿄 측지계 → WGS84 옮김값(미터). 한국에서 널리 쓰는 값이다.
 TOKYO_TO_WGS84 = (-146.43, 507.89, 681.46)
 
+# 그러고도 남는 쏠림(미터). (북쪽, 동쪽) 차례로 우리 값에 더한다.
+#
+# 2026-09-10 두 번째 실측: 네이버가 준 실제 위경도와 15곳을 견주니 가운데값
+# 259m이 남았고, 방향이 북 +5m · 동 +258m으로 거의 정동 한 쪽이었다.
+# 폭도 251~272m로 좁아, 곳마다 다른 것이 아니라 통째로 밀린 것이다.
+# 원본이 표준 중부원점이 아니라 보정 원점을 쓰는 것으로 보이는데, 어느
+# 쪽이든 잰 만큼 되밀면 맞는다. 다음 수집이 이 값을 다시 재어 확인해 준다.
+RESIDUAL_NORTH_M = 5.0
+RESIDUAL_EAST_M = 258.0
+
 
 def _params(datum):
     a, f = ELLIPSOIDS[datum]
@@ -147,6 +157,10 @@ def to_wgs84(x, y, datum=None):
     # 베셀(도쿄)로 잰 값이면 WGS84로 한 번 더 옮긴다. 이걸 빼먹어 312m 어긋났다.
     if datum == "bessel":
         lat_deg, lon_deg = molodensky(lat_deg, lon_deg, "bessel", "grs80")
+    # 그러고도 남는 쏠림을 되민다. 미터를 도로 바꿔 더한다.
+    if RESIDUAL_NORTH_M or RESIDUAL_EAST_M:
+        lat_deg += RESIDUAL_NORTH_M / 110574.0
+        lon_deg += RESIDUAL_EAST_M / (111320.0 * math.cos(math.radians(lat_deg)))
     return round(lat_deg, 6), round(lon_deg, 6)
 
 

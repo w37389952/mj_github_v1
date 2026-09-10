@@ -133,9 +133,41 @@ def area_centres():
     return out
 
 
+def right_station(name, title):
+    """찾아온 것이 정말 그 역인지 이름으로 확인한다.
+
+    '무악재역'을 물었더니 '홍제역 3호선'이 왔다. 가까운 역이라 그런 듯한데,
+    그대로 넣으면 무악재역이 홍제역 자리에 놓여 가장 가까운 역이 뒤바뀐다.
+    받아 온 이름에 내가 물은 역 이름이 들어 있어야 받아들인다.
+    ('총신대입구(이수)역'처럼 괄호가 끼는 것은 받아야 하므로 괄호를 지우고 본다.)
+    """
+    if not title:
+        return False
+    bare = name[:-1] if name.endswith("역") else name
+    flat = title.replace(" ", "").replace("(", "").replace(")", "")
+    return bare in flat
+
+
+def drop_duplicates(stations):
+    """좌표가 똑같은 역이 둘 이상이면 그 무리를 통째로 버린다.
+
+    이름이 다른데 자리가 같을 수는 없다. 엉뚱한 역을 받아 온 것이므로
+    지워서 다시 찾게 한다. 어느 쪽이 맞는지 알 수 없으니 둘 다 버린다.
+    """
+    where = {}
+    for name, spot in stations.items():
+        where.setdefault(tuple(spot), []).append(name)
+    bad = [n for names in where.values() if len(names) > 1 for n in names]
+    for name in bad:
+        stations.pop(name, None)
+    if bad:
+        print(f"  자리가 겹쳐 지우고 다시 찾습니다: {', '.join(sorted(bad))}")
+    return stations
+
+
 def main():
     got = load_out()
-    stations = got["stations"]
+    stations = drop_duplicates(got["stations"])
 
     missing = [s for s in STATIONS if s not in stations]
     if missing and not naver.enabled():
@@ -145,11 +177,15 @@ def main():
         print(f"역 {len(missing)}곳의 좌표를 받습니다 (이미 있는 {len(stations)}곳은 건너뜁니다)")
         for name in missing:
             spot, title = naver.geocode(f"{name} 지하철")
-            if not spot:
+            if not right_station(name, title):
                 spot, title = naver.geocode(name)
-            if spot:
+            if spot and right_station(name, title):
                 stations[name] = [spot[0], spot[1]]
                 print(f"  {name} → {spot[0]}, {spot[1]}  ({title})")
+            elif spot:
+                # 2026-09-10에 '무악재역'을 물었더니 홍제역 좌표가 왔다.
+                # 엉뚱한 역을 그 역이라고 넣어 두면 가장 가까운 역이 뒤바뀐다.
+                print(f"  {name} 건너뜀 — 엉뚱한 곳이 왔습니다({title})", file=sys.stderr)
             else:
                 print(f"  {name} 못 찾음", file=sys.stderr)
             time.sleep(0.1)
