@@ -368,14 +368,19 @@ def check_coords(items):
     north = sum((spot[0] - p["lat"]) * 110574 for p, spot in pairs) / len(pairs)
     east = sum((spot[1] - p["lon"]) * 111320
                * math.cos(math.radians(p["lat"])) for p, spot in pairs) / len(pairs)
+    # 네이버 값에서 우리 값을 뺀 것이다. 곧 '우리 값을 이만큼 밀어야 맞는다'는 뜻이라,
+    # 그대로 RESIDUAL에 더하면 된다. 부호를 거꾸로 적어 두면 반대로 밀게 된다.
     print(f"  쏠린 방향: 북으로 {north:+,.0f}m · 동으로 {east:+,.0f}m "
-          f"(우리 값에서 네이버 값을 뺀 것)")
+          f"(네이버 값에서 우리 값을 뺀 것 — 우리 값을 이만큼 밀면 맞습니다)")
 
+    now = (geo.RESIDUAL_NORTH_M, geo.RESIDUAL_EAST_M)
     if mid > 150:
-        print(f"  ⚠ 아직 {mid:,.0f}m 쏠려 있습니다. 위 '쏠린 방향'을 "
-              f"scripts/geo.py의 RESIDUAL에 그대로 넣으면 맞춰집니다.", file=sys.stderr)
+        print(f"  ⚠ 아직 {mid:,.0f}m 쏠려 있습니다. scripts/geo.py의 RESIDUAL을 "
+              f"북 {now[0] + north:,.0f} · 동 {now[1] + east:,.0f}으로 바꾸세요 "
+              f"(지금은 북 {now[0]:,.0f} · 동 {now[1]:,.0f}).", file=sys.stderr)
     elif mid > 60:
-        print(f"  얼추 맞습니다. 더 줄이려면 위 '쏠린 방향'을 RESIDUAL에 넣으세요.")
+        print(f"  얼추 맞습니다. 더 줄이려면 RESIDUAL을 "
+              f"북 {now[0] + north:,.0f} · 동 {now[1] + east:,.0f}으로 바꾸세요.")
     else:
         print(f"  좌표를 그대로 써도 됩니다(가게 앞뒤 정도 차이).")
 
