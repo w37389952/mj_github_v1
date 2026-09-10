@@ -390,6 +390,19 @@ details .body { padding:0 0 26px; }
     </div>
   </details>
 
+  <details id="syncBox">
+    <summary>동기화</summary>
+    <div class="body">
+      <p class="hint" id="syncHint"></p>
+      <button class="save" id="syncLogin" hidden>카카오로 로그인</button>
+      <div class="pair" id="syncActions" hidden>
+        <button class="save" id="syncNow" style="margin:0">지금 맞추기</button>
+        <button class="save" id="syncOut" style="margin:0; color:var(--ink); background:transparent; border-color:var(--line)">로그아웃</button>
+      </div>
+      <p class="saved" id="syncMsg"></p>
+    </div>
+  </details>
+
   <details id="backupBox">
     <summary>내보내기 · 가져오기</summary>
     <div class="body">
@@ -418,6 +431,8 @@ details .body { padding:0 0 26px; }
   </details>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="manse.js"></script>
 <script>
 // ── 저장 ──────────────────────────────────────────────────
@@ -647,8 +662,11 @@ function 담기(키, 점수값, 태그들, 글, opts = {}) {
     소급: opts.소급 === true,
     확실성: opts.확실성 ?? "정확",
     적은날: 오늘키,
+    // 같은 날짜가 이 기기와 서버 양쪽에 있을 때 어느 쪽이 새것인지 가리는 값이다.
+    수정시각: new Date().toISOString(),
   };
   쓰기(KEY_기록, 기록);
+  서버로밀기(키);
 }
 
 // 점수 버튼과 태그 버튼을 한 벌로 묶는다. 오늘 자리와 지난 날 자리가 같은 짜임이다.
@@ -838,6 +856,146 @@ document.getElementById("meSave").addEventListener("click", () => {
   차트그리기();
   목록그리기();
 });
+
+// ── 동기화 ────────────────────────────────────────────────
+// 서버에는 점수와 태그와 그날의 간지만 올린다. 일기 본문은 올리지 않는다.
+// 새어 나갔을 때 누구의 무슨 일인지 드러나는 것은 본문뿐이고, 분석에 필요한 것은
+// 본문이 아니기 때문이다. 생년월일시도 올리지 않는다.
+const 설정 = window.ILJIN_CONFIG ?? {};
+const 동기화켜짐 = Boolean(설정.SUPABASE_URL && 설정.SUPABASE_ANON_KEY && window.supabase);
+const sb = 동기화켜짐 ? window.supabase.createClient(설정.SUPABASE_URL, 설정.SUPABASE_ANON_KEY) : null;
+let 세션 = null;
+
+// 서버에 올릴 모양. 글이 빠져 있는 것은 빠뜨린 것이 아니라 이 앱의 약속이다.
+const 서버모양 = (날짜, r) => ({
+  date: 날짜,
+  score: r.점수,
+  areas: r.영역 ?? [],
+  iljin: r.일진 ?? null,
+  gan_ohaeng: r.천간오행 ?? null,
+  ji_ohaeng: r.지지오행 ?? null,
+  sip_gan: r.십성?.천간 ?? null,
+  sip_ji: r.십성?.지지 ?? null,
+  predicted: r.예측 ?? null,
+  weekday: r.요일 ?? null,
+  retro: r.소급 === true,
+  certainty: r.확실성 ?? null,
+  updated_at: r.수정시각 ?? new Date().toISOString(),
+});
+
+// 서버에서 내려온 줄을 이 기기의 모양으로 되돌린다. 글은 손대지 않는다.
+const 로컬모양 = (s) => ({
+  점수: s.score,
+  영역: s.areas ?? [],
+  일진: s.iljin,
+  천간오행: s.gan_ohaeng,
+  지지오행: s.ji_ohaeng,
+  십성: { 천간: s.sip_gan, 지지: s.sip_ji },
+  예측: s.predicted,
+  요일: s.weekday,
+  소급: s.retro,
+  확실성: s.certainty,
+  수정시각: s.updated_at,
+});
+
+function 동기화UI() {
+  const hint = document.getElementById("syncHint");
+  const login = document.getElementById("syncLogin");
+  const actions = document.getElementById("syncActions");
+
+  if (!동기화켜짐) {
+    hint.textContent =
+      "config.js에 Supabase 주소와 anon 키를 넣으면 켜진다. 지금은 이 브라우저 안에서만 기록이 남는다.";
+    login.hidden = true; actions.hidden = true;
+  } else if (!세션) {
+    hint.textContent =
+      "로그인하면 점수와 태그가 서버에도 남아 기기를 바꿔도 이어진다. 일기 본문과 생년월일시는 올라가지 않고 이 기기에만 남는다.";
+    login.hidden = false; actions.hidden = true;
+  } else {
+    hint.textContent =
+      "로그인되어 있다. 기록할 때마다 서버에 함께 올라간다. 일기 본문은 여전히 이 기기에만 있다.";
+    login.hidden = true; actions.hidden = false;
+  }
+}
+
+// 양쪽을 맞춘다. 같은 날짜가 겹치면 수정시각이 새것인 쪽을 쓴다.
+async function 동기화() {
+  const msg = document.getElementById("syncMsg");
+  if (!sb || !세션) return;
+  msg.textContent = "맞추는 중…";
+  try {
+    const { data, error } = await sb.from("records").select("*");
+    if (error) throw error;
+
+    const 서버맵 = Object.fromEntries((data ?? []).map((r) => [r.date, r]));
+    const 새것 = (a, b) => new Date(a ?? 0) > new Date(b ?? 0);
+
+    let 내림 = 0;
+    for (const s of data ?? []) {
+      const r = 기록[s.date];
+      if (!r || 새것(s.updated_at, r.수정시각)) {
+        기록[s.date] = { ...(r ?? {}), ...로컬모양(s) };   // 글은 이 기기 것을 그대로 둔다
+        내림++;
+      }
+    }
+
+    const 올릴것 = [];
+    for (const [날짜, r] of Object.entries(기록)) {
+      const s = 서버맵[날짜];
+      if (!s || 새것(r.수정시각, s.updated_at)) {
+        올릴것.push({ ...서버모양(날짜, r), user_id: 세션.user.id });
+      }
+    }
+    if (올릴것.length) {
+      const { error: e2 } = await sb.from("records").upsert(올릴것);
+      if (e2) throw e2;
+    }
+
+    쓰기(KEY_기록, 기록);
+    차트그리기();
+    목록그리기();
+    msg.textContent = `올림 ${올릴것.length}개 · 내림 ${내림}개. 지금 기록 ${Object.keys(기록).length}개.`;
+  } catch (e) {
+    msg.textContent = "맞추지 못했어: " + (e?.message ?? e);
+  }
+}
+
+// 기록할 때마다 그 한 줄만 조용히 올린다. 실패해도 이 기기의 기록은 그대로 남으므로
+// 화면을 막지 않는다. 다음 '지금 맞추기'에서 따라잡는다.
+async function 서버로밀기(날짜) {
+  if (!sb || !세션 || !기록[날짜]) return;
+  try {
+    await sb.from("records").upsert({ ...서버모양(날짜, 기록[날짜]), user_id: 세션.user.id });
+  } catch {}
+}
+
+document.getElementById("syncLogin").addEventListener("click", async () => {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "kakao",
+    options: { redirectTo: location.href.split("#")[0] },
+  });
+  if (error) document.getElementById("syncMsg").textContent = "로그인을 시작하지 못했어: " + error.message;
+});
+
+document.getElementById("syncNow").addEventListener("click", 동기화);
+
+document.getElementById("syncOut").addEventListener("click", async () => {
+  await sb.auth.signOut();
+  세션 = null;
+  동기화UI();
+  document.getElementById("syncMsg").textContent = "로그아웃했어. 기록은 이 기기에 그대로 있어.";
+});
+
+if (sb) {
+  sb.auth.getSession().then(({ data }) => {
+    세션 = data?.session ?? null;
+    동기화UI();
+    if (세션) 동기화();
+  });
+  sb.auth.onAuthStateChange((_e, s) => { 세션 = s; 동기화UI(); });
+} else {
+  동기화UI();
+}
 
 // ── 내보내기 · 가져오기 ───────────────────────────────────
 // 브라우저 저장소는 생각보다 잘 지워진다. 몇 달 치가 한순간에 사라지면
