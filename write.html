@@ -180,6 +180,14 @@
   }
   .fold > summary::-webkit-details-marker { display: none; }
   .fold > summary::before { content: "▸"; font-size: 10px; }
+  /* 지난 결과는 접어 두었더니 있는 줄도 모르겠다는 말이 있었다.
+     돈 주고 받은 것이라 눈에는 띄어야 한다. */
+  #histFold > summary {
+    font-size: 14px; font-weight: 700; color: var(--accent);
+    padding: 7px 12px; border: 1.5px solid var(--line);
+    border-radius: 999px; background: var(--accent-soft);
+  }
+  #histFold > summary:hover { border-color: var(--accent); }
   .fold[open] > summary::before { content: "▾"; }
   .fold > summary:hover { color: var(--accent); }
   /* 자식에 display를 지정해 두면 접힌 details가 안 감춰진다. 직접 눌러 준다. */
