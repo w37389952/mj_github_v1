@@ -23,6 +23,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import naver  # noqa: E402  (같은 폴더의 공통 모듈)
 
+# 좌표 변환은 있으면 좋은 것이지 수집의 조건이 아니다. 이 모듈이 잘못되어도
+# 그날 수집이 통째로 죽으면 안 되므로 감싸서 읽는다.
+try:
+    import geo  # noqa: E402
+except Exception as exc:                    # pragma: no cover
+    geo = None
+    print(f"좌표 변환 모듈을 읽지 못했습니다 — 좌표 없이 갑니다: {exc}",
+          file=sys.stderr)
+
 API_KEY = os.environ.get("SEOUL_API_KEY", "sample")
 BASE = "http://openapi.seoul.go.kr:8088"
 PAGE = 5 if API_KEY == "sample" else 1000
@@ -184,7 +193,7 @@ def is_excluded(name):
 
 
 def normalize(row, category):
-    return {
+    place = {
         "id": clean(row.get("MGTNO")),
         "name": clean(row.get("BPLCNM")),
         "address": clean(row.get("RDNWHLADDR")) or clean(row.get("SITEWHLADDR")),
@@ -196,6 +205,12 @@ def normalize(row, category):
         "phone": clean(row.get("SITETEL")),
         "area": clean(row.get("SITEAREA")),
     }
+    # 원본이 주는 중부원점 좌표를 위경도로 옮겨 둔다. 가장 가까운 역과
+    # 인접 동네를 이름이 아니라 거리로 고르기 위해서다.
+    spot = geo.to_wgs84(row.get("X"), row.get("Y")) if geo else None
+    if spot:
+        place["lat"], place["lon"] = spot
+    return place
 
 
 def audit():
@@ -325,6 +340,35 @@ def attach_naver_links(items, seen, budget):
     return looked
 
 
+def check_coords(items):
+    """옮긴 좌표가 맞는지 네이버가 준 위경도와 견준다.
+
+    원본 X·Y가 어느 측지계인지는 문서만 봐서는 확실치 않다. GRS80으로 풀면
+    맞고, 옛 베셀이면 300~400m가 한쪽으로 쏠려 어긋난다. 그러면 가장 가까운
+    역이 뒤바뀔 수 있다. 그래서 두 좌표가 다 있는 건으로 실제 어긋남을 잰다.
+    """
+    if not geo:
+        return
+    pairs = [
+        (p, (p["naver"]["lat"], p["naver"]["lon"]))
+        for p in items
+        if p.get("lat") and (p.get("naver") or {}).get("lat")
+    ]
+    if not pairs:
+        print("  좌표 확인: 견줄 짝이 없습니다(네이버 조회분이 아직 없음).")
+        return
+    offs = sorted(geo.metres_between((p["lat"], p["lon"]), spot) for p, spot in pairs)
+    mid = offs[len(offs) // 2]
+    print(f"  좌표 확인: {len(offs)}건과 견줌 — 가운데값 {mid:,.0f}m "
+          f"(가장 작은 {offs[0]:,.0f}m · 가장 큰 {offs[-1]:,.0f}m)")
+    if mid > 150:
+        print(f"  ⚠ 한쪽으로 {mid:,.0f}m 쏠려 있습니다. scripts/geo.py의 DATUM을 "
+              f"'{'bessel' if geo.DATUM == 'grs80' else 'grs80'}'로 바꿔 보세요.",
+              file=sys.stderr)
+    else:
+        print(f"  좌표를 그대로 써도 됩니다(가게 앞뒤 정도 차이).")
+
+
 def dedupe(items):
     """관리번호가 같은 건은 한 번만 남긴다."""
     seen_ids = set()
@@ -418,6 +462,14 @@ def main():
     if naver.enabled():
         found = sum(1 for p in opened + changed if p.get("naver"))
         print(f"네이버 지역 조회 {looked}건 / 링크 확보 누적 {found}곳", file=sys.stderr)
+
+    # 좌표는 곁다리다. 여기서 넘어져 그날 자료를 통째로 못 쓰게 하지 않는다.
+    try:
+        with_xy = sum(1 for p in opened + changed if p.get("lat"))
+        print(f"좌표를 옮긴 곳 {with_xy}곳 / 전체 {len(opened) + len(changed)}곳")
+        check_coords(opened + changed)
+    except Exception as exc:                # pragma: no cover
+        print(f"좌표 확인 중 넘어졌습니다(수집은 계속합니다): {exc}", file=sys.stderr)
 
     meta = {
         "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),

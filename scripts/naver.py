@@ -173,10 +173,42 @@ def find_place(name, address):
         for item in search("local", query, display=5):
             got = road_key(item.get("roadAddress") or item.get("address"))
             if got and got == want:
-                return {
+                out = {
                     "link": item.get("link") or "",
                     "category": item.get("category") or "",
                     "naverName": clean_text(item.get("title")),
                 }
+                # 지역 검색은 위경도도 준다(1천만 배한 정수). 이것이 참값이라
+                # 원본 X·Y를 옮긴 값이 맞는지 견주는 데 쓴다.
+                spot = map_point(item)
+                if spot:
+                    out["lat"], out["lon"] = spot
+                return out
         time.sleep(0.1)
     return None
+
+
+def map_point(item):
+    """지역 검색 결과의 mapx·mapy를 위경도로. 못 읽으면 None."""
+    try:
+        x = float(item.get("mapx"))
+        y = float(item.get("mapy"))
+    except (TypeError, ValueError):
+        return None
+    if not x or not y:
+        return None
+    # 요즘 지역 검색은 1천만 배한 WGS84를 준다. 옛 형식(카텍)은 훨씬 큰 값이다.
+    if x > 1e6:
+        x, y = x / 1e7, y / 1e7
+    if not (124 < x < 132 and 33 < y < 39):
+        return None
+    return round(y, 6), round(x, 6)       # (위도, 경도)
+
+
+def geocode(query, attempts=3):
+    """이름 하나를 지역 검색으로 찾아 위경도를 얻는다. 역 좌표에 쓴다."""
+    for item in search("local", query, display=5, attempts=attempts):
+        spot = map_point(item)
+        if spot:
+            return spot, clean_text(item.get("title"))
+    return None, ""

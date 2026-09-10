@@ -369,6 +369,10 @@
     <button type="button" class="stats-toggle" id="onlyKnown" style="margin:0"></button>
     <span id="changedWhy"></span>
   </div>
+  <div class="tab-hint" id="blogNote" hidden style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button type="button" class="stats-toggle" id="onlyStrong" style="margin:0"></button>
+    <span id="blogWhy"></span>
+  </div>
 
   <button type="button" class="stats-toggle" id="statsToggle" aria-expanded="true">
     <span id="statsToggleText">요약 숨기기</span> <span class="caret">▴</span>
@@ -460,6 +464,15 @@ const TABS = {
 let activeTab = "opened";
 // 간판 교체 탭에서 '바뀐 내용 아는 것만' 볼지. 탭을 옮기면 풀린다.
 let onlyKnownChanges = false;
+
+/* 블로그 검색은 '연남동 신상카페'처럼 지명과 신상 낌새를 함께 보낸다.
+   네이버가 그 둘을 다 보긴 한다 — 2026-09-10에 905건을 세어 보니 99%에
+   '오픈'이 들어 있었다. 다만 '오픈'은 무른 말이라 '오픈런', '오픈 시간',
+   '전시 오픈'까지 걸린다. 그래서 확실한 말이 든 것은 절반뿐이었다(51%).
+   그 절반만 골라 볼 수 있게 한다. */
+const STRONG_NEW = /신상|가오픈|프리오픈|정식\s?오픈|새로\s?생긴|새로\s?오픈|오픈\s?예정|그랜드\s?오픈|뉴\s?오픈|신규\s?오픈/;
+const isStrongNew = p => STRONG_NEW.test((p.title || "") + (p.description || ""));
+let onlyStrongNew = false;
 const tab = () => TABS[activeTab];
 let today = null;
 const selected = { district: new Set(), bizType: new Set() };
@@ -1577,6 +1590,7 @@ function currentFilters() {
 function matchesPost(post, f) {
   const day = post.date || "";
   if (hiddenPosts.has(post.link)) return false;
+  if (onlyStrongNew && !isStrongNew(post)) return false;
   if (f.q && !(post.title + post.description).toLowerCase().includes(f.q)) return false;
   if (f.month && !day.startsWith(f.month)) return false;
   if (f.from && day < f.from) return false;
@@ -1781,6 +1795,18 @@ function refreshForTab() {
 
   // 블로그 글에는 지역·업종·구분이 없다. 쓸 수 없는 조건은 감춘다.
   const isBlog = t.kind === "blog";
+  $("blogNote").hidden = !isBlog;
+  if (isBlog) {
+    const strong = places.filter(isStrongNew).length;
+    $("onlyStrong").textContent = onlyStrongNew
+      ? `← 전체 ${places.length.toLocaleString("ko-KR")}건 보기`
+      : `확실한 신상만 (${strong.toLocaleString("ko-KR")}건)`;
+    $("onlyStrong").disabled = strong === 0;
+    $("blogWhy").textContent =
+      "검색은 ‘연남동 신상카페’처럼 동네와 신상 낌새를 함께 보냅니다. "
+      + "다만 ‘오픈’이 무른 말이라 ‘오픈런’·‘오픈 시간’까지 걸립니다. "
+      + "‘신상·가오픈’ 같은 확실한 말이 든 글만 보려면 왼쪽을 누르세요.";
+  }
   $("subtabs").hidden = !isBlog;
   [$("districtMulti"), $("bizTypeMulti"), $("categoryFilter")]
     .forEach(el => { el.hidden = isBlog; });
@@ -1852,6 +1878,7 @@ function dedupeById(places) {
 async function openTab(key) {
   activeTab = key;
   onlyKnownChanges = false;          // 탭을 옮기면 걸러 둔 것을 푼다
+  onlyStrongNew = false;
   const t = tab();
   if (!t.places) {
     try {
@@ -1925,6 +1952,13 @@ function init(data) {
 
   $("onlyKnown").addEventListener("click", () => {
     onlyKnownChanges = !onlyKnownChanges;
+    tab().page = 1;
+    refreshForTab();
+    render();
+  });
+
+  $("onlyStrong").addEventListener("click", () => {
+    onlyStrongNew = !onlyStrongNew;
     tab().page = 1;
     refreshForTab();
     render();
