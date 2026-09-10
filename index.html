@@ -365,6 +365,10 @@
     <a class="subtab" href="ranks.html" aria-selected="false">순위</a>
   </div>
   <div class="tab-hint" id="tabHint"></div>
+  <div class="tab-hint" id="changedNote" hidden style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button type="button" class="stats-toggle" id="onlyKnown" style="margin:0"></button>
+    <span id="changedWhy"></span>
+  </div>
 
   <button type="button" class="stats-toggle" id="statsToggle" aria-expanded="true">
     <span id="statsToggleText">요약 숨기기</span> <span class="caret">▴</span>
@@ -454,6 +458,8 @@ const TABS = {
 };
 
 let activeTab = "opened";
+// 간판 교체 탭에서 '바뀐 내용 아는 것만' 볼지. 탭을 옮기면 풀린다.
+let onlyKnownChanges = false;
 const tab = () => TABS[activeTab];
 let today = null;
 const selected = { district: new Set(), bizType: new Set() };
@@ -1580,6 +1586,9 @@ function matchesPost(post, f) {
 
 function matches(place, f, t) {
   if (t.kind === "blog") return matchesPost(place, f);
+  // 무엇이 바뀌었는지 아는 것만 보겠다고 했으면 그것만 남긴다.
+  if (onlyKnownChanges && activeTab === "changed"
+      && !(place.changes || []).length) return false;
   // 날짜 조건은 탭마다 기준이 다르다. 신규 오픈은 인허가일자,
   // 간판 교체는 기록이 바뀐 날짜로 걸러야 말이 된다.
   const day = place[t.dateField] || place.licenseDate;
@@ -1751,6 +1760,25 @@ function refreshForTab() {
 
   $("tabHint").textContent = t.hint;
 
+  /* '무엇이 바뀌었는지'는 원본이 알려 주지 않는다. 원본에는 '언제 고쳤다'만
+     있어서, 우리가 두 번 보고 견줘야 무엇이 달라졌는지 알 수 있다.
+     값을 남기기 시작한 것이 2026-07-21이라 그 전에 바뀐 것은 알 길이 없다.
+     지금은 몇 건 안 되므로 3,500장 사이에서 찾을 수가 없다. 그래서 따로 센다. */
+  // kind는 블로그 탭에만 붙어 있다. 나머지는 열쇠 이름으로 가른다.
+  const isChanged = activeTab === "changed";
+  $("changedNote").hidden = !isChanged;
+  if (isChanged) {
+    const known = places.filter(p => (p.changes || []).length).length;
+    $("onlyKnown").textContent = onlyKnownChanges
+      ? `← 전체 ${places.length.toLocaleString("ko-KR")}건 보기`
+      : `바뀐 내용 아는 것만 (${known}건)`;
+    $("onlyKnown").disabled = known === 0;
+    $("changedWhy").textContent = known
+      ? "원본은 ‘언제 고쳤다’만 알려 줍니다. 무엇이 달라졌는지는 우리가 두 번 보고 견줘야 알 수 있어, "
+        + "값을 남기기 시작한 2026-07-21 이후에 바뀐 것만 나옵니다. 날마다 쌓입니다."
+      : "아직 바뀐 내용을 아는 건이 없습니다. 우리가 두 번 본 뒤부터 쌓입니다.";
+  }
+
   // 블로그 글에는 지역·업종·구분이 없다. 쓸 수 없는 조건은 감춘다.
   const isBlog = t.kind === "blog";
   $("subtabs").hidden = !isBlog;
@@ -1823,6 +1851,7 @@ function dedupeById(places) {
 /** 탭을 연다. 이때 비로소 그 탭의 NEW 기준일이 갱신된다. */
 async function openTab(key) {
   activeTab = key;
+  onlyKnownChanges = false;          // 탭을 옮기면 걸러 둔 것을 푼다
   const t = tab();
   if (!t.places) {
     try {
@@ -1892,6 +1921,13 @@ function init(data) {
     const nowHidden = !$("stats").hidden;
     setStatsHidden(nowHidden);
     try { localStorage.setItem(STATS_KEY, nowHidden ? "1" : "0"); } catch (e) { /* 무시 */ }
+  });
+
+  $("onlyKnown").addEventListener("click", () => {
+    onlyKnownChanges = !onlyKnownChanges;
+    tab().page = 1;
+    refreshForTab();
+    render();
   });
   $("resetBtn").addEventListener("click", () => {
     $("search").value = "";
