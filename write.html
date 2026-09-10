@@ -1918,6 +1918,14 @@ function drawAreaPicks(area) {
       box.innerHTML = "";
       // 후보가 하나뿐이면 고를 것이 없으니 굳이 안 보여 준다.
       if (list.length < 2) return;
+      // 비어 있으면 왜 비었는지 알려 준다. 안 그러면 빠뜨린 줄 안다.
+      if (!$(inputId).value.trim()) {
+        const ask = document.createElement("span");
+        ask.className = "chip-hint";
+        ask.style.cssText = "margin:0 4px 0 0;align-self:center";
+        ask.textContent = "어느 쪽인지 몰라 비워 뒀습니다 —";
+        box.append(ask);
+      }
       list.forEach(word => {
         const b = document.createElement("button");
         b.type = "button";
@@ -1966,8 +1974,26 @@ function fillAreaExtras(area, force) {
     touched = true;
   };
 
+  /* 역은 동네와 이름이 같은 것이 있으면 그것으로 채운다. 합정동이면
+     합정역이라 찍어도 크게 어긋나지 않는다.
+
+     인접 지역은 다르다. 합정동 옆에는 망원동도 상수동도 있고, 어느 쪽인지는
+     좌표가 없는 한 알 수 없다. 그런데도 하나를 미리 골라 두면 고쳐야 하는 줄
+     모르고 그대로 발행하게 된다 — 실제로 상수 쪽 가게가 망원동으로 나갔다.
+     그래서 후보가 둘 이상이면 비워 두고 고르게 한다. */
+  const { nears } = areaCandidates(area);
   put("fStation", station, "station");
-  put("fNear", near, "near");
+  if (nears.length <= 1) {
+    put("fNear", near, "near");
+  } else {
+    const now = $("fNear").value.trim();
+    // 내가 손으로 고친 값은 그대로 둔다. 찍어 둔 값만 비운다.
+    if (!now || force || now === autoFilled.near) {
+      if (now) touched = true;
+      $("fNear").value = "";
+      autoFilled.near = "";
+    }
+  }
   if (touched) rememberAuto();
   drawAreaPicks(area);
   return touched;
@@ -1997,8 +2023,9 @@ function fillFromShop(row) {
      같은 동네 안에서도 틀릴 수 있다. 주소를 봐야 고쳐야 할지 알 수 있다. */
   $("parseMsg").innerHTML = `레이더에서 찾았습니다 — <b>${address}</b>`
     + (filledExtras
-        ? "<br>역과 인접 지역은 <b>동네 이름만 보고 찍은 값</b>입니다"
-          + "(좌표가 없어 어느 쪽인지 모릅니다). 주소를 보고 아래 후보에서 골라 주세요."
+        ? "<br>역은 동네 이름을 보고 채웠습니다. <b>인접 지역은 비워 뒀습니다</b> — "
+          + "합정동 옆에는 망원동도 상수동도 있어, 좌표가 없는 지금은 어느 쪽인지 "
+          + "알 수 없습니다. 위 주소를 보고 후보에서 골라 주세요."
         : "");
 }
 
