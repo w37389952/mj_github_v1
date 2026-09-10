@@ -1,0 +1,37 @@
+<title>만세력 검증</title>
+<script src="manse.js"></script>
+<pre id="out"></pre>
+<script>
+const L = [];
+const dates = [[2026,9,7],[2026,1,1],[2025,1,1],[2024,2,4],[2000,1,1],[1900,1,1],[1988,9,17]];
+L.push("=== 일진 ===");
+for (const [y,m,d] of dates) {
+  L.push(`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}  JDN ${Manse.toJDN(y,m,d)}  ${Manse.iljin(y,m,d).이름}`);
+}
+L.push("");
+L.push("=== 연속성(60일 뒤 같은 갑자여야 한다) ===");
+L.push("2026-09-07 " + Manse.iljin(2026,9,7).이름 + " / 60일 뒤 2026-11-06 " + Manse.iljin(2026,11,6).이름);
+L.push("");
+L.push("=== 2026년 절기(월을 가르는 12개) ===");
+const names = ["입춘","경칩","청명","입하","망종","소서","입추","백로","한로","입동","대설","소한"];
+Manse.majorTerms(2026).forEach((t,i)=>{
+  const jd = t.jd + 0.5 + 9/24;             // 세계시 → 한국시, 자정 기준으로 환산
+  const z = Math.floor(jd), f = jd - z;
+  let a = z + 32044, b = Math.floor((4*a+3)/146097), c = a - Math.floor(146097*b/4);
+  let dd = Math.floor((4*c+3)/1461), e = c - Math.floor(1461*dd/4), mmm = Math.floor((5*e+2)/153);
+  const day = e - Math.floor((153*mmm+2)/5) + 1, mon = mmm + 3 - 12*Math.floor(mmm/10), yr = 100*b + dd - 4800 + Math.floor(mmm/10);
+  const hh = Math.floor(f*24), mi = Math.round((f*24-hh)*60);
+  L.push(`${names[i]} ${t.deg}도  ${yr}-${String(mon).padStart(2,"0")}-${String(day).padStart(2,"0")} ${String(hh).padStart(2,"0")}:${String(mi).padStart(2,"0")}`);
+});
+L.push("");
+L.push("=== 원국 예시 (1990-05-15 14:30 서울) ===");
+const s = Manse.saju(1990,5,15,14,30);
+L.push(`연주 ${s.연주} · 월주 ${s.월주} · 일주 ${s.일주} · 시주 ${s.시주}  (사주연도 ${s.사주연도}, 일간 ${s.일간오행}${s.일간음양})`);
+L.push("");
+L.push("=== 입춘 경계 (2026 입춘 전후) ===");
+[[2026,2,3],[2026,2,4],[2026,2,5]].forEach(([y,m,d])=>{
+  const r = Manse.saju(y,m,d,12,0);
+  L.push(`${y}-${m}-${d}  연주 ${r.연주} 월주 ${r.월주}`);
+});
+document.getElementById("out").textContent = L.join("\n");
+</script>

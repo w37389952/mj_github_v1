@@ -1,0 +1,821 @@
+<title>오늘의 일진</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@400;600&display=swap">
+<style>
+/* 색은 오행에서 가져온다. 장식이 아니라 데이터를 가리키는 색이므로
+   다섯이 서로 한눈에 갈리는 것이 가장 중요하다. */
+:root {
+  --ground:#EFF1F4; --surface:#FFFFFF; --line:#DDE1E7; --line-soft:#E8EBEF;
+  --ink:#161A21; --ink-soft:#5D6673; --ink-faint:#939BA6;
+  --mok:#2C7A3F; --hwa:#B4483F; --to:#96762F; --geum:#6B7885; --su:#3E6699;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:#0F1218; --surface:#161A22; --line:#252B36; --line-soft:#1D222B;
+    --ink:#E7E5E0; --ink-soft:#8A929F; --ink-faint:#5B636F;
+    --mok:#5DBA6B; --hwa:#C8615A; --to:#B08D52; --geum:#A8B2BC; --su:#5B7FB0;
+  }
+}
+:root[data-theme="dark"] {
+  --ground:#0F1218; --surface:#161A22; --line:#252B36; --line-soft:#1D222B;
+  --ink:#E7E5E0; --ink-soft:#8A929F; --ink-faint:#5B636F;
+  --mok:#5DBA6B; --hwa:#C8615A; --to:#B08D52; --geum:#A8B2BC; --su:#5B7FB0;
+}
+
+* { box-sizing:border-box; }
+body {
+  background:var(--ground); color:var(--ink);
+  font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;
+  display:flex; justify-content:center; padding:0 16px 48px; margin:0;
+}
+main { width:100%; max-width:400px; }
+
+.datebar {
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12px; letter-spacing:.14em; color:var(--ink-faint);
+  padding:22px 2px 0;
+}
+.datebar .term { letter-spacing:.04em; }
+
+.iljin { text-align:center; padding:28px 0 4px; }
+.iljin .hanja {
+  font-family:"Noto Serif KR",serif; font-weight:600;
+  font-size:76px; line-height:1; letter-spacing:.08em; text-indent:.08em;
+}
+.iljin .hangul {
+  font-size:13px; letter-spacing:.5em; text-indent:.5em;
+  color:var(--ink-soft); margin-top:12px;
+}
+
+.relation { display:flex; justify-content:center; gap:10px; margin:20px 0 28px; flex-wrap:wrap; }
+.rel {
+  display:inline-flex; align-items:center; gap:7px;
+  border:1px solid var(--line); border-radius:2px;
+  padding:6px 10px; font-size:12px; color:var(--ink-soft);
+}
+.rel b { font-family:"Noto Serif KR",serif; font-weight:600; font-size:14px; }
+.rel .op { font-family:"Noto Serif KR",serif; font-size:12px; color:var(--ink-faint); }
+
+.score { text-align:center; }
+.score .num {
+  font-family:"IBM Plex Mono",monospace; font-weight:500;
+  font-size:62px; line-height:1; font-variant-numeric:tabular-nums;
+}
+.gauge { position:relative; height:1px; background:var(--line); margin:24px 4px 0; }
+.gauge .mark { position:absolute; top:-4px; width:9px; height:9px; border-radius:50%; transform:translateX(-4px); }
+.gauge-labels {
+  display:flex; justify-content:space-between; margin:9px 4px 0;
+  font-family:"IBM Plex Mono",monospace; font-size:10px;
+  letter-spacing:.1em; color:var(--ink-faint);
+}
+
+.reading {
+  font-family:"Noto Serif KR",serif; font-size:15px; line-height:1.85;
+  text-align:center; margin:28px 8px 0; text-wrap:balance;
+}
+.reading .note {
+  display:block; font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-size:12px; line-height:1.7; color:var(--ink-faint); margin-top:14px;
+}
+
+hr.rule { border:0; border-top:1px solid var(--line-soft); margin:28px 0; }
+h2.label {
+  font-size:11px; font-weight:600; letter-spacing:.18em;
+  color:var(--ink-faint); margin:0 0 14px;
+}
+
+.layers { display:grid; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
+.layer {
+  display:grid; grid-template-columns:38px 52px 1fr auto;
+  align-items:baseline; gap:10px;
+  background:var(--ground); padding:11px 12px; font-size:12px;
+}
+.layer .kind { color:var(--ink-faint); letter-spacing:.08em; }
+.layer .gz { font-family:"Noto Serif KR",serif; font-weight:600; font-size:15px; letter-spacing:.06em; }
+.layer .sip { color:var(--ink-soft); }
+.layer .when {
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px;
+  letter-spacing:.06em; color:var(--ink-faint);
+}
+.layer.today .kind, .layer.today .sip { color:var(--ink); }
+.layer .ohaeng b { font-family:"Noto Serif KR",serif; font-weight:600; font-size:14px; }
+.verdict { font-size:11.5px; line-height:1.75; color:var(--ink-faint); margin:14px 0 0; }
+
+/* 그날의 네 기둥과 오행 쏠림. 일진 두 글자만으로는 그날의 성질이 다 안 보이므로
+   펼치면 여덟 글자와 그 오행 분포를 함께 준다. */
+.more {
+  display:block; margin:18px auto 0; font:inherit; font-size:11px;
+  letter-spacing:.14em; color:var(--ink-faint); cursor:pointer;
+  background:transparent; border:0; padding:6px 10px;
+}
+.more:hover { color:var(--ink-soft); }
+.panel { margin-top:16px; }
+.pillars { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
+.pillars.three { grid-template-columns:repeat(3,1fr); }
+.pillar { background:var(--ground); padding:12px 4px; text-align:center; }
+.pillar .kind { display:block; font-size:10px; letter-spacing:.12em; color:var(--ink-faint); margin-bottom:8px; }
+.pillar .gz {
+  font-family:"Noto Serif KR",serif; font-weight:600; font-size:22px;
+  line-height:1.25; display:block;
+}
+.pillar .rd { display:block; font-size:10.5px; color:var(--ink-faint); margin-top:6px; letter-spacing:.06em; }
+.spread { display:flex; gap:3px; margin-top:12px; height:26px; }
+.spread .seg {
+  display:flex; align-items:center; justify-content:center;
+  font-size:10.5px; color:var(--ground); border-radius:1px;
+  font-family:"IBM Plex Mono",monospace;
+}
+.spread .seg.zero { background:var(--line-soft) !important; color:var(--ink-faint); }
+.spread-note { font-size:11px; line-height:1.7; color:var(--ink-faint); margin:10px 0 0; }
+
+/* 기록. 점수 한 번, 영역 태그, 그리고 하고 싶은 만큼의 글. */
+.choices { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.choice {
+  font:inherit; font-size:14px; color:var(--ink); cursor:pointer;
+  background:var(--surface); border:1px solid var(--line); border-radius:2px;
+  padding:14px 0; transition:border-color .15s;
+}
+.choice:hover { border-color:var(--ink-faint); }
+.choice[aria-pressed="true"] { box-shadow:inset 0 0 0 1px var(--ink); border-color:var(--ink); }
+
+/* 태그는 십성의 영역 그대로다. 사람이 아니라 사건의 성격으로 받는다.
+   같은 상사라도 나를 누르면 관성이고 나를 가르치면 인성이라,
+   '윗사람'으로 묶어 두면 두 기운이 한 칸에 섞인다. */
+.tags { display:flex; flex-wrap:wrap; gap:6px; }
+.tag {
+  font:inherit; font-size:12.5px; color:var(--ink-soft); cursor:pointer;
+  background:transparent; border:1px solid var(--line); border-radius:2px;
+  padding:8px 11px; transition:border-color .15s, color .15s;
+}
+.tag:hover { border-color:var(--ink-faint); }
+.tag[aria-pressed="true"] { color:var(--ink); border-color:currentColor; }
+
+textarea, input[type="date"], input[type="time"], select {
+  width:100%; font:inherit; font-size:14px; color:var(--ink);
+  background:var(--surface); border:1px solid var(--line); border-radius:2px;
+  padding:12px 13px;
+}
+textarea { min-height:120px; resize:vertical; margin-top:14px; line-height:1.75; }
+textarea::placeholder { color:var(--ink-faint); }
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+.choice:focus-visible, .tag:focus-visible, button:focus-visible, summary:focus-visible {
+  outline:2px solid var(--su); outline-offset:2px;
+}
+.save {
+  width:100%; margin-top:12px; font:inherit; font-size:14px; cursor:pointer;
+  color:var(--ground); background:var(--ink); border:1px solid var(--ink);
+  border-radius:2px; padding:14px 0;
+}
+.saved { font-size:12px; color:var(--ink-faint); text-align:center; margin:10px 0 0; min-height:1em; }
+
+/* 접히는 자리. 오늘 화면이 주인이고 나머지는 필요할 때만 편다. */
+details { border-top:1px solid var(--line-soft); }
+details > summary {
+  list-style:none; cursor:pointer; padding:18px 2px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; font-weight:600; letter-spacing:.18em; color:var(--ink-faint);
+}
+details > summary::-webkit-details-marker { display:none; }
+details > summary::after { content:"펴기"; font-weight:400; letter-spacing:.04em; }
+details[open] > summary::after { content:"접기"; }
+details .body { padding:0 0 26px; }
+.hint { font-size:11.5px; line-height:1.75; color:var(--ink-faint); margin:0 0 16px; }
+
+.field { margin-bottom:12px; }
+.field > span {
+  display:block; font-size:11px; letter-spacing:.12em;
+  color:var(--ink-faint); margin-bottom:7px;
+}
+.pair { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.check { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft); cursor:pointer; margin-top:4px; }
+.check input { width:auto; accent-color:var(--su); }
+
+/* 지난 기록. 소급해 적은 것과 그날 적은 것을 눈으로 갈라 둔다.
+   분석할 때 둘을 나눠 볼 수 있어야 하기 때문이다. */
+.log { display:grid; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
+.entry { background:var(--ground); padding:12px; display:grid; gap:6px; }
+.entry .top { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.entry .when { font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.06em; color:var(--ink-faint); }
+.entry .gz { font-family:"Noto Serif KR",serif; font-weight:600; font-size:14px; }
+.entry .badge {
+  font-size:10px; letter-spacing:.08em; color:var(--ink-faint);
+  border:1px solid var(--line); border-radius:2px; padding:1px 5px;
+}
+.entry .txt { font-size:12.5px; line-height:1.7; color:var(--ink-soft); white-space:pre-wrap; }
+.entry .areas { font-size:11px; color:var(--ink-faint); }
+.empty { font-size:12px; color:var(--ink-faint); padding:16px 2px; }
+
+.bars { display:flex; align-items:flex-end; gap:4px; height:56px; }
+.bars .bar { flex:1; border-radius:1px 1px 0 0; min-height:3px; background:var(--line-soft); }
+.legend {
+  display:flex; justify-content:center; gap:14px; margin-top:16px;
+  font-family:"IBM Plex Mono",monospace; font-size:10px; color:var(--ink-faint);
+}
+.legend span { display:inline-flex; align-items:center; gap:5px; }
+.legend i { width:6px; height:6px; border-radius:50%; display:inline-block; }
+
+.progress .row {
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-family:"IBM Plex Mono",monospace; font-size:11px;
+  letter-spacing:.08em; color:var(--ink-faint); margin-bottom:10px;
+}
+.progress .track { height:2px; background:var(--line-soft); }
+.progress .fill { height:2px; background:var(--ink-faint); }
+.progress .why { font-size:11px; line-height:1.75; color:var(--ink-faint); margin:14px 0 0; }
+
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+
+<main>
+  <div class="datebar">
+    <span id="date"></span>
+    <span class="term" id="term"></span>
+  </div>
+
+  <div class="iljin">
+    <div class="hanja" id="hanja"></div>
+    <div class="hangul" id="hangul"></div>
+  </div>
+
+  <div class="relation" id="relation"></div>
+
+  <div class="score">
+    <div class="num" id="score"></div>
+    <div class="gauge"><div class="mark" id="mark"></div></div>
+    <div class="gauge-labels"><span>0</span><span>50</span><span>100</span></div>
+  </div>
+
+  <p class="reading" id="reading"></p>
+
+  <button class="more" id="todayMore" aria-expanded="false">그날 여덟 글자 펼치기</button>
+  <div class="panel" id="todayPanel" hidden></div>
+
+  <hr class="rule">
+
+  <section>
+    <h2 class="label">네 겹</h2>
+    <div class="layers" id="layers"></div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2 class="label">용신</h2>
+    <div class="layers" id="yongsin"></div>
+    <p class="verdict" id="verdict"></p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2 class="label">오늘 어땠어?</h2>
+    <div class="choices" id="todayChoices">
+      <button class="choice" aria-pressed="false" data-v="80">좋음</button>
+      <button class="choice" aria-pressed="false" data-v="50">보통</button>
+      <button class="choice" aria-pressed="false" data-v="20">나쁨</button>
+    </div>
+
+    <h2 class="label" style="margin:24px 0 12px">무슨 일이었어?</h2>
+    <div class="tags" id="todayTags"></div>
+
+    <textarea id="todayNote" placeholder="오늘 있었던 일을 적어 둬. 나중에 이 글이 어떤 기운의 날에 쓰였는지 되짚어볼 수 있어."></textarea>
+    <button class="save" id="todaySave">기록하기</button>
+    <p class="saved" id="todayMsg"></p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2 class="label">최근 14일</h2>
+    <div class="bars" id="bars"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <hr class="rule">
+
+  <section class="progress">
+    <div class="row"><span id="dayCount"></span><span id="dayLeft"></span></div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <p class="why">70일이 되면 열 개의 천간이 모든 요일을 한 번씩 만난다. 월요일이라서 나빴던 것과 일진이라서 나빴던 것이 그때 비로소 갈린다.</p>
+  </section>
+
+  <details id="pastBox">
+    <summary>지난 날 적기</summary>
+    <div class="body">
+      <p class="hint">
+        기억에 남은 날이 있으면 지금 남겨 둬. 그날 너는 운세를 모르고 하루를 보냈으니,
+        앞으로 쌓을 어떤 기록보다 깨끗한 데이터야.<br><br>
+        다만 일진은 하루 단위로 바뀐다. 날짜가 하루만 어긋나도 완전히 다른 날이 되므로,
+        얼마나 확실한지를 같이 받아 둔다. 흐릿한 기록은 나중에 분석에서 뺄 수 있다.
+      </p>
+
+      <div class="field">
+        <span>언제</span>
+        <input type="date" id="pastDate">
+      </div>
+
+      <div class="panel" id="pastPanel" hidden></div>
+
+      <div class="field">
+        <span>날짜가 얼마나 확실해?</span>
+        <select id="pastSure">
+          <option value="정확">정확히 그날이다</option>
+          <option value="며칠">며칠 오차가 있을 수 있다</option>
+          <option value="무렵">그 무렵이었다</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <span>그날 어땠어?</span>
+        <div class="choices" id="pastChoices">
+          <button class="choice" aria-pressed="false" data-v="80">좋음</button>
+          <button class="choice" aria-pressed="false" data-v="50">보통</button>
+          <button class="choice" aria-pressed="false" data-v="20">나쁨</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span>무슨 일이었어?</span>
+        <div class="tags" id="pastTags"></div>
+      </div>
+
+      <textarea id="pastNote" placeholder="그날 무슨 일이 있었는지 적어 둬."></textarea>
+      <button class="save" id="pastSave">남기기</button>
+      <p class="saved" id="pastMsg"></p>
+    </div>
+  </details>
+
+  <details id="logBox">
+    <summary>기록 보기</summary>
+    <div class="body"><div id="log"></div></div>
+  </details>
+
+  <details id="meBox">
+    <summary>내 정보</summary>
+    <div class="body">
+      <p class="hint">
+        브라우저에만 저장된다. 서버도 로그인도 없어서 이 기기 밖으로 나가지 않는다.
+      </p>
+      <div class="field">
+        <span>생년월일 (양력)</span>
+        <input type="date" id="meDate">
+      </div>
+      <div class="field">
+        <span>태어난 시각</span>
+        <input type="time" id="meTime">
+        <label class="check"><input type="checkbox" id="meNoTime"> 시각을 모른다</label>
+      </div>
+      <div class="field">
+        <span>성별 (대운의 방향을 정한다)</span>
+        <select id="meGender">
+          <option value="여">여</option>
+          <option value="남">남</option>
+        </select>
+      </div>
+      <div class="field">
+        <span>쌍둥이</span>
+        <label class="check"><input type="checkbox" id="meTwin"> 쌍둥이로 태어났다</label>
+        <select id="meTwinOrder" style="margin-top:10px" disabled>
+          <option value="첫째">먼저 난 쪽</option>
+          <option value="둘째">나중 난 쪽 (시주를 다음 간지로)</option>
+        </select>
+        <p class="hint" style="margin:10px 0 0">
+          나중 난 쪽은 시주를 한 칸 민다. 임진시라면 계사시로 본다.
+          유파가 갈리는 자리라, 안 맞는다 싶으면 체크를 풀어 먼저 난 쪽과 같은 시주로 되돌리면 된다.
+        </p>
+      </div>
+      <button class="save" id="meSave">저장하기</button>
+      <p class="saved" id="meMsg"></p>
+    </div>
+  </details>
+</main>
+
+<script src="manse.js"></script>
+<script>
+// ── 저장 ──────────────────────────────────────────────────
+// 전부 브라우저에만 남는다. 서버도 로그인도 API도 없다.
+const KEY_기록 = "iljin:records";
+const KEY_나 = "iljin:me";
+const 읽기 = (k, 기본) => { try { return JSON.parse(localStorage.getItem(k)) ?? 기본; } catch { return 기본; } };
+const 쓰기 = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+const 기본나 = { y:1993, m:12, d:31, hour:8, minute:16, 시모름:false, 성별:"여", 쌍둥이:false, 순서:"첫째" };
+let 나 = { ...기본나, ...읽기(KEY_나, {}) };
+const 기록 = 읽기(KEY_기록, {});
+
+// ── 공통 ──────────────────────────────────────────────────
+const 색이름 = { 목:"--mok", 화:"--hwa", 토:"--to", 금:"--geum", 수:"--su" };
+const 오행색 = (o) => getComputedStyle(document.documentElement).getPropertyValue(색이름[o]).trim();
+const 한자 = {
+  갑:"甲", 을:"乙", 병:"丙", 정:"丁", 무:"戊", 기:"己", 경:"庚", 신:"辛", 임:"壬", 계:"癸",
+  자:"子", 축:"丑", 인:"寅", 묘:"卯", 진:"辰", 사:"巳", 오:"午", 미:"未", 신:"申", 유:"酉", 술:"戌", 해:"亥"
+};
+const 한자로 = (s) => [...(s || "")].map((c) => 한자[c] || c).join("");
+const 키로 = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+// 태그는 십성이 가리키는 삶의 영역 그대로다. 사람이 아니라 사건의 성격으로 받는다.
+const 영역 = [
+  ["동료·경쟁", "비겁", "같이 하거나 겨룬 일"],
+  ["표현·창작", "식상", "말하고 만들고 드러낸 일"],
+  ["돈·성과", "재성", "벌고 쓰고 거둔 일"],
+  ["압박·질책", "관성", "나를 누르거나 통제한 일"],
+  ["배움·도움", "인성", "나를 채우거나 받쳐 준 일"],
+  ["몸·컨디션", "일간", "몸 상태 그 자체"],
+];
+const 영역이름 = Object.fromEntries(영역.map(([n, c]) => [c, n]));
+const 태그판 = (el) => {
+  el.innerHTML = 영역
+    .map(([n, c, h]) => `<button class="tag" aria-pressed="false" data-code="${c}" title="${h}">${n}</button>`)
+    .join("");
+};
+
+const 생하는곳 = { 목:"화", 화:"토", 토:"금", 금:"수", 수:"목" };
+const 생극 = (a, b) => (생하는곳[a] === b ? "生" : "剋");
+
+// ── 원국과 용신 ───────────────────────────────────────────
+let 원국, 판정, 용신, 기신, 일간오행;
+
+function 원국계산() {
+  원국 = Manse.saju(나.y, 나.m, 나.d, 나.시모름 ? 12 : 나.hour, 나.시모름 ? 0 : 나.minute, {
+    시모름: 나.시모름,
+    쌍둥이둘째: 나.쌍둥이 && 나.순서 === "둘째",
+  });
+  판정 = Manse.yongsin(원국);
+  용신 = 판정.억부.용신;
+  기신 = 판정.억부.기신;
+  일간오행 = 원국.일간오행;
+}
+
+// 임시 점수. 용신을 돕는 오행이면 올리고 기신이면 내린다.
+// 천간을 지지보다 무겁게 두는 것은 일진에서 천간이 그날의 성질을 더 크게 정하기 때문이다.
+function 점수(천간오행, 지지오행) {
+  const 값 = (o, w) => (용신.includes(o) ? w : 기신.includes(o) ? -w : -w * 0.3);
+  return Math.round(Math.max(15, Math.min(92, 50 + 값(천간오행, 15) + 값(지지오행, 10))));
+}
+
+// ── 오늘 화면 ─────────────────────────────────────────────
+const 이제 = new Date();
+const [Y, M, D] = [이제.getFullYear(), 이제.getMonth() + 1, 이제.getDate()];
+const 오늘키 = 키로(이제);
+let 일진, 운, 점;
+
+function 오늘그리기() {
+  일진 = Manse.iljin(Y, M, D);
+  운 = Manse.fortune(원국, 나.성별, Y, M, D);
+  점 = 점수(일진.천간오행, 일진.지지오행);
+
+  document.getElementById("date").textContent =
+    `${Y}.${String(M).padStart(2,"0")}.${String(D).padStart(2,"0")}  ${"일월화수목금토"[이제.getDay()]}`;
+  document.getElementById("term").textContent = `${운.월운.이름} 월 · ${운.만나이}세`;
+  document.getElementById("hanja").textContent = 한자로(일진.이름);
+  document.getElementById("hangul").textContent = 일진.이름;
+  document.getElementById("score").textContent = 점;
+
+  const 칩 = (a, op, b) =>
+    `<span class="rel"><b style="color:${오행색(a)}">${a}</b><span class="op">${op}</span><b style="color:${오행색(b)}">${b}</b></span>`;
+  document.getElementById("relation").innerHTML =
+    칩(일진.천간오행, 생극(일진.천간오행, 일간오행), 일간오행) +
+    칩(일진.지지오행, 생극(일진.지지오행, 일진.천간오행), 일진.천간오행);
+
+  const mark = document.getElementById("mark");
+  mark.style.left = 점 + "%";
+  mark.style.background = 오행색(일진.천간오행);
+
+  document.getElementById("reading").innerHTML =
+    (용신.includes(일진.천간오행)
+      ? `${일진.이름[0]}${일진.천간오행}이 네 ${원국.일간}${일간오행}를 살리는 날. 다만 ${일진.이름[1]}${일진.지지오행}이 그 ${일진.천간오행}을 쳐서 힘이 반만 온다.`
+      : `${일진.이름[0]}${일진.천간오행}이 네 ${원국.일간}${일간오행}를 누르는 날. 무리해서 밀지 말고 하루를 짧게 쓰는 편이 낫다.`) +
+    `<span class="note">지금 점수는 표준 억부용신 기준이다. 네 기록이 쌓이면 너에게 맞게 고쳐진다.</span>`;
+
+  const 겹들 = [
+    ["대운", 운.대운.이름, 운.대운.십성, `${운.대운.나이}–${운.대운.나이 + 9}세`],
+    ["세운", 운.세운.이름, 운.세운.십성, `${Y}`],
+    ["월운", 운.월운.이름, 운.월운.십성, "이번 달"],
+    ["일운", 운.일운.이름, 운.일운.십성, "오늘"],
+  ];
+  document.getElementById("layers").innerHTML = 겹들
+    .map(([kind, gz, sip, when], i) => `
+      <div class="layer${i === 3 ? " today" : ""}">
+        <span class="kind">${kind}</span>
+        <span class="gz">${한자로(gz)}</span>
+        <span class="sip">${sip.천간} · ${sip.지지}</span>
+        <span class="when">${when}</span>
+      </div>`)
+    .join("");
+
+  const 오행칩 = (list) =>
+    list.length ? list.map((o) => `<b style="color:${오행색(o)}">${o}</b>`).join(" ") : "—";
+  const 강약 = 판정.강약;
+  document.getElementById("yongsin").innerHTML = `
+    <div class="layer">
+      <span class="kind">강약</span>
+      <span class="gz">${강약.신강 ? "신강" : "신약"}</span>
+      <span class="sip">득령 ${강약.득령 ? "O" : "X"} · 득지 ${강약.득지 ? "O" : "X"} · 득세 ${강약.득세 ? "O" : "X"}</span>
+      <span class="when">${강약.점}/${강약.만점}</span>
+    </div>
+    <div class="layer">
+      <span class="kind">억부</span>
+      <span class="ohaeng gz">${오행칩(판정.억부.용신)}</span>
+      <span class="sip">기신 ${판정.억부.기신.join("·")}</span>
+      <span class="when">기본</span>
+    </div>
+    <div class="layer">
+      <span class="kind">조후</span>
+      <span class="ohaeng gz">${오행칩(판정.조후.용신)}</span>
+      <span class="sip">${판정.계절}생</span>
+      <span class="when">${판정.조후.용신.length ? "후보" : "해당 없음"}</span>
+    </div>`;
+
+  document.getElementById("verdict").textContent =
+    (강약.시모름 ? "생시를 몰라 여섯 글자로 재었다. " : "") +
+    (판정.일치
+      ? `억부와 조후가 같은 답을 냈다. 용신 논쟁이 거의 없는 사주다. (${판정.억부.까닭})`
+      : 판정.조후.용신.length
+      ? `억부는 ${판정.억부.용신.join("·")}, 조후는 ${판정.조후.용신.join("·")}로 갈린다. 어느 쪽이 맞는지는 네 기록이 정한다.`
+      : `${판정.계절}에 나서 조후가 급하지 않다. 억부만으로 본다. (${판정.억부.까닭})`);
+}
+
+// ── 그날의 여덟 글자 ──────────────────────────────────────
+// 일진 두 글자만으로는 그날의 성질이 다 안 보인다. 같은 갑신일이라도
+// 어느 해 어느 달에 놓였는지에 따라 오행 쏠림이 달라지기 때문이다.
+//
+// 시각을 주면 네 기둥, 안 주면 세 기둥으로 본다. 지난 날은 몇 시였는지
+// 기억나지 않는 것이 보통이라 세 기둥이 기본이다.
+function 간지판(y, m, d, 시각) {
+  const 시있음 = Array.isArray(시각);
+  const s = Manse.saju(y, m, d, 시있음 ? 시각[0] : 12, 시있음 ? 시각[1] : 0, { 시모름: !시있음 });
+
+  const 기둥 = [["연", s.연주], ["월", s.월주], ["일", s.일주]];
+  if (s.시주) 기둥.push(["시", s.시주]);
+
+  const 오행 = { 목:0, 화:0, 토:0, 금:0, 수:0 };
+  const 읽기오행 = (gz) => [
+    Manse.GAN_OHAENG[Manse.GAN.indexOf(gz[0])],
+    Manse.JI_OHAENG[Manse.JI.indexOf(gz[1])],
+  ];
+  기둥.forEach(([, gz]) => 읽기오행(gz).forEach((o) => 오행[o]++));
+
+  const 총 = 기둥.length * 2;
+  const 칸 = 기둥
+    .map(([k, gz]) => {
+      const [go, jo] = 읽기오행(gz);
+      return `<div class="pillar">
+        <span class="kind">${k}</span>
+        <span class="gz"><span style="color:${오행색(go)}">${한자[gz[0]]}</span><br><span style="color:${오행색(jo)}">${한자[gz[1]]}</span></span>
+        <span class="rd">${gz}</span>
+      </div>`;
+    })
+    .join("");
+
+  // 오행 막대는 너비가 곧 개수다. 어느 기운이 넘치고 어느 기운이 비었는지
+  // 숫자를 읽지 않아도 보이게 한다.
+  const 막대 = ["목", "화", "토", "금", "수"]
+    .map((o) => {
+      const n = 오행[o];
+      const w = n === 0 ? 1 : n;
+      return `<div class="seg${n === 0 ? " zero" : ""}" style="flex:${w}; background:${오행색(o)}">${o}${n || ""}</div>`;
+    })
+    .join("");
+
+  const 없는것 = ["목", "화", "토", "금", "수"].filter((o) => 오행[o] === 0);
+  const 많은것 = ["목", "화", "토", "금", "수"].filter((o) => 오행[o] >= 3);
+
+  const 쏠림 = [
+    많은것.length ? `${많은것.join("·")}이 몰려 있다` : "",
+    없는것.length ? `${없는것.join("·")}이 없다` : "",
+  ].filter(Boolean).join(". ");
+
+  const 내편 = ["목", "화", "토", "금", "수"].filter((o) => 용신.includes(o) && 오행[o] > 0);
+
+  return `
+    <div class="pillars${기둥.length === 3 ? " three" : ""}">${칸}</div>
+    <div class="spread">${막대}</div>
+    <p class="spread-note">
+      여덟 글자 가운데 ${총}자. ${쏠림 || "고르게 퍼져 있다"}.
+      ${내편.length ? `네 용신인 ${내편.join("·")}이 ${내편.map((o) => 오행[o]).reduce((a, b) => a + b, 0)}자 들어 있다.` : "네 용신에 해당하는 글자가 하나도 없다."}
+    </p>`;
+}
+
+// ── 기록 담기 ─────────────────────────────────────────────
+// 소급인지 그날 적은 것인지를 남긴다. 소급 기록은 운세를 모르고 겪은 날이라
+// 오히려 깨끗하지만, 기억나는 날만 남는 쏠림이 있어 따로 셀 수 있어야 한다.
+function 담기(키, 점수값, 태그들, 글, opts = {}) {
+  const [y, m, d] = 키.split("-").map(Number);
+  const 그날 = Manse.iljin(y, m, d);
+  const 그날운 = Manse.fortune(원국, 나.성별, y, m, d);
+  기록[키] = {
+    점수: 점수값,
+    영역: [...태그들],
+    글,
+    일진: 그날.이름,
+    천간오행: 그날.천간오행,
+    지지오행: 그날.지지오행,
+    십성: 그날운.일운.십성,
+    세운: 그날운.세운.이름,
+    월운: 그날운.월운.이름,
+    대운: 그날운.대운.이름,
+    예측: 점수(그날.천간오행, 그날.지지오행),
+    요일: new Date(y, m - 1, d).getDay(),
+    소급: opts.소급 === true,
+    확실성: opts.확실성 ?? "정확",
+    적은날: 오늘키,
+  };
+  쓰기(KEY_기록, 기록);
+}
+
+// 점수 버튼과 태그 버튼을 한 벌로 묶는다. 오늘 자리와 지난 날 자리가 같은 짜임이다.
+function 기록판(prefix, 초기 = {}) {
+  const 상태 = { 점수: 초기.점수 ?? null, 태그: new Set(초기.영역 ?? []) };
+  const 토글 = (el, on) => el.setAttribute("aria-pressed", String(on));
+
+  document.querySelectorAll(`#${prefix}Choices .choice`).forEach((b) => {
+    토글(b, Number(b.dataset.v) === 상태.점수);
+    b.addEventListener("click", () => {
+      상태.점수 = Number(b.dataset.v);
+      document.querySelectorAll(`#${prefix}Choices .choice`).forEach((o) => 토글(o, o === b));
+    });
+  });
+  document.querySelectorAll(`#${prefix}Tags .tag`).forEach((b) => {
+    토글(b, 상태.태그.has(b.dataset.code));
+    b.addEventListener("click", () => {
+      const c = b.dataset.code;
+      상태.태그.has(c) ? 상태.태그.delete(c) : 상태.태그.add(c);
+      토글(b, 상태.태그.has(c));
+    });
+  });
+  return 상태;
+}
+
+// ── 지난 기록 목록 ────────────────────────────────────────
+function 목록그리기() {
+  const 키들 = Object.keys(기록).sort().reverse();
+  const el = document.getElementById("log");
+  if (!키들.length) {
+    el.innerHTML = `<p class="empty">아직 기록이 없어. 오늘부터 시작하거나, 기억나는 지난 날을 먼저 넣어도 돼.</p>`;
+    return;
+  }
+  el.innerHTML = `<div class="log">` + 키들.map((k) => {
+    const r = 기록[k];
+    const 맞음 = Math.abs(r.예측 - r.점수) <= 20;
+    return `
+      <div class="entry">
+        <div class="top">
+          <span class="when">${k}</span>
+          <span class="gz" style="color:${오행색(r.천간오행)}">${한자로(r.일진)}</span>
+          <span class="badge">${r.점수}점 · 예측 ${r.예측}</span>
+          <span class="badge">${맞음 ? "얼추 맞음" : "빗나감"}</span>
+          ${r.소급 ? `<span class="badge">소급 · ${r.확실성}</span>` : ""}
+        </div>
+        ${r.영역?.length ? `<div class="areas">${r.영역.map((c) => 영역이름[c] ?? c).join(" · ")}</div>` : ""}
+        ${r.글 ? `<div class="txt">${r.글.replace(/[<>&]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;" }[c]))}</div>` : ""}
+      </div>`;
+  }).join("") + `</div>`;
+}
+
+function 차트그리기() {
+  const bars = document.getElementById("bars");
+  bars.innerHTML = "";
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(Y, M - 1, D - i);
+    const r = 기록[키로(d)];
+    const o = Manse.iljin(d.getFullYear(), d.getMonth() + 1, d.getDate()).천간오행;
+    const el = document.createElement("div");
+    el.className = "bar";
+    el.title = `${d.getMonth() + 1}/${d.getDate()} ${o}` + (r ? ` · ${r.점수}점` : " · 기록 없음");
+    if (r) { el.style.height = Math.max(8, r.점수) + "%"; el.style.background = 오행색(o); }
+    bars.appendChild(el);
+  }
+
+  // 70일은 그날그날 적은 기록으로 센다. 소급 기록은 요일이 고르게 섞이지 않아
+  // 요일 편향을 상쇄해 주지 못하기 때문이다.
+  const n = Object.values(기록).filter((r) => !r.소급).length;
+  const 소급수 = Object.values(기록).filter((r) => r.소급).length;
+  document.getElementById("dayCount").textContent =
+    `기록 ${n}일` + (소급수 ? ` (+소급 ${소급수})` : "");
+  document.getElementById("dayLeft").textContent = n >= 70 ? "70일 채움" : `70일까지 ${70 - n}일`;
+  document.getElementById("fill").style.width = Math.min(100, (n / 70) * 100) + "%";
+}
+
+// ── 화면 붙이기 ───────────────────────────────────────────
+원국계산();
+오늘그리기();
+태그판(document.getElementById("todayTags"));
+태그판(document.getElementById("pastTags"));
+
+const 오늘상태 = 기록판("today", 기록[오늘키] ?? {});
+if (기록[오늘키]) document.getElementById("todayNote").value = 기록[오늘키].글 ?? "";
+
+document.getElementById("todaySave").addEventListener("click", () => {
+  if (오늘상태.점수 === null) {
+    document.getElementById("todayMsg").textContent = "좋음·보통·나쁨 중 하나는 골라줘.";
+    return;
+  }
+  담기(오늘키, 오늘상태.점수, 오늘상태.태그, document.getElementById("todayNote").value.trim());
+  document.getElementById("todayMsg").textContent = "기록했어.";
+  차트그리기();
+  목록그리기();
+});
+
+// 오늘 여덟 글자. 지금 시각까지 넣어 네 기둥으로 본다.
+const todayMore = document.getElementById("todayMore");
+const todayPanel = document.getElementById("todayPanel");
+todayMore.addEventListener("click", () => {
+  const 펼침 = todayPanel.hidden;
+  if (펼침) todayPanel.innerHTML = 간지판(Y, M, D, [이제.getHours(), 이제.getMinutes()]);
+  todayPanel.hidden = !펼침;
+  todayMore.setAttribute("aria-expanded", String(펼침));
+  todayMore.textContent = 펼침 ? "접기" : "그날 여덟 글자 펼치기";
+});
+
+const 지난상태 = 기록판("past");
+const pastDate = document.getElementById("pastDate");
+const pastPanel = document.getElementById("pastPanel");
+pastDate.max = 오늘키;
+
+// 날짜를 고르는 즉시 그날이 무슨 날이었는지 보여준다. 적기 전에 먼저 알아야
+// '아 그래서 그랬나' 하는 생각이 드는데, 그 생각까지가 이 앱의 재미다.
+pastDate.addEventListener("change", () => {
+  if (!pastDate.value) { pastPanel.hidden = true; return; }
+  const [y, m, d] = pastDate.value.split("-").map(Number);
+  pastPanel.innerHTML = 간지판(y, m, d);
+  pastPanel.hidden = false;
+});
+
+document.getElementById("pastSave").addEventListener("click", () => {
+  const 날짜 = document.getElementById("pastDate").value;
+  const msg = document.getElementById("pastMsg");
+  if (!날짜) { msg.textContent = "언제였는지 골라줘."; return; }
+  if (날짜 >= 오늘키) { msg.textContent = "지난 날만 여기에 넣을 수 있어. 오늘은 위에서 적어줘."; return; }
+  if (지난상태.점수 === null) { msg.textContent = "그날이 어땠는지 골라줘."; return; }
+
+  담기(날짜, 지난상태.점수, 지난상태.태그, document.getElementById("pastNote").value.trim(), {
+    소급: true,
+    확실성: document.getElementById("pastSure").value,
+  });
+
+  const 그날 = Manse.iljin(...날짜.split("-").map(Number));
+  msg.textContent = `${날짜}은 ${그날.이름}일이었어. 남겼어.`;
+  document.getElementById("pastNote").value = "";
+  document.querySelectorAll("#pastChoices .choice, #pastTags .tag").forEach((b) => b.setAttribute("aria-pressed", "false"));
+  지난상태.점수 = null;
+  지난상태.태그.clear();
+  차트그리기();
+  목록그리기();
+});
+
+// ── 내 정보 ───────────────────────────────────────────────
+const 나채우기 = () => {
+  document.getElementById("meDate").value =
+    `${나.y}-${String(나.m).padStart(2,"0")}-${String(나.d).padStart(2,"0")}`;
+  document.getElementById("meTime").value =
+    `${String(나.hour).padStart(2,"0")}:${String(나.minute).padStart(2,"0")}`;
+  document.getElementById("meNoTime").checked = 나.시모름;
+  document.getElementById("meTime").disabled = 나.시모름;
+  document.getElementById("meGender").value = 나.성별;
+  document.getElementById("meTwin").checked = 나.쌍둥이;
+  document.getElementById("meTwinOrder").value = 나.순서;
+  document.getElementById("meTwinOrder").disabled = !나.쌍둥이;
+};
+나채우기();
+
+document.getElementById("meNoTime").addEventListener("change", (e) => {
+  document.getElementById("meTime").disabled = e.target.checked;
+});
+document.getElementById("meTwin").addEventListener("change", (e) => {
+  document.getElementById("meTwinOrder").disabled = !e.target.checked;
+});
+
+document.getElementById("meSave").addEventListener("click", () => {
+  const 날짜 = document.getElementById("meDate").value;
+  const msg = document.getElementById("meMsg");
+  if (!날짜) { msg.textContent = "생년월일을 넣어줘."; return; }
+  const [y, m, d] = 날짜.split("-").map(Number);
+  const 시모름 = document.getElementById("meNoTime").checked;
+  const [hh, mi] = (document.getElementById("meTime").value || "12:00").split(":").map(Number);
+
+  나 = {
+    y, m, d, hour: hh, minute: mi, 시모름,
+    성별: document.getElementById("meGender").value,
+    쌍둥이: document.getElementById("meTwin").checked,
+    순서: document.getElementById("meTwinOrder").value,
+  };
+  쓰기(KEY_나, 나);
+  원국계산();
+  오늘그리기();
+
+  msg.textContent =
+    `${원국.연주} ${원국.월주} ${원국.일주}${원국.시주 ? " " + 원국.시주 : " (시주 없음)"}` +
+    ` · 일간 ${원국.일간}${원국.일간오행}` +
+    (원국.쌍둥이둘째 ? " · 나중 난 쪽으로 시주를 한 칸 밀었다" : "");
+  차트그리기();
+  목록그리기();
+});
+
+document.getElementById("legend").innerHTML = ["목", "화", "토", "금", "수"]
+  .map((o) => `<span><i style="background:${오행색(o)}"></i>${o}</span>`)
+  .join("");
+
+차트그리기();
+목록그리기();
+</script>
