@@ -389,6 +389,33 @@ details .body { padding:0 0 26px; }
       <p class="saved" id="meMsg"></p>
     </div>
   </details>
+
+  <details id="backupBox">
+    <summary>내보내기 · 가져오기</summary>
+    <div class="body">
+      <p class="hint">
+        기록은 이 브라우저 안에만 있다. 브라우저 데이터를 지우거나 기기를 바꾸면
+        사라지므로, 가끔 파일로 빼 두는 것이 안전하다. 그 파일 하나만 옮기면
+        다른 기기에서도 이어서 쓸 수 있다.
+      </p>
+
+      <div class="pair">
+        <button class="save" id="expFile" style="margin:0">파일로 내보내기</button>
+        <button class="save" id="expText" style="margin:0; color:var(--ink); background:transparent; border-color:var(--line)">텍스트로 보기</button>
+      </div>
+      <textarea id="expBox" readonly hidden placeholder="내보낸 내용"></textarea>
+      <p class="saved" id="expMsg"></p>
+
+      <h2 class="label" style="margin:26px 0 12px">가져오기</h2>
+      <p class="hint">
+        지금 기록에 합친다. 같은 날짜가 겹치면 가져온 쪽으로 바뀐다.
+      </p>
+      <input type="file" id="impFile" accept="application/json,.json" style="margin-bottom:10px">
+      <textarea id="impBox" placeholder="또는 내보낸 내용을 여기에 붙여넣어."></textarea>
+      <button class="save" id="impRun">가져오기</button>
+      <p class="saved" id="impMsg"></p>
+    </div>
+  </details>
 </main>
 
 <script src="manse.js"></script>
@@ -810,6 +837,78 @@ document.getElementById("meSave").addEventListener("click", () => {
     (원국.쌍둥이둘째 ? " · 나중 난 쪽으로 시주를 한 칸 밀었다" : "");
   차트그리기();
   목록그리기();
+});
+
+// ── 내보내기 · 가져오기 ───────────────────────────────────
+// 브라우저 저장소는 생각보다 잘 지워진다. 몇 달 치가 한순간에 사라지면
+// 이 앱은 존재 이유가 없어지므로, 파일 하나로 빼고 되살릴 길을 둔다.
+const 보따리 = () => ({
+  앱: "일진일기",
+  버전: 1,
+  내보낸날: new Date().toISOString(),
+  나,
+  기록,
+});
+
+document.getElementById("expFile").addEventListener("click", () => {
+  const 글 = JSON.stringify(보따리(), null, 2);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([글], { type: "application/json" }));
+  a.download = `일진일기-${오늘키}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  document.getElementById("expMsg").textContent =
+    `기록 ${Object.keys(기록).length}개를 파일로 내보냈어. 안 받아졌으면 옆의 '텍스트로 보기'를 써.`;
+});
+
+document.getElementById("expText").addEventListener("click", () => {
+  const box = document.getElementById("expBox");
+  box.value = JSON.stringify(보따리());
+  box.hidden = false;
+  box.select();
+  document.getElementById("expMsg").textContent =
+    `기록 ${Object.keys(기록).length}개. 전체 선택해 두었으니 복사해서 안전한 곳에 둬.`;
+});
+
+// 가져온 것과 지금 것을 합친다. 겹치는 날은 가져온 쪽을 쓴다.
+function 가져오기(글) {
+  const msg = document.getElementById("impMsg");
+  let 짐;
+  try { 짐 = JSON.parse(글); } catch { msg.textContent = "읽을 수 없는 파일이야. 내보낸 파일이 맞는지 봐줘."; return; }
+  if (짐?.앱 !== "일진일기" || typeof 짐.기록 !== "object" || 짐.기록 === null) {
+    msg.textContent = "일진일기에서 내보낸 파일이 아닌 것 같아.";
+    return;
+  }
+
+  const 전 = Object.keys(기록).length;
+  let 덮음 = 0;
+  for (const [k, v] of Object.entries(짐.기록)) {
+    if (기록[k]) 덮음++;
+    기록[k] = v;
+  }
+  쓰기(KEY_기록, 기록);
+
+  const 더함 = Object.keys(기록).length - 전;
+  if (짐.나) { 나 = { ...기본나, ...짐.나 }; 쓰기(KEY_나, 나); 나채우기(); 원국계산(); 오늘그리기(); }
+
+  차트그리기();
+  목록그리기();
+  msg.textContent = `${더함}개를 새로 넣고 ${덮음}개를 바꿨어. 지금 기록 ${Object.keys(기록).length}개.`;
+}
+
+document.getElementById("impFile").addEventListener("change", (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => 가져오기(String(r.result));
+  r.onerror = () => { document.getElementById("impMsg").textContent = "파일을 못 읽었어."; };
+  r.readAsText(f);
+});
+
+document.getElementById("impRun").addEventListener("click", () => {
+  const 글 = document.getElementById("impBox").value.trim();
+  if (!글) { document.getElementById("impMsg").textContent = "파일을 고르거나 내용을 붙여넣어줘."; return; }
+  가져오기(글);
 });
 
 document.getElementById("legend").innerHTML = ["목", "화", "토", "금", "수"]
