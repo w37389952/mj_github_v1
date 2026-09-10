@@ -2001,21 +2001,34 @@ function drawAreaPicks(area) {
     });
 }
 
+/* 법정동은 '문래동2가', '영등포동3가'처럼 숫자가 붙어 오기도 한다. 표에는
+   '문래동'으로 적혀 있어 그대로는 안 걸린다. 그래서 숫자 토막을 떼고 한 번 더 본다. */
+function areaKey(area) {
+  const a = (area || "").trim();
+  if (AREA_MAP[a]) return a;
+  const bare = a.replace(/\d+가$/, "");
+  return AREA_MAP[bare] ? bare : a;
+}
+
 function fillAreaExtras(area, force) {
-  const found = AREA_MAP[area];
+  const key = areaKey(area);
+  const found = AREA_MAP[key];
   if (!found) {
     // 표에 없는 동네다. 앞 동네 것이 남아 있으면 지워 준다. 틀린 값보다 빈칸이 낫다.
     let cleared = false;
-    ["station", "near"].forEach(key => {
-      const id = key === "station" ? "fStation" : "fNear";
+    ["station", "near"].forEach(k => {
+      const id = k === "station" ? "fStation" : "fNear";
       const now = $(id).value.trim();
-      if (now && (force || now === autoFilled[key])) {
+      if (now && (force || now === autoFilled[k])) {
         $(id).value = "";
-        autoFilled[key] = "";
+        autoFilled[k] = "";
         cleared = true;
       }
     });
     if (cleared) rememberAuto();
+    /* 앞 가게의 후보가 그대로 남아 있으면 그 동네 것인 줄 안다. 실제로
+       도화동 가게에 후암동 후보(숙대입구역·남영역)가 붙어 있었다. */
+    drawAreaPicks(key);
     return false;
   }
   const [station, near] = found;
@@ -2039,7 +2052,7 @@ function fillAreaExtras(area, force) {
      좌표가 없는 한 알 수 없다. 그런데도 하나를 미리 골라 두면 고쳐야 하는 줄
      모르고 그대로 발행하게 된다 — 실제로 상수 쪽 가게가 망원동으로 나갔다.
      그래서 후보가 둘 이상이면 비워 두고 고르게 한다. */
-  const { nears } = areaCandidates(area);
+  const { nears } = areaCandidates(key);
   put("fStation", station, "station");
   if (nears.length <= 1) {
     put("fNear", near, "near");
@@ -2053,7 +2066,7 @@ function fillAreaExtras(area, force) {
     }
   }
   if (touched) rememberAuto();
-  drawAreaPicks(area);
+  drawAreaPicks(key);
   return touched;
 }
 
@@ -2102,6 +2115,7 @@ function fillFromShop(row) {
   save();
   const far = byGeo && byGeo.stations
     ? ` (${Math.round(byGeo.stations[0].m).toLocaleString()}m)` : "";
+  const knownArea = Boolean(AREA_MAP[areaKey(area)]);
   $("parseMsg").innerHTML = `레이더에서 찾았습니다 — <b>${address}</b>`
     + (byGeo
         ? `<br>이 가게 좌표에서 <b>거리로 재어</b> 가장 가까운 역${far}과 `
@@ -2109,7 +2123,10 @@ function fillFromShop(row) {
         : filledExtras
           ? "<br>이 가게는 좌표가 없어 <b>동네 이름만 보고</b> 역을 채웠습니다. "
             + "인접 지역은 어느 쪽인지 몰라 비워 뒀습니다 — 주소를 보고 골라 주세요."
-          : "");
+          : knownArea
+            ? ""
+            : `<br><b>‘${area}’은 아직 우리 동네 표에 없습니다.</b> 역과 인접 지역을 `
+              + "손으로 채워 주세요. 밤 수집이 좌표를 채우면 거리로 자동으로 잡힙니다.");
 }
 
 function renderAc(hits) {
