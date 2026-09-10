@@ -544,6 +544,7 @@ function load() {
   F.forEach(id => { if (saved[id] != null) $(id).value = saved[id]; });
   if (saved.fBar != null) $("fBar").checked = Boolean(saved.fBar);
   if (saved.fIntent != null) $("fIntent").checked = Boolean(saved.fIntent);
+  if (Array.isArray(saved.spot) && saved.spot.length === 2) SHOP_SPOT = saved.spot;
   /* 새로고침해도 API로 뽑아 둔 것이 살아 있어야 한다. 돈을 주고 받은
      결과가 F5 한 번에 날아가면 안 된다. 지우는 것은 '새 글 쓰기'뿐이다. */
   if (saved.draft) {
@@ -582,6 +583,7 @@ function save() {
   F.forEach(id => { d[id] = $(id).value; });
   d.fBar = $("fBar").checked;
   d.fIntent = $("fIntent").checked;
+  d.spot = SHOP_SPOT;                 // 새로고침해도 거리로 잰 것을 이어 간다
   d.draft = $("draft") ? $("draft").textContent : "";
   d.draftStatus = $("draftStatus") ? $("draftStatus").textContent : "";
   d.shown = $("out").classList.contains("show");
@@ -1886,13 +1888,40 @@ function rememberAuto() {
 /* force=true — 다른 가게를 고른 것이다. 앞 글의 역·인접 지역은 쓸모가 없으므로
    손으로 고친 값이라도 갈아 끼운다. 그러지 않으면 저장돼 있던 옛 값이
    '사용자가 고친 값'으로 취급돼 영영 안 바뀐다. */
+/* 역·동네 좌표. 밤 수집이 만들어 둔다.
+   역은 네이버에서 한 번 받아 캐시한 값, 동네는 그 동네 가게들의 좌표 평균이다. */
+/* 지금 고른 가게의 좌표. 손으로 이름만 친 경우에는 없다. */
+let SHOP_SPOT = null;
+let PLACES = null;
+fetch("data/places.json")
+  .then(r => (r.ok ? r.json() : null))
+  .then(j => { PLACES = j; })
+  .catch(() => { PLACES = null; });
+
+function metresBetween(a, b) {
+  const mid = (a[0] + b[0]) / 2 * Math.PI / 180;
+  const dx = (b[1] - a[1]) * 111320 * Math.cos(mid);
+  const dy = (b[0] - a[0]) * 110574;
+  return Math.hypot(dx, dy);
+}
+
+/* 좌표를 아는 가게라면 이름이 아니라 거리로 고른다.
+   가까운 것부터 늘어놓아, 첫 번째가 실제로 가장 가까운 곳이 된다. */
+function byDistance(spot, table, skip) {
+  if (!spot || !table) return null;
+  const out = Object.entries(table)
+    .filter(([name]) => name !== skip)
+    .map(([name, at]) => ({ name, m: metresBetween(spot, at) }))
+    .sort((a, b) => a.m - b.m);
+  return out.length ? out : null;
+}
+
 /* 동네 하나에 역과 인접 지역을 하나씩만 못 박아 두었더니, 합정동 안에서도
    상수역 쪽에 있는 가게가 말없이 '망원동'으로 채워졌다. 고쳐야 하는 줄
    모르고 그대로 돌리면 엉뚱한 동네로 글이 나간다.
 
-   좌표가 없어 어느 쪽인지 우리가 알 수는 없다(수집 원본에 X·Y가 있지만
-   아직 안 받아 둔다). 그러니 우리가 고르지 말고, 이웃한 후보를 다 보여
-   주고 고르게 한다. 표를 양쪽으로 훑어 후보를 만든다 —
+   좌표를 아는 가게는 이제 거리로 고른다. 좌표가 없으면(옛 자료이거나
+   원본에 X·Y가 없는 곳) 예전처럼 표를 양쪽으로 훑어 후보만 늘어놓는다 —
    합정동은 자기 짝(망원동)과, 합정동을 이웃으로 적어 둔 동네(상수동)를 함께 낸다. */
 function areaCandidates(area) {
   const stations = [], nears = [];
@@ -1911,7 +1940,21 @@ function areaCandidates(area) {
 }
 
 function drawAreaPicks(area) {
-  const { stations, nears } = areaCandidates(area);
+  const table = areaCandidates(area);
+  /* 좌표를 아는 가게면 가까운 차례로 늘어놓고 몇 미터인지도 적는다.
+     이름 표로 찍던 것과 달리 눈으로 견줄 수 있다. */
+  const geoNear = SHOP_SPOT && PLACES ? byDistance(SHOP_SPOT, PLACES.areas, area) : null;
+  const geoStn = SHOP_SPOT && PLACES ? byDistance(SHOP_SPOT, PLACES.stations) : null;
+  const far = {};
+  let stations = table.stations, nears = table.nears;
+  if (geoStn) {
+    stations = geoStn.slice(0, 4).map(x => x.name);
+    geoStn.forEach(x => { far[x.name] = x.m; });
+  }
+  if (geoNear) {
+    nears = geoNear.slice(0, 4).map(x => x.name);
+    geoNear.forEach(x => { far[x.name] = x.m; });
+  }
   [["stationPick", "fStation", stations], ["nearPick", "fNear", nears]]
     .forEach(([boxId, inputId, list]) => {
       const box = $(boxId);
@@ -1926,11 +1969,26 @@ function drawAreaPicks(area) {
         ask.textContent = "어느 쪽인지 몰라 비워 뒀습니다 —";
         box.append(ask);
       }
+      // 좌표로 잰 것이면 가까운 차례임을 알려 준다.
+      if (Object.keys(far).length && $(inputId).value.trim()) {
+        const lab = document.createElement("span");
+        lab.className = "chip-hint";
+        lab.style.cssText = "margin:0 4px 0 0;align-self:center";
+        lab.textContent = "가까운 차례 —";
+        box.append(lab);
+      }
       list.forEach(word => {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "chip" + ($(inputId).value.trim() === word ? " hot" : "");
         b.textContent = word;
+        if (far[word] != null) {
+          const m = document.createElement("span");
+          m.className = "rate";
+          m.textContent = far[word] >= 1000
+            ? `${(far[word] / 1000).toFixed(1)}km` : `${Math.round(far[word])}m`;
+          b.append(m);
+        }
         b.addEventListener("click", () => {
           $(inputId).value = word;
           autoFilled[inputId === "fStation" ? "station" : "near"] = word;
@@ -2007,7 +2065,7 @@ const BIZ_TO_TYPE = {
 };
 
 function fillFromShop(row) {
-  const [name, address, biz] = row;
+  const [name, address, biz, lat, lon] = row;
   // 영문 상호가 뒤에 붙어 오면 떼어 낸다 — '에드 로스트웍스 Ed roastworks'.
   $("fName").value = koreanName(name) || name;
   const area = areaFromAddress(address);
@@ -2016,17 +2074,42 @@ function fillFromShop(row) {
   if (guess && [...$("fType").options].some(o => o.value === guess)) {
     $("fType").value = guess;
   }
-  const filledExtras = fillAreaExtras(area, true);
+
+  /* 좌표를 아는 가게면 역과 인접 동네를 거리로 정한다. 이러면 합정동 안에서
+     상수역 쪽에 있는 가게가 '망원동'으로 채워지는 일이 없다. */
+  SHOP_SPOT = (lat && lon) ? [lat, lon] : null;
+  const byGeo = SHOP_SPOT && PLACES
+    ? {
+        stations: byDistance(SHOP_SPOT, PLACES.stations),
+        nears: byDistance(SHOP_SPOT, PLACES.areas, area),
+      }
+    : null;
+
+  let filledExtras = false;
+  if (byGeo && byGeo.stations && byGeo.nears) {
+    $("fStation").value = byGeo.stations[0].name;
+    $("fNear").value = byGeo.nears[0].name;
+    autoFilled.station = $("fStation").value;
+    autoFilled.near = $("fNear").value;
+    rememberAuto();
+    drawAreaPicks(area);
+    filledExtras = true;
+  } else {
+    filledExtras = fillAreaExtras(area, true);
+  }
+
   $("ac").hidden = true;
   save();
-  /* 주소를 크게 보여 준다. 역·인접 지역은 동네 이름만 보고 찍는 것이라
-     같은 동네 안에서도 틀릴 수 있다. 주소를 봐야 고쳐야 할지 알 수 있다. */
+  const far = byGeo && byGeo.stations
+    ? ` (${Math.round(byGeo.stations[0].m).toLocaleString()}m)` : "";
   $("parseMsg").innerHTML = `레이더에서 찾았습니다 — <b>${address}</b>`
-    + (filledExtras
-        ? "<br>역은 동네 이름을 보고 채웠습니다. <b>인접 지역은 비워 뒀습니다</b> — "
-          + "합정동 옆에는 망원동도 상수동도 있어, 좌표가 없는 지금은 어느 쪽인지 "
-          + "알 수 없습니다. 위 주소를 보고 후보에서 골라 주세요."
-        : "");
+    + (byGeo
+        ? `<br>이 가게 좌표에서 <b>거리로 재어</b> 가장 가까운 역${far}과 `
+          + "인접 동네를 채웠습니다. 아래 후보는 가까운 차례입니다."
+        : filledExtras
+          ? "<br>이 가게는 좌표가 없어 <b>동네 이름만 보고</b> 역을 채웠습니다. "
+            + "인접 지역은 어느 쪽인지 몰라 비워 뒀습니다 — 주소를 보고 골라 주세요."
+          : "");
 }
 
 function renderAc(hits) {
@@ -2797,6 +2880,7 @@ $("clear").addEventListener("click", () => {
   if (hasDraft && !confirm("입력과 초안을 비웁니다. '지난 API 결과'는 그대로 남습니다. 비울까요?")) return;
   F.forEach(id => { $(id).value = ""; });
   autoFilled = { station: "", near: "" };
+  SHOP_SPOT = null;
   PICS = [];
   $("picList").innerHTML = "";
   $("parseMsg").textContent = "";
