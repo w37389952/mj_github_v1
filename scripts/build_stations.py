@@ -79,8 +79,9 @@ def area_centres():
                 continue
             for part in found.group(1).split(","):
                 dong = part.strip()
-                # '합정동', '서교동' 꼴만 쓴다. 층수나 건물명이 섞이지 않게.
-                if not re.fullmatch(r"[가-힣]{2,5}(동|가|리)\d?", dong):
+                # '합정동', '문래동2가', '한강로3가', '종로1가' 같은 법정동만 쓴다.
+                # 층수나 건물명이 섞이지 않게 꼴을 못 박는다.
+                if not re.fullmatch(r"[가-힣]{2,5}동\d*가?|[가-힣]{2,5}\d*(가|리)", dong):
                     continue
                 buckets.setdefault(dong, []).append((lat, lon))
 
