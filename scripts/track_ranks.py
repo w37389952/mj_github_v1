@@ -168,23 +168,38 @@ def target_keywords(title):
     return out[:3]
 
 
-def rank_of(query, blog_id=BLOG_ID):
-    """블로그 탭에서 몇 번째로 나오는지. 안 보이면 None."""
+def rank_of(query, blog_id=BLOG_ID, attempts=3):
+    """블로그 탭에서 몇 번째로 나오는지. 안 보이면 None.
+
+    두 번째 값은 결과에서 찾은 블로그 수다. 0이면 '30위 밖'이 아니라
+    '못 읽었다'는 뜻이므로 부르는 쪽에서 갈라 써야 한다.
+
+    네이버는 한 IP에서 검색이 잦으면 빈 화면을 준다. 2026-09-12에 마흔 번을
+    내리 그렇게 받아 순위가 다 무너진 것처럼 찍혔다. 같은 시각에 집 인터넷에서는
+    멀쩡히 됐으니 IP를 보고 막은 것이다. 그래서 빈 화면이면 좀 쉬었다 다시 묻는다.
+    """
     url = ("https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum"
            f"&query={urllib.parse.quote(query)}")
-    try:
-        html = fetch(url).replace("\\u002F", "/").replace("\\u002f", "/")
-    except Exception:
-        return None, 0
+    for attempt in range(1, attempts + 1):
+        try:
+            html = fetch(url).replace("\\u002F", "/").replace("\\u002f", "/")
+        except Exception:
+            html = ""
 
-    seen = []
-    for match in BLOG_LINK_RE.finditer(html):
-        found = match.group(1)
-        if found not in seen:
-            seen.append(found)
-    if blog_id in seen:
-        return seen.index(blog_id) + 1, len(seen)
-    return None, len(seen)
+        seen = []
+        for match in BLOG_LINK_RE.finditer(html):
+            found = match.group(1)
+            if found not in seen:
+                seen.append(found)
+
+        if seen:
+            if blog_id in seen:
+                return seen.index(blog_id) + 1, len(seen)
+            return None, len(seen)
+
+        if attempt < attempts:
+            time.sleep(5 * attempt)          # 5초, 10초 쉬었다 다시
+    return None, 0
 
 
 def load_store():
