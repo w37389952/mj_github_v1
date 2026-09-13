@@ -196,10 +196,34 @@ def load_store():
         return {"posts": {}}
 
 
+def drop_blind_days(posts):
+    """이미 남아 있는 '통째로 못 잰 날'을 지운다.
+
+    막히기 전에 쌓인 기록에는 하루치가 전부 '없음'인 날이 섞여 있다.
+    그날을 그대로 두면 화면에서 순위가 무너진 것처럼 보인다. 한 글의
+    검색어가 하나도 안 잡힌 날은 잰 것이 아니므로 지운다. 다만 정말로
+    다 밀린 날과 구별할 수 없으므로, 같은 날 모든 글이 그랬을 때만 지운다.
+    """
+    days = {}
+    for entry in posts.values():
+        for day, row in (entry.get("history") or {}).items():
+            got = sum(1 for v in row.values() if v is not None)
+            hit, total = days.get(day, (0, 0))
+            days[day] = (hit + got, total + len(row))
+
+    bad = [day for day, (hit, total) in days.items() if total and hit == 0]
+    for day in bad:
+        for entry in posts.values():
+            (entry.get("history") or {}).pop(day, None)
+    if bad:
+        print(f"  통째로 못 잰 날을 지웠습니다: {', '.join(sorted(bad))}")
+    return posts
+
+
 def main():
     today = date.today().isoformat()
     store = load_store()
-    posts = store.get("posts") or {}
+    posts = drop_blind_days(store.get("posts") or {})
 
     fresh = recent_posts()
     if not fresh:
@@ -208,6 +232,7 @@ def main():
 
     print(f"글 {len(fresh)}편의 순위를 잽니다")
     measured = 0
+    blind = 0                 # 검색 결과를 아예 못 읽은 횟수
 
     for post in fresh:
         entry = posts.setdefault(post["logNo"], {
@@ -225,16 +250,38 @@ def main():
             continue
 
         row = {}
+        marks = []
         for query in entry["keywords"]:
             place, pool = rank_of(query)
-            row[query] = place
             measured += 1
+            if pool == 0:
+                # 검색 결과에 블로그가 한 건도 없다는 것은 '내 글이 30위 밖'이
+                # 아니라 '못 읽었다'는 뜻이다. 네이버가 막았거나 화면이 바뀐 것이다.
+                # 그것을 '없음'으로 적으면 순위가 무너진 것처럼 보인다.
+                blind += 1
+                marks.append(f"{query} 못 쟀음")
+                time.sleep(0.8)
+                continue
+            row[query] = place
+            marks.append(f"{query} {('%d위' % place) if place else '없음'}")
             time.sleep(0.8)
-        entry["history"][today] = row
 
-        marks = ", ".join(
-            f"{q} {('%d위' % p) if p else '없음'}" for q, p in row.items())
-        print(f"  {post['title'][:34]:<34} {marks}")
+        # 한 글의 검색어를 하나도 못 쟀으면 그 날짜를 아예 남기지 않는다.
+        if row:
+            entry["history"][today] = row
+        print(f"  {post['title'][:34]:<34} {', '.join(marks)}")
+
+    # 검색을 절반 넘게 못 읽었으면 그 회차는 통째로 버린다.
+    #
+    # 2026-09-12에 마흔 번을 다 못 읽고 전부 '없음'으로 적혔다. 7일 연속
+    # 1위였던 글까지 30위 밖으로 찍혀, 화면에서는 순위가 하루아침에 무너진
+    # 것처럼 보였다. 실제로는 네이버가 막은 것이었다. 잘못 잰 값을 남기느니
+    # 그날을 비우는 편이 낫다.
+    if measured and blind * 2 > measured:
+        print(f"  검색 {measured}번 중 {blind}번을 못 읽었습니다. "
+              f"네이버가 막은 것으로 보여 이번 회차는 기록하지 않습니다.",
+              file=sys.stderr)
+        return
 
     # 오래된 기록은 버린다. 파일이 계속 부풀면 화면이 무거워진다.
     cutoff = (date.today().toordinal() - KEEP_DAYS)
