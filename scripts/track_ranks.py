@@ -10,6 +10,7 @@
 """
 
 import json
+import random
 import re
 import sys
 import time
@@ -168,6 +169,16 @@ def target_keywords(title):
     return out[:3]
 
 
+def breath():
+    """검색 사이에 쉬는 시간(초).
+
+    0.8초로 규칙적으로 두드리면 기계로 보인다. 사람이 검색하는 속도에 가깝게
+    2~5초로 늘리고 들쭉날쭉하게 둔다. 마흔 번이면 2분 남짓 더 걸리지만,
+    한 회차를 통째로 날리는 것보다 낫다.
+    """
+    return random.uniform(2.0, 5.0)
+
+
 def rank_of(query, blog_id=BLOG_ID, attempts=3):
     """블로그 탭에서 몇 번째로 나오는지. 안 보이면 None.
 
@@ -275,7 +286,7 @@ def main():
                 # 그것을 '없음'으로 적으면 순위가 무너진 것처럼 보인다.
                 blind += 1
                 marks.append(f"{query} 못 쟀음")
-                time.sleep(0.8)
+                time.sleep(breath())
                 continue
             row[query] = place
             marks.append(f"{query} {('%d위' % place) if place else '없음'}")
