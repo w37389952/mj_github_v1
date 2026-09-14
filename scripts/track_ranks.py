@@ -29,23 +29,36 @@ KEEP_DAYS = 90           # 기록을 며칠치 남길지
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 
-TYPE_WORDS = ["카페", "맛집", "베이커리", "브런치", "디저트", "술집",
-              "이자카야", "레스토랑", "빵집", "바",
-              # 이런 합성어를 안 넣어 두면 '봉천동 북카페 소로'에서 업종을
-              # 못 찾아 목표 검색어가 통째로 비었다.
-              "북카페", "LP카페", "감성카페", "대형카페", "찻집", "고기집",
-              # 2026-09-14에 알았다. '을지로 야장 바베큐 맛집 달맞이광장'에서
-              # 앞에 있는 '맛집'을 집어 '을지로 맛집'을 쟀는데, 정작 그 글이
-              # 걸리는 말은 '을지로 바베큐'였다. 음식 이름도 업종 노릇을 한다.
-              "바베큐", "야장", "국수", "파스타", "라멘", "초밥", "삼겹살",
-              "치킨", "피자", "돈까스", "김밥", "떡볶이", "곱창", "막창",
-              "냉면", "칼국수", "쌀국수", "덮밥", "우동", "젤라또", "빙수",
-              "와인바", "위스키바", "포차", "호프"]
+# 업종어를 고르는 차례. 앞자리일수록 먼저 고른다.
+#
+# 맨 앞의 것을 집던 때는 '빙수 맛집 카페 틸데'에서 '맛집'을 골라
+# '후암동 맛집'을 쟀다. 카페 글인데 맛집으로 잰 셈이다. 자리가 아니라
+# 구체성으로 고른다 — 무엇을 파는지가 가장 또렷한 말이 먼저다.
+TYPE_TIERS = [
+    # 1. 무엇을 파는지
+    ["빙수", "파르페", "젤라또", "바베큐", "야장", "곱창", "막창", "삼겹살",
+     "국수", "칼국수", "쌀국수", "냉면", "파스타", "라멘", "우동", "초밥",
+     "돈까스", "치킨", "피자", "김밥", "떡볶이", "덮밥", "약과", "소금빵"],
+    # 2. 어떤 집인지
+    ["북카페", "LP카페", "감성카페", "대형카페", "베이커리", "브런치",
+     "디저트", "찻집", "와인바", "위스키바", "이자카야", "고기집", "빵집",
+     "포차", "호프"],
+    # 3. 뭉뚱그린 말. 위에 아무것도 없을 때만 쓴다.
+    ["카페", "맛집", "술집", "바", "레스토랑"],
+]
+TYPE_WORDS_ALL = [w for tier in TYPE_TIERS for w in tier]
 
 # 제목 끝에 붙는 일반 낱말. 가게 이름이 아니다.
-GENERIC_TAIL = {"본점", "지점", "점", "카페", "북카페", "커피", "맛집", "바",
-                "집", "식당", "베이커리", "디저트", "브런치", "술집", "펍",
-                "가게", "공간", "후기", "방문", "추천"}
+GENERIC_TAIL = {"본점", "지점", "점", "커피", "집", "식당", "펍",
+                "가게", "공간", "방문", "위치",
+                # 의도어. '내돈내산 솔직후기'로 끝나는 제목에서 '솔직후기'를
+                # 가게 이름으로 집어 순위를 재고 있었다.
+                "후기", "솔직후기", "내돈내산", "추천", "강추", "리뷰",
+                "데이트", "코스", "신상", "오픈", "가오픈"} | set(TYPE_WORDS_ALL)
+
+# 가게 이름 자리에 오면 안 되는 꼴. 꾸밈말과 풀이말이다.
+# '감각적인 카페 바'에서 '감각적인'을 가게 이름으로 집은 일이 있었다.
+NOT_A_NAME = re.compile(r"(적인|스러운|다운|같은|좋은|는|은|던|한|인|의|게|서|고|며|기|듯)$")
 
 # 가게 이름처럼 보이지만 일상어로도 흔한 말. 이걸로 순위를 재면 남의 글이
 # 잔뜩 잡혀 아무 뜻이 없다. 2026-09-05 첫 수집에서 '종묘', '프로젝트',
@@ -77,6 +90,7 @@ AREA_WORDS = {
     "제기", "성북", "삼선", "당산", "송파", "잠실", "방이", "공덕",
     "아현", "충무로", "신당", "용산", "삼각지", "가로수길", "성수동",
     "노원", "수유", "왕십리", "건대", "청파", "남영", "영등포",
+    "동대문역사문화공원", "동대문", "후암시장", "광장시장", "경리단길",
 }
 
 
@@ -84,10 +98,31 @@ AREA_WORDS = {
 STATION_RE = re.compile(r"[가-힣]{2,5}역")
 
 
+# 동네 뒤에도 조사가 붙는다. '후암동에 2호점을'의 '후암동에'가 안 걸려
+# 목표 검색어가 통째로 비던 일이 있었다.
+AREA_JOSA = re.compile(r"(에서|으로|에|은|는|이|가|의|도|와|과|까지|부터|쪽)$")
+
+
+def looks_area(w):
+    return (bool(AREA_RE.fullmatch(w))
+            or w in AREA_WORDS
+            or bool(STATION_RE.fullmatch(w)))
+
+
+def bare_area(word):
+    """조사를 떼고 동네 이름만 남긴다.
+
+    떼기 전에 먼저 그대로 맞는지 본다. '여의도'의 '도'를 조사로 보고 떼면
+    '여의'가 되어 동네가 사라진다. 실제로 '여의도 찻집'을 통째로 놓쳤다.
+    """
+    if looks_area(word):
+        return word
+    cut = AREA_JOSA.sub("", word)
+    return cut if len(cut) >= 2 and looks_area(cut) else word
+
+
 def is_area(word):
-    return (bool(AREA_RE.fullmatch(word))
-            or word in AREA_WORDS
-            or bool(STATION_RE.fullmatch(word)))
+    return looks_area(word) or looks_area(bare_area(word))
 
 POST_RE = re.compile(r"(?s)<item>(.*?)</item>")
 TITLE_RE = re.compile(r"(?s)<title><!\[CDATA\[(.*?)\]\]></title>")
@@ -149,39 +184,85 @@ def target_keywords(title):
         return []
 
     out = []
-    # 동네(OO동/OO가) 뒤나 앞에 업종어가 낱말로 있으면 그 짝을 쓴다.
-    areas = [w for w in words if is_area(w)]
+    areas = [bare_area(w) for w in words if is_area(w)]
+
+    # 업종어는 자리가 아니라 구체성으로 고른다. 둘까지 재서 결과로 판단한다 —
+    # 어느 쪽이 걸릴지는 미리 알 수 없고 재보면 알 수 있는 일이다.
     kinds = []
-    for w in words:
-        if w in TYPE_WORDS and w not in kinds:
-            kinds.append(w)
-    # 업종어를 하나만 골라 쟀더니 엉뚱한 것을 골랐다. '을지로 야장 바베큐 맛집
-    # 달맞이광장'에서 맨 앞의 것을 집어 '을지로 맛집'을 쟀는데, 정작 그 글이
-    # 걸리는 말은 '을지로 바베큐'였다. 어느 쪽이 걸릴지는 재봐야 아는 것이므로
-    # 둘까지 재고 결과로 판단한다.
+    for tier in TYPE_TIERS:
+        for w in words:
+            if w in tier and w not in kinds:
+                kinds.append(w)
     for kind in kinds[:2]:
         if areas:
             out.append(f"{areas[0]} {kind}")
 
-    # 가게 이름. 뒤에서부터 일반 낱말을 걷어낸 마지막 낱말로 본다.
-    tail = list(words)
-    while tail and tail[-1] in GENERIC_TAIL:
-        tail.pop()
-    if tail:
-        last = tail[-1]
-        # 흔한 말이거나 너무 짧으면 앞 낱말을 붙여 구체화한다.
-        # '프랙티스 프로젝트'처럼 두 낱말이면 우연히 겹칠 일이 없다.
-        if last in TOO_COMMON or len(last) < MIN_NAME_LEN:
-            if len(tail) >= 2 and tail[-2] not in GENERIC_TAIL:
-                name = f"{tail[-2]} {last}"
-            else:
-                name = ""
-        else:
-            name = last
-        if name and name not in out:
-            out.append(name)
+    name = shop_name(title, words)
+    if name and name not in out:
+        out.append(name)
 
     return out[:4]     # 동네+업종 둘 + 가게 이름
+
+
+def shop_name(title, words):
+    """제목에서 가게 이름을 집는다.
+
+    내 제목은 두 가지 꼴이다.
+      예전 : 후암동에 2호점을 오픈한 빙수 맛집 카페⛅ 틸데   (이모지 뒤가 이름)
+      요즘 : 상수동 카페 에드로스트웍스ㅣ⛅ 햇살이…          (ㅣ 앞이 이름)
+    그래서 ㅣ가 있으면 그 앞 토막에서, 없으면 이모지 뒤에서 찾는다.
+    둘 다 없으면 예전처럼 뒤에서 일반 낱말을 걷어내며 찾는다.
+    """
+    def pick(chunk):
+        chunk = re.sub(r"\([^)]*\)", " ", chunk)      # (캐치테이블 팁) 같은 것은 뺀다
+        bits = [w for w in re.sub(r"[^\w가-힣A-Za-z0-9 ]", " ", chunk).split() if w]
+        # 뒤에서부터 걷어낸다. 동네 이름도 가게 이름이 아니다 —
+        # '육즙관리소 더룸 을지로 내돈내산 솔직후기'에서 '을지로'를 집은 일이 있었다.
+        while bits and (bits[-1] in GENERIC_TAIL
+                        or NOT_A_NAME.search(bits[-1])
+                        or is_area(bits[-1])):
+            bits.pop()
+        if not bits:
+            return ""
+        last = bits[-1]
+        if last in TOO_COMMON:
+            if len(bits) >= 2 and bits[-2] not in GENERIC_TAIL:
+                return f"{bits[-2]} {last}"
+            return ""
+        # 두 글자 이름이 많다 — 틸데·소로·뚜뚜·미유·퍼슨·라하. 앞 낱말이
+        # 이름의 일부로 보이면 붙이고(한강 토오베), 아니면 그대로 쓴다.
+        if len(last) < MIN_NAME_LEN and len(bits) >= 2:
+            prev = bits[-2]
+            if prev not in GENERIC_TAIL and not is_area(prev) \
+                    and not NOT_A_NAME.search(prev) and len(prev) >= 2:
+                return f"{prev} {last}"
+        return last
+
+    # 1) ㅣ 나 | 로 나뉘면 앞 토막 끝이 가게 이름이다.
+    for sep in ("ㅣ", "|", "｜"):
+        if sep in title:
+            got = pick(title.split(sep)[0])
+            if got:
+                return got
+
+    # 2) 이모지가 있으면 그 뒤가 통째로 가게 이름이다. 내 제목 120편이 그 꼴이다.
+    #    여기서는 뒤가 아니라 앞에서 집는다. '카르마커피 더 블랙 청담'에서
+    #    뒤부터 걷어내면 '블랙'만 남아, 아무 글이나 걸리는 검색어가 된다.
+    marks = list(re.finditer(r"[\U0001F300-\U0001FAFF☀-➿️]", title))
+    if marks:
+        after = re.sub(r"\([^)]*\)", " ", title[marks[-1].end():])
+        bits = [w for w in re.sub(r"[^\w가-힣A-Za-z0-9 ]", " ", after).split() if w]
+        bits = [w for w in bits if w not in GENERIC_TAIL]
+        if bits:
+            head = bits[0]
+            if len(head) >= MIN_NAME_LEN:
+                return head
+            if len(bits) >= 2:
+                return f"{head} {bits[1]}"
+            return head
+
+    # 3) 그 밖에는 뒤에서부터 걷어낸다.
+    return pick(title)
 
 
 def breath():
@@ -285,8 +366,17 @@ def main():
         entry["title"] = post["title"]
         if post["date"]:
             entry["date"] = post["date"]
-        if not entry["keywords"]:
-            entry["keywords"] = target_keywords(post["title"])
+        # 한 번 뽑고 그대로 두었더니, 뽑는 규칙을 고쳐도 예전 글에는 안 먹혔다.
+        # '커피가 카페', '감각적인', '솔직후기' 같은 것이 계속 남아 있었다.
+        # 규칙은 정해진 대로 도는 것이니 회차마다 다시 뽑는다.
+        fresh_kw = target_keywords(post["title"])
+        if fresh_kw and fresh_kw != entry["keywords"]:
+            gone = [k for k in entry["keywords"] if k not in fresh_kw]
+            entry["keywords"] = fresh_kw
+            # 더 안 재는 검색어의 지난 기록은 지운다. 표에 남아 헷갈린다.
+            for row_day in entry["history"].values():
+                for k in gone:
+                    row_day.pop(k, None)
         if not entry["keywords"]:
             continue
 
