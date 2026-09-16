@@ -257,10 +257,33 @@ def shop_name(title, words):
                 return f"{prev} {last}"
         return last
 
-    # 1) ㅣ 나 | 로 나뉘면 앞 토막 끝이 가게 이름이다.
+    def pick_front(chunk):
+        """ㅣ 앞 토막은 '동네 업종 가게이름' 꼴이다. 앞에서 동네와 업종을
+        걷어내고 남은 것이 통째로 가게 이름이다.
+
+        뒤에서 한 낱말씩 집던 때에는 '동교동 카페 쿄아 커피 로스터스'에서
+        '로스터스'만 집었다. 세 낱말짜리 이름을 담을 수가 없는 방식이었다.
+        """
+        chunk = re.sub(r"\([^)]*\)", " ", chunk)
+        bits = [w for w in re.sub(r"[^\w가-힣A-Za-z0-9 ]", " ", chunk).split() if w]
+        while bits and (bits[-1] in GENERIC_TAIL
+                        or NOT_A_NAME.search(bits[-1])
+                        or is_area(bits[-1])):
+            bits.pop()
+        while bits and (is_area(bits[0]) or bits[0] in GENERIC_TAIL):
+            bits.pop(0)
+        # 다섯 낱말이 남으면 '동네 업종 이름' 꼴이 아니다. 뒤에서 집던 길로 보낸다.
+        if not bits or len(bits) > 4:
+            return ""
+        if len(bits) == 1 and bits[0] in TOO_COMMON:
+            return ""
+        return " ".join(bits)
+
+    # 1) ㅣ 나 | 로 나뉘면 앞 토막이 '동네 업종 가게이름'이다.
     for sep in ("ㅣ", "|", "｜"):
         if sep in title:
-            got = pick(title.split(sep)[0])
+            head = title.split(sep)[0]
+            got = pick_front(head) or pick(head)
             if got:
                 return got
 
@@ -281,7 +304,10 @@ def shop_name(title, words):
             return head
 
     # 3) 그 밖에는 뒤에서부터 걷어낸다.
-    return pick(title)
+    got = pick(title)
+    # 한 글자는 가게 이름일 수 없다. '동교동 카페ㅣ필터커피가 맛있는 곳'에서
+    # '곳'을 집어 검색어로 삼은 일이 있었다.
+    return got if len(got) >= 2 else ""
 
 
 def breath():
