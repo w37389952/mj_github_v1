@@ -202,6 +202,10 @@
   }
   .kw .q { font-size: 14.5px; font-weight: 600; }
   .kw .n { font-size: 13px; color: var(--ink-soft); }
+  /* 찾는 사람이 많은 자리는 눈에 먼저 들어와야 한다. 이기기 쉬운 자리와 섞어 쓰라는
+     이야기인데, 둘이 똑같이 생기면 어느 쪽이 어느 쪽인지 알 수 없다. */
+  .kw.hot { border-color: var(--accent); background: var(--accent-soft); }
+  .kw.hot .q::after { content: " · 사람 많은 자리"; font-size: 12px; color: var(--warn); }
   .grade {
     font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 9px;
     background: var(--accent-soft); color: var(--accent);
@@ -1076,8 +1080,9 @@ function measuredQueries(v) {
   [v.area, v.near].filter(Boolean).forEach(a => {
     writtenKinds(v).forEach(k => ["", "추천"].forEach(mod => {
       const q = `${a} ${k} ${mod}`.trim();
-      const o = opportunity(KW.counts[q], KW.demand ? KW.demand[q] : null);
-      if (o != null) out.push({ query: q, opp: o });
+      const want = KW.demand ? KW.demand[q] : null;
+      const o = opportunity(KW.counts[q], want);
+      if (o != null) out.push({ query: q, opp: o, demand: want });
     }));
   });
   return out.sort((a, b) => b.opp - a.opp);
@@ -1085,6 +1090,38 @@ function measuredQueries(v) {
 
 function bestQuery(v) {
   return measuredQueries(v)[0] || null;
+}
+
+/* 주제어의 관심도는 전국에서 그 말을 찾는 수다. 동네를 붙이면 그보다 훨씬 적어진다.
+   '북카페' 133을 '봉천동 북카페' 옆에 적으면 133명이 그 말을 찾는 것처럼 읽히는데,
+   봉천동에서 카페를 찾는 수 자체가 3.9다. 그러니 재지 않은 조합은 값을 말하지 말고
+   천장만 말한다 — 동네 전체보다도, 전국 그 주제어보다도 많을 수 없다. */
+const FAMILY_OF = [
+  [/카페|커피|드립|로스터|에스프레소|빵|베이커리/, "카페"],
+  [/디저트|빙수|케이크|젤라또|파르페|타르트/, "디저트"],
+  [/브런치/, "브런치"],
+  [/술|바$|포차|야장|이자카야|와인|하이볼/, "술집"],
+];
+
+/* '봉천동를'이 아니라 '봉천동을'이다. 받침이 있으면 앞엣것을 쓴다. */
+function particle(word, withBatchim, without) {
+  const last = (word || "").charCodeAt((word || "").length - 1);
+  const has = last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0;
+  return has ? withBatchim : without;
+}
+function josa(word, withBatchim, without) {
+  return word + particle(word, withBatchim, without);
+}
+
+function ceilingOf(area, word) {
+  if (!KW || !area) return null;
+  const caps = [];
+  const fam = (FAMILY_OF.find(([re]) => re.test(word)) || [null, "맛집"])[1];
+  const areaWant = (KW.demand || {})[`${area} ${fam}`];
+  if (areaWant != null) caps.push(areaWant);
+  const theme = (KW.themes || []).find(x => x.word === word);
+  if (theme) caps.push(theme.demand);
+  return caps.length ? Math.min.apply(null, caps) : null;
 }
 
 /* 제목이 물고 있는 검색어 중 가장 기회가 큰 값. 후보마다 이걸 붙여 주면
@@ -1632,6 +1669,9 @@ function renderThemes() {
    같은 날 잰 332개의 분포로 문턱을 잡았다: 중앙값 0.73, 상위 25%가 2.47. */
 const OPP_GOOD = 2.5;
 const OPP_FAIR = 0.7;
+/* 관심도는 '성수동 카페'를 100으로 놓은 값이다. 재어 둔 454개의 중앙값이 2.5,
+   4분의 3이 12.5 아래다. 50을 넘으면 상위 열에 드는 큰 말이라고 봐도 된다. */
+const DEMAND_BIG = 50;
 
 function opportunity(total, want) {
   if (total == null || want == null || total <= 0) return null;
@@ -1661,9 +1701,32 @@ function renderPicks(v) {
   const rows = [];
 
   const ranked = measuredQueries(v);
-  ranked.slice(0, 2).forEach((r, i) => rows.push({
+
+  /* 찾는 사람이 많은 말을 먼저 보여 준다.
+
+     전에는 기회(관심도 ÷ 글 수)로만 줄을 세웠다. 그러면 글이 많은 큰 검색어가
+     자동으로 뒤로 밀린다. 그런데 2026-09-16에 확인해 보니, 관심도 6.3짜리
+     '상수동 카페' 1위보다 '을지로 야장' 18위가 조회수가 더 나왔다
+     ('을지로 술집'이 132.6이니 '을지로 야장'은 많아야 그 정도다).
+     큰 말은 1위를 못 해도 10~20위만 걸리면 사람이 들어온다.
+     이기기 쉬운 자리와 사람이 많은 자리는 다른 이야기이므로 둘 다 보여 준다. */
+  /* 다만 '이 동네에서 제일 큰 말'이 곧 '큰 말'은 아니다. 봉천동에서 카페를 찾는
+     정도는 3.9다 — 그걸 '사람이 많습니다'라고 적으면 거짓말이 된다. 절대값으로 끊는다. */
+  const byDemand = ranked.filter(r => r.demand != null && r.demand >= DEMAND_BIG)
+    .slice().sort((a, b) => b.demand - a.demand);
+  byDemand.slice(0, 2).forEach(r => rows.push({
     word: r.query,
-    note: `기회 ${r.opp.toFixed(1)} — 잰 것 중 ${i === 0 ? "가장" : "두 번째로"} 나은 동네 검색어`,
+    note: `관심도 ${Math.round(r.demand)} — 찾는 사람이 많습니다. `
+      + "1위는 어려워도 10~20위만 걸리면 사람이 들어옵니다",
+    cls: "hot",
+  }));
+
+  const picked = new Set(byDemand.slice(0, 2).map(r => r.query));
+  ranked.filter(r => !picked.has(r.query)).slice(0, 2).forEach((r, i) => rows.push({
+    word: r.query,
+    note: `기회 ${r.opp.toFixed(1)}`
+      + (r.demand != null ? ` · 관심도 ${Math.round(r.demand)}` : "")
+      + ` — ${i === 0 ? "이기기 가장 쉬운" : "그다음으로 쉬운"} 자리입니다`,
     cls: r.opp >= OPP_FAIR ? "easy" : "",
   }));
 
@@ -1678,13 +1741,20 @@ function renderPicks(v) {
      '핸드드립'·'로스터리'는 블로그탭에도 통합검색에도 내 글이 없었다.
      그런데 동네를 붙이면 '한남동 LP카페' 3위, '봉천동 북카페' 3위였다.
      내 블로그가 이길 수 있는 자리는 좁은 말이다. 그래서 동네와 묶어 권한다. */
-  themes.forEach(x => rows.push({
-    word: v.area ? `${v.area} ${x.word}` : x.word,
-    note: v.area
-      ? `${x.word} 관심도 ${Math.round(x.demand)} — 동네를 붙이면 이길 만한 자리입니다`
-      : `관심도 ${Math.round(x.demand)}`,
-    cls: "easy",
-  }));
+  themes.forEach(x => {
+    const ceil = ceilingOf(v.area, x.word);
+    rows.push({
+      word: v.area ? `${v.area} ${x.word}` : x.word,
+      note: !v.area
+        ? `전국에서 '${x.word}'를 찾는 정도 ${Math.round(x.demand)}`
+        : ceil != null
+          ? `많아야 ${ceil < 10 ? Math.round(ceil * 10) / 10 : Math.round(ceil)}`
+            + ` — 전국 '${x.word}'${particle(x.word, "은", "는")} ${Math.round(x.demand)}지만`
+            + ` ${josa(v.area, "을", "를")} 붙이면 그만큼 줄어듭니다. 대신 이기기 쉽습니다`
+          : `전국 '${x.word}' ${Math.round(x.demand)} — 동네를 붙이면 이길 만한 자리입니다`,
+      cls: "easy",
+    });
+  });
 
   const special = pickDistinctMenu(v.menus);
   if (v.name) rows.push({ word: v.name, note: "고유명 — 경쟁자가 없어 그대로 1위입니다", cls: "easy" });
@@ -1700,7 +1770,7 @@ function renderPicks(v) {
 
   rows.forEach(r => {
     const el = document.createElement("div");
-    el.className = "kw";
+    el.className = "kw" + (r.cls ? " " + r.cls : "");
     const left = document.createElement("div");
     left.innerHTML = `<div class="q">${r.word}</div><div class="n">${r.note}</div>`;
     const btn = document.createElement("button");
@@ -1720,7 +1790,11 @@ function renderPicks(v) {
     + "<br>2026-09-15에 실제로 재어 본 것입니다 — "
     + "<b>‘LP카페’·‘북카페’·‘핸드드립’ 홑말로는 내 글이 한 편도 안 걸렸고, "
     + "‘한남동 LP카페’는 3위, ‘봉천동 북카페’는 3위였습니다.</b> "
-    + "이길 수 있는 자리는 좁은 말입니다.";
+    + "이길 수 있는 자리는 좁은 말입니다."
+    + "<br>다만 <b>작은 말에서 1위 하는 것보다 큰 말에서 20위 안에 드는 쪽이 "
+    + "조회수가 낫습니다.</b> 관심도 6짜리 ‘상수동 카페’ 1위보다 ‘을지로 야장’ "
+    + "18위가 사람이 더 들어왔습니다. 위의 <b>관심도가 큰 말</b>과 "
+    + "<b>이기기 쉬운 말</b>을 섞어 넣으세요.";
   box.append(tip);
 }
 
@@ -3065,9 +3139,15 @@ ${$("fBar").checked ? "- 다섯 중 두셋은 ㅣ 로 앞뒤를 나눠라. 나�
   아니다 — 가운데 꾸밈말이 저마다 달라야 한다. 하나는 분위기로, 하나는
   메뉴 맛으로, 하나는 누가 오면 좋을지로, 하나는 역 이름으로, 하나는
   옆 동네나 기회가 큰 검색어로.
-${ranked.length ? `\n[이 동네에서 재어 둔 검색어 — 기회가 큰 순]\n`
-  + ranked.map(r => `- ${r.query} (기회 ${r.opp.toFixed(1)})`).join("\n")
-  + `\n기회가 큰 것을 적어도 한 후보에는 제목 앞쪽에 넣어라.` : ""}
+${ranked.length ? `\n[이 동네에서 재어 둔 검색어]\n`
+  + ranked.map(r => `- ${r.query} (관심도 ${r.demand != null ? Math.round(r.demand) : "모름"}`
+      + ` · 기회 ${r.opp.toFixed(1)})`).join("\n")
+  + `\n관심도는 찾는 사람이 얼마나 많은가, 기회는 이기기 얼마나 쉬운가다.`
+  + `\n둘은 대개 반대로 간다. 작은 말에서 1위 하는 것보다 큰 말에서 20위 안에`
+  + `\n드는 쪽이 조회수가 낫다 — 관심도 6짜리 '상수동 카페' 1위보다`
+  + `\n'을지로 야장' 18위가 사람이 더 들어왔다.`
+  + `\n그러니 다섯 후보 중 적어도 하나는 **관심도가 가장 큰 말**을, 다른 하나는`
+  + `\n**기회가 가장 큰 말**을 제목 앞쪽에 넣어라.` : ""}
 ${themes.length ? `\n[내가 적은 말 중 검색량이 확인된 것]\n`
   + themes.map(x => `- ${v.area} ${x.word} (${x.word} 관심도 ${Math.round(x.demand)})`).join("\n")
   + `\n이 말들은 **반드시 동네와 붙여서** 써라. 2026-09-15에 재어 보니`
