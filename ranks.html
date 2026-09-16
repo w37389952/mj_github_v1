@@ -357,11 +357,20 @@ function demandOf(kw) {
   if (!KW) return null;
   let want = (KW.demand || {})[kw];
 
-  // '상수동 핸드드립'처럼 동네+주제어는 격자에 없다. 뒷말을 주제어에서 찾는다.
+  /* '봉천동 북카페'처럼 동네+주제어는 격자에 없다. 전에는 뒷말('북카페')의
+     전국 관심도를 그대로 붙였는데, 그건 전국에서 북카페를 찾는 수이지
+     봉천동에서 찾는 수가 아니다. '봉천동 북카페'에 133을 붙이는 꼴이었다.
+     대신 위쪽 한계만 말한다 — 봉천동에서 카페를 찾는 수(3.9)보다 많을 수 없고,
+     전국에서 북카페를 찾는 수보다도 많을 수 없다. 둘 중 작은 쪽이 천장이다. */
   if (want == null && kw.includes(" ")) {
-    const tailWord = kw.slice(kw.indexOf(" ") + 1);
-    const theme = (KW.themes || []).find(x => x.word === tailWord);
-    if (theme) want = theme.demand;
+    const ceil = ceilingOf(kw);
+    if (ceil != null) {
+      const n = ceil < 10 ? Math.round(ceil * 10) / 10 : Math.round(ceil);
+      return { cls: "cool", label: `많아야 ${n}`,
+        tip: `이 조합은 재지 않았습니다. 다만 ${ceil.toFixed(1)}보다 많을 수는 `
+          + `없습니다 — 더 넓은 말이 그만큼이기 때문입니다. `
+          + `'${(KW && KW.anchor) || "성수동 카페"}'를 100으로 놓은 값입니다.` };
+    }
   }
   if (want == null) {
     /* 잴 자료가 없는 데는 두 가지가 있다. 가게 이름이라 잴 것이 없는 경우와,
@@ -383,6 +392,30 @@ function demandOf(kw) {
   if (want >= 10) return { cls: "warm", label: `꽤 찾음 ${n}`, tip: tipFor(want) };
   if (want >= 2) return { cls: "mild", label: `보통 ${n}`, tip: tipFor(want) };
   return { cls: "cool", label: `적게 찾음 ${n}`, tip: tipFor(want) };
+}
+
+/* 좁은 말은 자기를 품는 넓은 말보다 많이 찾힐 수 없다. '봉천동 북카페'는
+   '봉천동 카페'보다도, 전국 '북카페'보다도 적다. 둘 중 작은 쪽을 천장으로 본다. */
+const FAMILY_OF = [
+  [/카페|커피|드립|로스터|에스프레소|빵|베이커리/, "카페"],
+  [/디저트|빙수|케이크|젤라또|파르페|타르트/, "디저트"],
+  [/브런치/, "브런치"],
+  [/술|바$|포차|야장|이자카야|와인|하이볼/, "술집"],
+];
+
+function ceilingOf(kw) {
+  const head = kw.split(" ")[0];
+  const tail = kw.slice(kw.indexOf(" ") + 1);
+  const caps = [];
+
+  const fam = (FAMILY_OF.find(([re]) => re.test(tail)) || [null, "맛집"])[1];
+  const areaWant = (KW.demand || {})[`${head} ${fam}`];
+  if (areaWant != null) caps.push(areaWant);
+
+  const theme = (KW.themes || []).find(x => x.word === tail);
+  if (theme) caps.push(theme.demand);
+
+  return caps.length ? Math.min.apply(null, caps) : null;
 }
 
 function tipFor(want) {
