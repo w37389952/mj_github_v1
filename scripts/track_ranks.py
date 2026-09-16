@@ -320,8 +320,13 @@ def breath():
     return random.uniform(2.0, 5.0)
 
 
-def rank_of(query, blog_id=BLOG_ID, attempts=3):
+def rank_of(query, blog_id=BLOG_ID, attempts=3, surface="tab"):
     """블로그 탭에서 몇 번째로 나오는지. 안 보이면 None.
+
+    surface="all"이면 통합검색을 본다. 2026-09-16에 재어 보니 둘이 크게 다르다 —
+    '상수동 카페'는 블로그탭 1위인데 통합검색에는 아예 없었다. 그런데 유입분석을
+    보면 통합검색이 19.2%, 블로그검색이 8.2%다. 사람이 더 많이 오는 쪽을
+    안 재고 있었던 셈이라 둘 다 잰다.
 
     두 번째 값은 결과에서 찾은 블로그 수다. 0이면 '30위 밖'이 아니라
     '못 읽었다'는 뜻이므로 부르는 쪽에서 갈라 써야 한다.
@@ -330,8 +335,9 @@ def rank_of(query, blog_id=BLOG_ID, attempts=3):
     내리 그렇게 받아 순위가 다 무너진 것처럼 찍혔다. 같은 시각에 집 인터넷에서는
     멀쩡히 됐으니 IP를 보고 막은 것이다. 그래서 빈 화면이면 좀 쉬었다 다시 묻는다.
     """
-    url = ("https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum"
-           f"&query={urllib.parse.quote(query)}")
+    q = urllib.parse.quote(query)
+    url = (f"https://search.naver.com/search.naver?query={q}" if surface == "all"
+           else f"https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query={q}")
     for attempt in range(1, attempts + 1):
         try:
             html = fetch(url).replace("\\u002F", "/").replace("\\u002f", "/")
@@ -382,6 +388,7 @@ def drop_blind_days(posts):
     for day in bad:
         for entry in posts.values():
             (entry.get("history") or {}).pop(day, None)
+            (entry.get("historyAll") or {}).pop(day, None)
     if bad:
         print(f"  통째로 못 잰 날을 지웠습니다: {', '.join(sorted(bad))}")
     return posts
@@ -426,6 +433,7 @@ def main():
             continue
 
         row = {}
+        row_all = {}
         marks = []
         for query in entry["keywords"]:
             place, pool = rank_of(query)
@@ -439,12 +447,26 @@ def main():
                 time.sleep(breath())
                 continue
             row[query] = place
-            marks.append(f"{query} {('%d위' % place) if place else '없음'}")
+            time.sleep(0.8)
+
+            # 통합검색도 잰다. 여기서 못 읽더라도 블로그탭 값은 그대로 남긴다.
+            place_all, pool_all = rank_of(query, surface="all")
+            measured += 1
+            if pool_all == 0:
+                blind += 1
+                said_all = "통합 못 쟀음"
+            else:
+                row_all[query] = place_all
+                said_all = f"통합 {('%d위' % place_all) if place_all else '없음'}"
+            said_tab = ("%d위" % place) if place else "없음"
+            marks.append(f"{query} 블로그 {said_tab} · {said_all}")
             time.sleep(0.8)
 
         # 한 글의 검색어를 하나도 못 쟀으면 그 날짜를 아예 남기지 않는다.
         if row:
             entry["history"][today] = row
+        if row_all:
+            entry.setdefault("historyAll", {})[today] = row_all
         print(f"  {post['title'][:34]:<34} {', '.join(marks)}")
 
     # 한 번도 못 읽었으면 파일을 건드리지 않는다.
@@ -469,10 +491,12 @@ def main():
     # 오래된 기록은 버린다. 파일이 계속 부풀면 화면이 무거워진다.
     cutoff = (date.today().toordinal() - KEEP_DAYS)
     for entry in posts.values():
-        entry["history"] = {
-            day: row for day, row in entry["history"].items()
-            if date.fromisoformat(day).toordinal() >= cutoff
-        }
+        for key in ("history", "historyAll"):
+            if key in entry:
+                entry[key] = {
+                    day: row for day, row in entry[key].items()
+                    if date.fromisoformat(day).toordinal() >= cutoff
+                }
 
     # 좇는 글도 최근 것만 남긴다.
     keep = {p["logNo"] for p in fresh}
@@ -483,7 +507,9 @@ def main():
         json.dumps({
             "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
             "blogId": BLOG_ID,
-            "note": "순위는 네이버 블로그 탭 기준이며 30위 밖은 '없음'으로 적는다.",
+            "note": "history는 블로그 탭, historyAll은 통합검색 순위다. "
+                    "30위 밖은 '없음'(null)으로 적는다. 둘은 크게 다르다 — "
+                    "'상수동 카페'는 블로그탭 1위인데 통합검색에는 없었다.",
             "posts": posts,
         }, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
