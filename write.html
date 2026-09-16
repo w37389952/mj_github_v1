@@ -1113,6 +1113,21 @@ function josa(word, withBatchim, without) {
   return word + particle(word, withBatchim, without);
 }
 
+/* 사람들이 실제로 줄여 치는 동네 이름. '동'을 아무 데나 떼면 '동교' 같은
+   아무도 안 치는 말이 나오므로, 줄여 쓰는 것이 확인된 것만 적어 둔다. */
+const SHORT_AREAS = new Set([
+  "성수", "연남", "연희", "망원", "합정", "상수", "서교", "성산", "문래",
+  "익선", "삼청", "후암", "한남", "청담", "신사", "논현", "역삼", "성북",
+  "삼선", "당산", "방이", "아현", "신당", "응암", "불광", "가산", "독산",
+  "봉천", "신림", "화곡", "등촌", "제기", "효창", "청파", "남영", "이태원",
+]);
+
+function shortArea(area) {
+  if (!area) return "";
+  const stem = area.replace(/동$/, "");
+  return stem !== area && SHORT_AREAS.has(stem) ? stem : "";
+}
+
 function ceilingOf(area, word) {
   if (!KW || !area) return null;
   const caps = [];
@@ -1760,6 +1775,38 @@ function renderPicks(v) {
   if (v.name) rows.push({ word: v.name, note: "고유명 — 경쟁자가 없어 그대로 1위입니다", cls: "easy" });
   if (special) rows.push({ word: special, note: "그 집만의 메뉴 — 찾는 사람은 적어도 정확히 걸립니다", cls: "easy" });
 
+  /* 통합검색으로 들어온 사람이 실제로 무엇을 쳤는지, 2026-09-16 유입분석에서
+     주소에 남은 검색어 106가지를 세어 보았다. 꼴이 셋으로 모인다.
+
+       동네(줄인 꼴) + 가게 이름 : 성수 미유 · 용산 코르츠 · 망원 녹취록 · 해방촌 솔트
+       가게 이름 + 업종         : 미유 카페 · 녹취록 카페 · 청음카페
+       동네(줄인 꼴) + 업종      : 삼각지 카페 · 이대역 드립커피
+
+     두 가지가 눈에 띈다. 첫째, 사람들은 '성수동'이 아니라 '성수'로 줄여 친다.
+     우리가 권하던 말은 늘 '동'이 붙은 꼴이었다. 둘째, 이 꼴들은 경쟁이 거의
+     없어서 블로그탭뿐 아니라 통합검색에도 걸린다 — 재어 보니 '동교동 필터커피'가
+     통합검색 2위, '동교동 햇살맛집'이 1위였다. 큰 말은 통합검색에서 통째로
+     빠지는데('상수동 카페'는 블로그탭 1위인데 통합검색에는 없다) 이 꼴은 걸린다. */
+  const short = shortArea(v.area);
+  if (v.name) {
+    if (short) rows.push({
+      word: `${short} ${v.name}`,
+      note: "동네를 줄여 가게 이름에 붙인 꼴 — 통합검색에 걸리는 꼴입니다",
+      cls: "easy",
+    });
+    rows.push({
+      word: `${v.name} ${t}`,
+      note: "가게 이름에 업종을 붙인 꼴 — 이름만 어렴풋이 아는 사람이 이렇게 칩니다",
+      cls: "easy",
+    });
+  }
+  if (short) rows.push({
+    word: `${short} ${t}`,
+    note: `'${v.area}'${particle(v.area, "이", "가")} 아니라`
+      + ` '${short}'${particle(short, "으로", "로")} 줄여 치는 사람이 많습니다`,
+    cls: "easy",
+  });
+
   if (!rows.length) {
     const p = document.createElement("div");
     p.className = "note";
@@ -1768,7 +1815,9 @@ function renderPicks(v) {
     return;
   }
 
-  rows.forEach(r => {
+  // 같은 말이 두 번 나올 수 있다 — '성수 카페'가 줄인 꼴로도, 재어 둔 말로도 나온다.
+  const shown = new Set();
+  rows.filter(r => !shown.has(r.word) && shown.add(r.word)).forEach(r => {
     const el = document.createElement("div");
     el.className = "kw" + (r.cls ? " " + r.cls : "");
     const left = document.createElement("div");
@@ -3121,6 +3170,10 @@ ${line("이름", v.name)}${line("동네", v.area)}${line("가까운 역", v.stat
   (조각 = 역명·동네·업종어·의도어)
 - 65%가 '${v.area} ${t}'를 붙여서 그대로 담고 있다. 사이에 다른 말을 끼우지 마라.
 - 가게 이름은 반드시 넣는다. 한글 상호만 쓰고 영문 상호는 붙이지 마라.
+${shortArea(v.area) ? `- 다섯 중 하나는 '${shortArea(v.area)} ${v.name || t}'처럼 동네를 줄여 가게 이름에 붙인
+  꼴을 제목 앞쪽에 담아라. 이 블로그로 실제로 들어온 사람들이 '성수 미유',
+  '문래 틈틈', '용산 코르츠'처럼 친다 — '${v.area}'이 아니라 '${shortArea(v.area)}'로 줄여 친다.
+  이 꼴은 경쟁이 거의 없어 블로그탭뿐 아니라 통합검색에도 걸린다.\n` : ""}
 ${$("fBar").checked ? "- 다섯 중 두셋은 ㅣ 로 앞뒤를 나눠라. 나눌 때는 양쪽이 다 실해야 한다 — 'ㅣ 후기'처럼 뒤에 한 마디만 남기지 마라.\n" : "- ㅣ 나 | 같은 구분 기호는 쓰지 마라. 이 사람은 120편 중 한 번도 안 썼다.\n"}${$("fIntent").checked ? "- 다섯 중 두셋은 끝에 '후기'나 '추천'을 붙여라. 다섯 개 모두에 붙이지는 마라.\n" : "- '후기 / 추천 / 내돈내산 / 솔직후기'로 끝맺지 마라. 이 사람은 120편 중 1편만 썼다.\n"}
 [꼭 지킬 것]
 - 낱말을 나열하지 마라. '통창 합정동 카페 에드 로스트웍스 필터커피 로스터리'처럼

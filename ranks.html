@@ -89,6 +89,9 @@
     background: var(--accent-soft); color: var(--accent);
   }
   .now.miss { background: none; color: var(--ink-faint); border: 1px solid var(--line); }
+  /* 통합검색 자리는 블로그탭 자리와 헷갈리면 안 되므로 테를 둘러 갈라 놓는다. */
+  .now.all { background: none; color: var(--ink); border: 1.5px solid var(--accent); }
+  .now.all.miss { border-color: var(--line); color: var(--ink-faint); }
   .delta { font-size: 12.5px; font-weight: 700; }
   .delta.up { color: var(--up); }
   .delta.down { color: var(--down); }
@@ -272,7 +275,14 @@ function render(data) {
     const days = Object.keys(post.history || {}).sort();
     (post.keywords || []).forEach(kw => {
       const series = days.map(d => (post.history[d] || {})[kw] ?? null);
-      box.append(keywordRow(kw, days, series));
+      /* 통합검색 순위. 블로그탭과 크게 다르다 — '상수동 카페'는 블로그탭 1위인데
+         통합검색에는 아예 없었다. 유입분석을 보면 통합검색이 19.2%,
+         블로그검색이 8.2%다. 사람이 더 많이 오는 쪽이 통합검색이므로 같이 보인다. */
+      const allDays = Object.keys(post.historyAll || {}).sort();
+      const lastAll = allDays.length
+        ? (post.historyAll[allDays[allDays.length - 1]] || {})[kw] ?? null
+        : undefined;
+      box.append(keywordRow(kw, days, series, lastAll));
     });
     if (LABELS[logNo] === "off") box.classList.add("off");
     $("list").append(box);
@@ -422,7 +432,7 @@ function tipFor(want) {
   return `관심도 ${want} — '${(KW && KW.anchor) || "성수동 카페"}'를 100으로 놓은 상대값입니다.`;
 }
 
-function keywordRow(kw, days, series) {
+function keywordRow(kw, days, series, lastAll) {
   const row = document.createElement("div");
   row.className = "kwrow";
 
@@ -457,8 +467,21 @@ function keywordRow(kw, days, series) {
   const now = document.createElement("span");
   now.className = "now" + (last ? "" : " miss");
   now.textContent = last ? `${last}위` : "30위 밖";
+  now.title = "네이버 블로그 탭에서의 자리입니다.";
 
   row.append(name, spark, now);
+
+  /* 통합검색 자리. 대부분의 사람이 보는 화면이 이쪽이다. lastAll 이 undefined 면
+     아직 안 잰 것이고, null 이면 재었는데 30위 밖이라는 뜻이라 갈라 적는다. */
+  if (lastAll !== undefined) {
+    const all = document.createElement("span");
+    all.className = "now all" + (lastAll ? "" : " miss");
+    all.textContent = lastAll ? `통합 ${lastAll}위` : "통합 밖";
+    all.title = "네이버 통합검색(검색창에 그냥 쳤을 때)에서의 자리입니다. "
+      + "블로그 탭과 다를 수 있습니다 — 유입분석으로는 통합검색이 19.2%, "
+      + "블로그검색이 8.2%였으니 이쪽이 더 중요합니다.";
+    row.append(all);
+  }
 
   // 처음 잰 날과 견주어 얼마나 움직였는지.
   const firstSeen = series.find(v => v);
