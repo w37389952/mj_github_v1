@@ -1,0 +1,29 @@
+name: 가게 하나 찾기
+
+# '분명 새로 생긴 집인데 왜 레이더에 안 떴나'를 가릴 때 쓴다.
+# 이름이나 주소를 넣고 돌리면 서울시 인허가 자료 전량을 훑어 알려 준다.
+# 자료를 고치지 않으므로 아무 때나 돌려도 안전하다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "찾을 가게 이름이나 주소 (예: 어니언 / 명동10길 35)"
+        required: true
+        type: string
+
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 찾기
+        env:
+          SEOUL_API_KEY: ${{ secrets.SEOUL_API_KEY }}
+          QUERY: ${{ inputs.query }}
+        run: python scripts/find_shop.py

@@ -202,6 +202,9 @@ def main():
                 "bloggerLink": item.get("bloggerlink") or "",
                 "date": posted.isoformat(),
                 "area": query.split()[0],
+                # 어느 검색어로 걸린 글인지 남긴다. 화면에서 그 말을 짚어 주면
+                # 왜 이 글이 여기 있는지 한눈에 보인다.
+                "matched": query,
             }
             if is_promo(title + desc):
                 post["promo"] = True

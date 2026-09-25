@@ -44,11 +44,18 @@ def main():
             if key in seen:
                 continue
             seen.add(key)
-            rows.append([
+            # 좌표는 소수점 다섯 자리면 1m 남짓이라 그 아래는 버린다.
+            # 한 줄에 열 글자쯤 늘어나는 대신 가장 가까운 역을 이름이 아니라
+            # 거리로 고를 수 있다.
+            lat, lon = place.get("lat"), place.get("lon")
+            row = [
                 name,
                 address.replace("서울특별시 ", "").replace("서울시 ", ""),
                 place.get("bizType") or "",
-            ])
+            ]
+            if lat and lon:
+                row += [round(lat, 5), round(lon, 5)]
+            rows.append(row)
 
     if not rows:
         print("담을 가게가 없습니다. 목록을 만들지 않습니다.", file=sys.stderr)
@@ -60,13 +67,15 @@ def main():
     out.write_text(
         json.dumps({
             "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
-            "fields": ["name", "address", "bizType"],
+            # 좌표가 없는 가게도 있어 줄 길이가 셋일 수도 다섯일 수도 있다.
+            "fields": ["name", "address", "bizType", "lat", "lon"],
             "rows": rows,
         }, ensure_ascii=False, separators=(",", ":")) + "\n",
         encoding="utf-8",
     )
     size = out.stat().st_size / 1024
-    print(f"가게 {len(rows)}곳을 담았습니다 ({size:,.0f} KB)")
+    withxy = sum(1 for r in rows if len(r) >= 5)
+    print(f"가게 {len(rows)}곳을 담았습니다 ({size:,.0f} KB) · 좌표 있는 곳 {withxy}곳")
 
 
 if __name__ == "__main__":
