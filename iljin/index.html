@@ -442,8 +442,11 @@ const KEY_나 = "iljin:me";
 const 읽기 = (k, 기본) => { try { return JSON.parse(localStorage.getItem(k)) ?? 기본; } catch { return 기본; } };
 const 쓰기 = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-const 기본나 = { y:1993, m:12, d:31, hour:8, minute:16, 시모름:false, 성별:"여", 쌍둥이:false, 순서:"첫째" };
+// 생년월일시는 코드에 박아 두지 않는다. 공개된 페이지의 소스에 누군가의 생시가
+// 남으면 그것부터가 개인정보다. 값은 쓰는 사람의 브라우저에만 생긴다.
+const 기본나 = { y:null, m:null, d:null, hour:12, minute:0, 시모름:false, 성별:"여", 쌍둥이:false, 순서:"첫째" };
 let 나 = { ...기본나, ...읽기(KEY_나, {}) };
+const 나있음 = () => [나.y, 나.m, 나.d].every(Number.isInteger);
 const 기록 = 읽기(KEY_기록, {});
 
 // ── 공통 ──────────────────────────────────────────────────
@@ -742,9 +745,21 @@ function 차트그리기() {
   document.getElementById("fill").style.width = Math.min(100, (n / 70) * 100) + "%";
 }
 
+// 생년월일시가 없으면 원국을 셀 수 없다. 첫 방문자에게 그것부터 청한다.
+function 첫방문() {
+  document.getElementById("date").textContent = "시작하기";
+  document.getElementById("term").textContent = "";
+  document.getElementById("hanja").textContent = "?";
+  document.getElementById("hangul").textContent = "";
+  document.getElementById("score").textContent = "—";
+  document.getElementById("reading").innerHTML =
+    "생년월일시를 넣으면 오늘 일진과 네 용신을 셈해 준다." +
+    "<span class=\"note\">아래 '내 정보'에 넣어 줘. 그 값은 이 브라우저에만 남고 어디로도 보내지 않는다.</span>";
+  document.getElementById("meBox").open = true;
+}
+
 // ── 화면 붙이기 ───────────────────────────────────────────
-원국계산();
-오늘그리기();
+if (나있음()) { 원국계산(); 오늘그리기(); } else { 첫방문(); }
 태그판(document.getElementById("todayTags"));
 태그판(document.getElementById("pastTags"));
 
@@ -752,6 +767,11 @@ const 오늘상태 = 기록판("today", 기록[오늘키] ?? {});
 if (기록[오늘키]) document.getElementById("todayNote").value = 기록[오늘키].글 ?? "";
 
 document.getElementById("todaySave").addEventListener("click", () => {
+  if (!나있음()) {
+    document.getElementById("todayMsg").textContent = "먼저 아래 '내 정보'에 생년월일시를 넣어줘.";
+    document.getElementById("meBox").open = true;
+    return;
+  }
   if (오늘상태.점수 === null) {
     document.getElementById("todayMsg").textContent = "좋음·보통·나쁨 중 하나는 골라줘.";
     return;
@@ -766,6 +786,7 @@ document.getElementById("todaySave").addEventListener("click", () => {
 const todayMore = document.getElementById("todayMore");
 const todayPanel = document.getElementById("todayPanel");
 todayMore.addEventListener("click", () => {
+  if (!나있음()) return;
   const 펼침 = todayPanel.hidden;
   if (펼침) todayPanel.innerHTML = 간지판(Y, M, D, [이제.getHours(), 이제.getMinutes()]);
   todayPanel.hidden = !펼침;
@@ -781,7 +802,7 @@ pastDate.max = 오늘키;
 // 날짜를 고르는 즉시 그날이 무슨 날이었는지 보여준다. 적기 전에 먼저 알아야
 // '아 그래서 그랬나' 하는 생각이 드는데, 그 생각까지가 이 앱의 재미다.
 pastDate.addEventListener("change", () => {
-  if (!pastDate.value) { pastPanel.hidden = true; return; }
+  if (!pastDate.value || !나있음()) { pastPanel.hidden = true; return; }
   const [y, m, d] = pastDate.value.split("-").map(Number);
   pastPanel.innerHTML = 간지판(y, m, d);
   pastPanel.hidden = false;
@@ -790,6 +811,11 @@ pastDate.addEventListener("change", () => {
 document.getElementById("pastSave").addEventListener("click", () => {
   const 날짜 = document.getElementById("pastDate").value;
   const msg = document.getElementById("pastMsg");
+  if (!나있음()) {
+    msg.textContent = "먼저 아래 '내 정보'에 생년월일시를 넣어줘.";
+    document.getElementById("meBox").open = true;
+    return;
+  }
   if (!날짜) { msg.textContent = "언제였는지 골라줘."; return; }
   if (날짜 >= 오늘키) { msg.textContent = "지난 날만 여기에 넣을 수 있어. 오늘은 위에서 적어줘."; return; }
   if (지난상태.점수 === null) { msg.textContent = "그날이 어땠는지 골라줘."; return; }
@@ -811,8 +837,9 @@ document.getElementById("pastSave").addEventListener("click", () => {
 
 // ── 내 정보 ───────────────────────────────────────────────
 const 나채우기 = () => {
-  document.getElementById("meDate").value =
-    `${나.y}-${String(나.m).padStart(2,"0")}-${String(나.d).padStart(2,"0")}`;
+  document.getElementById("meDate").value = 나있음()
+    ? `${나.y}-${String(나.m).padStart(2,"0")}-${String(나.d).padStart(2,"0")}`
+    : "";
   document.getElementById("meTime").value =
     `${String(나.hour).padStart(2,"0")}:${String(나.minute).padStart(2,"0")}`;
   document.getElementById("meNoTime").checked = 나.시모름;
@@ -1047,7 +1074,12 @@ function 가져오기(글) {
   쓰기(KEY_기록, 기록);
 
   const 더함 = Object.keys(기록).length - 전;
-  if (짐.나) { 나 = { ...기본나, ...짐.나 }; 쓰기(KEY_나, 나); 나채우기(); 원국계산(); 오늘그리기(); }
+  if (짐.나) {
+    나 = { ...기본나, ...짐.나 };
+    쓰기(KEY_나, 나);
+    나채우기();
+    if (나있음()) { 원국계산(); 오늘그리기(); }
+  }
 
   차트그리기();
   목록그리기();
