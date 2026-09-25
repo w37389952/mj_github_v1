@@ -435,6 +435,10 @@ details .body { padding:0 0 26px; }
 <script src="config.js"></script>
 <script src="manse.js"></script>
 <script>
+// 이 파일의 이름들이 manse.js의 전역과 부딪히지 않도록 제 범위 안에 가둔다.
+// 고전 스크립트는 전역을 함께 쓰므로, 같은 이름을 const로 두 번 선언하면
+// 파일 전체가 파싱에 실패해 화면이 통째로 비어 버린다.
+(() => {
 // ── 저장 ──────────────────────────────────────────────────
 // 전부 브라우저에만 남는다. 서버도 로그인도 API도 없다.
 const KEY_기록 = "iljin:records";
@@ -1107,4 +1111,5 @@ document.getElementById("legend").innerHTML = ["목", "화", "토", "금", "수"
 
 차트그리기();
 목록그리기();
+})();
 </script>
