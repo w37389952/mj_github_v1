@@ -168,6 +168,12 @@ h2.label {
 .vault .pair { margin-top:12px; }
 .vault .pair .save, .stack .save { margin-top:0; }
 .save.ghost { color:var(--ink); background:transparent; border-color:var(--line); }
+/* 로그인했는데 비밀번호를 또 묻는 까닭. 처음 보는 사람은 반드시 되묻는 자리라 바로 곁에 둔다. */
+.why {
+  font-size:12px; line-height:1.75; color:var(--ink-soft);
+  background:var(--ground); border-radius:2px; padding:12px 14px; margin:0 0 14px;
+}
+.why b { display:block; color:var(--ink); font-weight:600; margin-bottom:4px; }
 .linkish {
   display:block; margin:14px auto 0; padding:4px 8px; font:inherit; font-size:12px;
   color:var(--ink-soft); background:none; border:0; text-decoration:underline; cursor:pointer;
@@ -447,7 +453,11 @@ details .body { padding:18px 16px 20px; }
       <div class="vault" id="vaultBox" hidden>
         <div id="vaultSetup" hidden>
           <h2 class="label">일기 잠금 만들기</h2>
-          <p class="hint">글을 다른 기기에서도 보려면 잠금을 하나 만들어. 글은 이 기기에서 잠긴 채로만 서버에 올라가고, 푸는 비밀번호는 너만 알아. 서버도 운영자도 못 읽어.</p>
+          <p class="hint">글을 다른 기기에서도 보려면 일기 잠금을 하나 만들어. 새 기기에서 비밀번호를 한 번만 넣으면 그 기기는 기억해서 다시 묻지 않아.</p>
+          <div class="why">
+            <b>로그인했는데 비밀번호가 왜 또 필요해?</b>
+            카카오 로그인은 네가 누구인지만 확인해 줄 뿐, 너만 아는 비밀은 아니야. 로그인만으로 글이 풀리게 하면 서버도 풀 수 있게 되고, 그러면 운영자도 네 글을 읽을 수 있어. 그래서 글은 이 기기에서 잠긴 채로만 올라가고, 푸는 비밀번호는 너만 알게 했어. 카톡 비밀채팅과 같은 방식이야.
+          </div>
           <div class="stack">
             <input type="password" id="vpNew" placeholder="일기 비밀번호 (8자 이상)" autocomplete="new-password">
             <input type="password" id="vpNew2" placeholder="한 번 더" autocomplete="new-password">
@@ -467,7 +477,11 @@ details .body { padding:18px 16px 20px; }
 
         <div id="vaultUnlock" hidden>
           <h2 class="label">일기 비밀번호</h2>
-          <p class="hint">이 기기에서는 처음이야. 일기 비밀번호를 넣으면 다른 기기에서 쓴 글이 풀려서 보여.</p>
+          <p class="hint">이 기기에서는 처음이야. 일기 비밀번호를 넣으면 다른 기기에서 쓴 글이 풀려서 보여. 한 번만 넣으면 이 기기는 기억해.</p>
+          <div class="why">
+            <b>로그인했는데 비밀번호가 왜 또 필요해?</b>
+            네 글은 잠긴 채로 서버에 있고, 푸는 비밀번호는 너만 알아. 로그인만으로 풀리게 하면 서버도, 운영자도 읽을 수 있게 되거든. 카톡 비밀채팅처럼 너 말고는 아무도 못 읽게 한 거야.
+          </div>
           <input type="password" id="vpIn" placeholder="일기 비밀번호" autocomplete="current-password">
           <button class="save" id="vpUnlock">풀기</button>
           <button class="linkish" id="vpForgot">비밀번호를 잊었어</button>
