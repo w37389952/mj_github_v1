@@ -23,6 +23,9 @@
 }
 
 * { box-sizing:border-box; }
+/* hidden 속성은 브라우저 기본 스타일이라 display를 준 규칙에 진다.
+   .pair처럼 grid를 준 칸은 숨겨도 보였으므로 맨 위에서 못 박아 둔다. */
+[hidden] { display:none !important; }
 body {
   background:var(--ground); color:var(--ink);
   font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;
@@ -919,7 +922,12 @@ const 로그인에러 = (() => {
   const 뭐 = (k) => q.get(k) ?? h.get(k);
   const 설명 = 뭐("error_description");
   const 코드 = 뭐("error_code") ?? 뭐("error");
-  return 설명 || 코드 ? [코드, 설명].filter(Boolean).join(" · ") : null;
+  if (!설명 && !코드) return null;
+
+  // 읽었으면 주소에서 지운다. 남겨 두면 새로고침할 때마다 지난 실패가 되살아나
+  // 방금 다시 한 시도가 실패한 것처럼 보인다.
+  history.replaceState(null, "", location.pathname);
+  return [코드, 설명].filter(Boolean).join(" · ");
 })();
 
 const 설정 = window.ILJIN_CONFIG ?? {};
