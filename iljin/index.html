@@ -133,14 +133,22 @@ h2.label {
 .spread-note { font-size:11px; line-height:1.7; color:var(--ink-faint); margin:10px 0 0; }
 
 /* 기록. 점수 한 번, 영역 태그, 그리고 하고 싶은 만큼의 글. */
-.choices { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-.choice {
-  font:inherit; font-size:14px; color:var(--ink); cursor:pointer;
-  background:var(--surface); border:1px solid var(--line); border-radius:2px;
-  padding:14px 0; transition:border-color .15s;
+/* 점수는 0부터 100까지 직접 민다. 세 칸으로 받으면 기록이 세 덩어리로만 쌓여
+   '보통인데 조금 나은 날' 같은 차이가 묻힌다. 밀기 전에는 흐리게 두어,
+   아직 매기지 않았다는 것이 눈에 보이게 한다. */
+.rate-head { display:flex; align-items:baseline; justify-content:center; gap:10px; margin-bottom:12px; }
+.rate-num {
+  font-family:"IBM Plex Mono",monospace; font-weight:500; font-size:34px; line-height:1;
+  font-variant-numeric:tabular-nums; min-width:2.2ch; text-align:right;
 }
-.choice:hover { border-color:var(--ink-faint); }
-.choice[aria-pressed="true"] { box-shadow:inset 0 0 0 1px var(--ink); border-color:var(--ink); }
+.rate-word { font-size:13px; color:var(--ink-soft); min-width:6em; }
+.rate input[type="range"] { width:100%; margin:0; height:28px; accent-color:var(--ink); cursor:pointer; }
+.rate.untouched .rate-num, .rate.untouched .rate-word { color:var(--ink-faint); }
+.rate.untouched input[type="range"] { opacity:.4; }
+.rate-scale {
+  display:flex; justify-content:space-between; margin-top:4px;
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.1em; color:var(--ink-faint);
+}
 
 /* 태그는 십성의 영역 그대로다. 사람이 아니라 사건의 성격으로 받는다.
    같은 상사라도 나를 누르면 관성이고 나를 가르치면 인성이라,
@@ -162,7 +170,7 @@ textarea, input[type="date"], input[type="time"], select {
 textarea { min-height:120px; resize:vertical; margin-top:14px; line-height:1.75; }
 textarea::placeholder { color:var(--ink-faint); }
 input:focus-visible, select:focus-visible, textarea:focus-visible,
-.choice:focus-visible, .tag:focus-visible, button:focus-visible, summary:focus-visible {
+.tag:focus-visible, button:focus-visible, summary:focus-visible {
   outline:2px solid var(--su); outline-offset:2px;
 }
 .save {
@@ -273,10 +281,10 @@ details .body { padding:0 0 26px; }
 
   <section>
     <h2 class="label">오늘 어땠어?</h2>
-    <div class="choices" id="todayChoices">
-      <button class="choice" aria-pressed="false" data-v="80">좋음</button>
-      <button class="choice" aria-pressed="false" data-v="50">보통</button>
-      <button class="choice" aria-pressed="false" data-v="20">나쁨</button>
+    <div class="rate untouched" id="todayRate">
+      <div class="rate-head"><span class="rate-num" data-num>—</span><span class="rate-word" data-word></span></div>
+      <input type="range" min="0" max="100" step="1" value="50" aria-label="오늘 점수, 0부터 100까지">
+      <div class="rate-scale"><span>0</span><span>50</span><span>100</span></div>
     </div>
 
     <h2 class="label" style="margin:24px 0 12px">무슨 일이었어?</h2>
@@ -331,10 +339,10 @@ details .body { padding:0 0 26px; }
 
       <div class="field">
         <span>그날 어땠어?</span>
-        <div class="choices" id="pastChoices">
-          <button class="choice" aria-pressed="false" data-v="80">좋음</button>
-          <button class="choice" aria-pressed="false" data-v="50">보통</button>
-          <button class="choice" aria-pressed="false" data-v="20">나쁨</button>
+        <div class="rate untouched" id="pastRate">
+          <div class="rate-head"><span class="rate-num" data-num>—</span><span class="rate-word" data-word></span></div>
+          <input type="range" min="0" max="100" step="1" value="50" aria-label="그날 점수, 0부터 100까지">
+          <div class="rate-scale"><span>0</span><span>50</span><span>100</span></div>
         </div>
       </div>
 
@@ -697,18 +705,41 @@ function 담기(키, 점수값, 태그들, 글, opts = {}) {
   서버로밀기(키);
 }
 
-// 점수 버튼과 태그 버튼을 한 벌로 묶는다. 오늘 자리와 지난 날 자리가 같은 짜임이다.
+const 점수말 = (n) => (n < 20 ? "최악" : n < 40 ? "나쁨" : n < 60 ? "보통" : n < 80 ? "좋음" : "최고");
+
+// 점수 막대와 태그 버튼을 한 벌로 묶는다. 오늘 자리와 지난 날 자리가 같은 짜임이다.
 function 기록판(prefix, 초기 = {}) {
   const 상태 = { 점수: 초기.점수 ?? null, 태그: new Set(초기.영역 ?? []) };
   const 토글 = (el, on) => el.setAttribute("aria-pressed", String(on));
 
-  document.querySelectorAll(`#${prefix}Choices .choice`).forEach((b) => {
-    토글(b, Number(b.dataset.v) === 상태.점수);
-    b.addEventListener("click", () => {
-      상태.점수 = Number(b.dataset.v);
-      document.querySelectorAll(`#${prefix}Choices .choice`).forEach((o) => 토글(o, o === b));
-    });
-  });
+  // 점수는 한 번이라도 손을 대야 매긴 것으로 친다. 가운데 놓인 50을 그대로 저장하게
+  // 두면 매기지 않은 날이 전부 '보통'으로 쌓여 분석을 흐린다.
+  const 칸 = document.getElementById(`${prefix}Rate`);
+  const 막대 = 칸.querySelector("input");
+  const 숫자 = 칸.querySelector("[data-num]");
+  const 말 = 칸.querySelector("[data-word]");
+  const 그리기 = () => {
+    const 없음 = 상태.점수 === null;
+    칸.classList.toggle("untouched", 없음);
+    숫자.textContent = 없음 ? "—" : 상태.점수;
+    말.textContent = 없음 ? "밀어서 매겨줘" : 점수말(상태.점수);
+    if (!없음) 막대.value = 상태.점수;
+  };
+  // 값이 안 바뀌어도 눌렀다 뗐으면 매긴 것이다. 딱 50을 주고 싶은 날도 있으니까.
+  const 매김 = () => { 상태.점수 = Number(막대.value); 그리기(); };
+  막대.addEventListener("input", 매김);
+  막대.addEventListener("pointerup", 매김);
+  막대.addEventListener("keyup", 매김);
+  그리기();
+
+  상태.비우기 = () => {
+    상태.점수 = null;
+    상태.태그.clear();
+    막대.value = 50;
+    그리기();
+    document.querySelectorAll(`#${prefix}Tags .tag`).forEach((b) => 토글(b, false));
+  };
+
   document.querySelectorAll(`#${prefix}Tags .tag`).forEach((b) => {
     토글(b, 상태.태그.has(b.dataset.code));
     b.addEventListener("click", () => {
@@ -798,7 +829,7 @@ document.getElementById("todaySave").addEventListener("click", () => {
     return;
   }
   if (오늘상태.점수 === null) {
-    document.getElementById("todayMsg").textContent = "좋음·보통·나쁨 중 하나는 골라줘.";
+    document.getElementById("todayMsg").textContent = "점수를 밀어서 매겨줘.";
     return;
   }
   담기(오늘키, 오늘상태.점수, 오늘상태.태그, document.getElementById("todayNote").value.trim());
@@ -843,7 +874,7 @@ document.getElementById("pastSave").addEventListener("click", () => {
   }
   if (!날짜) { msg.textContent = "언제였는지 골라줘."; return; }
   if (날짜 >= 오늘키) { msg.textContent = "지난 날만 여기에 넣을 수 있어. 오늘은 위에서 적어줘."; return; }
-  if (지난상태.점수 === null) { msg.textContent = "그날이 어땠는지 골라줘."; return; }
+  if (지난상태.점수 === null) { msg.textContent = "그날 점수를 밀어서 매겨줘."; return; }
 
   담기(날짜, 지난상태.점수, 지난상태.태그, document.getElementById("pastNote").value.trim(), {
     소급: true,
@@ -853,9 +884,7 @@ document.getElementById("pastSave").addEventListener("click", () => {
   const 그날 = Manse.iljin(...날짜.split("-").map(Number));
   msg.textContent = `${날짜}은 ${그날.이름}일이었어. 남겼어.`;
   document.getElementById("pastNote").value = "";
-  document.querySelectorAll("#pastChoices .choice, #pastTags .tag").forEach((b) => b.setAttribute("aria-pressed", "false"));
-  지난상태.점수 = null;
-  지난상태.태그.clear();
+  지난상태.비우기();
   차트그리기();
   목록그리기();
 });
