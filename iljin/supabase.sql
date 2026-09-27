@@ -7,8 +7,9 @@
 -- 올라오고, 푸는 열쇠는 서버에 없다. 새어 나갔을 때 누구의 무슨 일인지 드러나는
 -- 것은 본문뿐이라, 본문만큼은 서버도 운영자도 읽을 수 없게 한다.
 --
--- 생년월일시는 올리지 않는다. 새 기기에서 한 번 다시 넣는 수고를 아끼자고
--- 개인을 특정할 수 있는 값을 서버에 둘 이유가 약하다.
+-- 생년월일시도 일기와 같은 열쇠로 잠가서만 올린다. 그대로 두면 개인을 특정할 수
+-- 있는 값이지만, 잠겨 있으면 서버도 운영자도 읽지 못한다. 새 기기에서 잠금을 풀면
+-- 따라오므로 기기마다 다시 넣지 않아도 된다.
 
 create table if not exists public.records (
   user_id     uuid        not null references auth.users(id) on delete cascade,
@@ -44,6 +45,9 @@ create table if not exists public.vault (
   wrap_r      text        not null,   -- 복구 코드로 잠근 데이터 열쇠
   updated_at  timestamptz not null default now()
 );
+
+-- 생년월일시. 일기와 같은 데이터 열쇠로 잠근 문자열이다.
+alter table public.vault add column if not exists me_cipher text;
 
 -- 행 수준 보안(RLS).
 --

@@ -34,6 +34,8 @@
 [hidden] { display:none !important; }
 body {
   background:var(--ground); color:var(--ink);
+  /* 한국어는 낱말 중간에서 줄을 바꾸면 '진'과 '토가'처럼 쪼개져 읽기 어렵다. */
+  word-break:keep-all; overflow-wrap:anywhere;
   font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;
   display:flex; justify-content:center; padding:0 16px 48px; margin:0;
 }
@@ -104,6 +106,7 @@ h2.label {
 .layer .gz { font-family:"Noto Serif KR",serif; font-weight:600; font-size:15px; letter-spacing:.06em; }
 .layer .sip { color:var(--ink-soft); }
 .layer .when {
+  white-space:nowrap;
   font-family:"IBM Plex Mono",monospace; font-size:10.5px;
   letter-spacing:.06em; color:var(--ink-faint);
 }
@@ -601,13 +604,39 @@ const 태그판 = (el) => {
 };
 
 const 생하는곳 = { 목:"화", 화:"토", 토:"금", 금:"수", 수:"목" };
-const 생극 = (a, b) => (생하는곳[a] === b ? "生" : "剋");
+const 극하는곳 = { 목:"토", 화:"금", 토:"수", 금:"목", 수:"화" };
+
+// 두 기운 사이에서 실제로 움직이는 쪽을 앞에 둔다. 生이 아니라고 다 剋은 아니고,
+// 剋에도 방향이 있다. 목과 토라면 목이 토를 친다. 이걸 뭉뚱그리면 '토 剋 목'처럼
+// 명리와 거꾸로 된 말을 하게 된다.
+function 관계(a, b) {
+  if (a === b) return [a, "比", b];
+  if (생하는곳[a] === b) return [a, "生", b];
+  if (생하는곳[b] === a) return [b, "生", a];
+  if (극하는곳[a] === b) return [a, "剋", b];
+  return [b, "剋", a];
+}
+
+// 천간이 일간에게 무엇을 하는지는 십성이 그대로 말해 준다.
+const 십성무리 = {
+  비견:"비겁", 겁재:"비겁", 식신:"식상", 상관:"식상", 편재:"재성",
+  정재:"재성", 편관:"관성", 정관:"관성", 편인:"인성", 정인:"인성",
+};
 
 // 오행 이름 다섯 가운데 화·토·수는 받침이 없다. 조사를 붙박이로 두면
 // '임수이 네 병화를'처럼 어긋나므로 끝 글자의 받침을 보고 고른다.
 const 받침 = (s) => (s.charCodeAt(s.length - 1) - 0xac00) % 28 !== 0;
 const 이가 = (s) => s + (받침(s) ? "이" : "가");
 const 을를 = (s) => s + (받침(s) ? "을" : "를");
+const 은는 = (s) => s + (받침(s) ? "은" : "는");
+
+const 하는말 = {
+  인성: (나) => `네 ${을를(나)} 살린다`,
+  비겁: (나) => `네 ${나} 곁에 힘을 보탠다`,
+  관성: (나) => `네 ${을를(나)} 누른다`,
+  식상: (나) => `네 ${나}의 기운을 빼 간다`,
+  재성: (나) => `네 ${나}의 힘을 끌어다 쓴다`,
+};
 
 // ── 원국과 용신 ───────────────────────────────────────────
 let 원국, 판정, 용신, 기신, 일간오행;
@@ -653,8 +682,8 @@ function 오늘그리기() {
   const 칩 = (a, op, b) =>
     `<span class="rel"><b style="color:${오행색(a)}">${a}</b><span class="op">${op}</span><b style="color:${오행색(b)}">${b}</b></span>`;
   document.getElementById("relation").innerHTML =
-    칩(일진.천간오행, 생극(일진.천간오행, 일간오행), 일간오행) +
-    칩(일진.지지오행, 생극(일진.지지오행, 일진.천간오행), 일진.천간오행);
+    칩(...관계(일진.천간오행, 일간오행)) +
+    칩(...관계(일진.지지오행, 일진.천간오행));
 
   const mark = document.getElementById("mark");
   mark.style.left = 점 + "%";
@@ -668,14 +697,20 @@ function 오늘그리기() {
   const 지지말 = 일진.이름[1] + 일진.지지오행;
   const 나말 = 원국.일간 + 일간오행;
 
+  // 첫 문장은 천간이 일간에게 하는 일을 십성 그대로 말하고, 둘째 문장이 그게 반가운지와
+  // 지지가 거드는지를 말한다. 지지가 천간을 '친다'고 한 가지로 박아 두면 갑진일처럼
+  // 목이 토 위에 뿌리내린 날에도 '진토가 목을 친다'는 거꾸로 된 말을 하게 된다.
+  const 무리 = 십성무리[운.일운.십성.천간];
+  const 무게 = 천간편 ? "반가운" : 기신.includes(일진.천간오행) ? "부담스러운" : "그저 그런";
   document.getElementById("reading").innerHTML =
+    `${이가(천간말)} ${하는말[무리](나말)}. ` +
     (천간편 && 지지편
-      ? `${이가(천간말)} 네 ${을를(나말)} 살리고 ${지지말}까지 거든다. 미뤄 둔 일을 꺼내기 좋은 날.`
+      ? `네게 반가운 기운이고, 아래 ${지지말}까지 거든다. 미뤄 둔 일을 꺼내기 좋은 날.`
       : 천간편
-      ? `${이가(천간말)} 네 ${을를(나말)} 살리는 날. 다만 ${이가(지지말)} 그 ${을를(일진.천간오행)} 쳐서 힘이 반만 온다.`
+      ? `네게 반가운 기운인데, 아래 ${은는(지지말)} 반갑지 않아 힘이 반만 온다.`
       : 지지편
-      ? `${이가(천간말)} 네 ${을를(나말)} 누르지만 ${지지말}이 아래서 받친다. 겉이 시끄러워도 속은 버틸 만한 날.`
-      : `${이가(천간말)} 네 ${을를(나말)} 누르는 날. 무리해서 밀지 말고 하루를 짧게 쓰는 편이 낫다.`) +
+      ? `${무게} 기운이지만 아래 ${이가(지지말)} 받쳐 줘서 속은 버틸 만하다.`
+      : `${무게} 기운이라 무리해서 밀지 말고 하루를 짧게 쓰는 편이 낫다.`) +
     `<span class="note">지금 점수는 표준 억부용신 기준이다. 네 기록이 쌓이면 너에게 맞게 고쳐진다.</span>`;
 
   const 겹들 = [
@@ -843,6 +878,16 @@ function 기록판(prefix, 초기 = {}) {
   막대.addEventListener("pointerup", 매김);
   막대.addEventListener("keyup", 매김);
   그리기();
+
+  // 다른 기기에서 적은 기록이 동기화로 늦게 도착하면 화면에 채워 넣는다. 그사이 이 기기에서
+  // 이미 손을 댔으면 그대로 둔다. 쓰던 것을 덮으면 안 되니까.
+  상태.채우기 = (r) => {
+    if (!r || 상태.점수 !== null) return;
+    상태.점수 = r.점수 ?? null;
+    상태.태그 = new Set(r.영역 ?? []);
+    그리기();
+    document.querySelectorAll(`#${prefix}Tags .tag`).forEach((b) => 토글(b, 상태.태그.has(b.dataset.code)));
+  };
 
   상태.비우기 = () => {
     상태.점수 = null;
@@ -1050,6 +1095,7 @@ document.getElementById("meSave").addEventListener("click", () => {
     `${원국.연주} ${원국.월주} ${원국.일주}${원국.시주 ? " " + 원국.시주 : " (시주 없음)"}` +
     ` · 일간 ${원국.일간}${원국.일간오행}` +
     (원국.쌍둥이둘째 ? " · 나중 난 쪽으로 시주를 한 칸 밀었다" : "");
+  나올리기();   // 잠금이 켜져 있으면 잠가서 다른 기기로도 보낸다
   차트그리기();
   목록그리기();
 });
@@ -1191,6 +1237,28 @@ async function 글풀기(문자열) {
   try { return new TextDecoder().decode(await 풀기(데이터열쇠, 문자열)); } catch { return null; }
 }
 
+// 생년월일시도 일기와 같은 열쇠로 잠가 금고에 둔다. 새 기기에서 잠금을 풀면 따라온다.
+// 이 기기에 이미 있으면 서버 것으로 덮지 않는다. 어느 쪽이 맞는지 가릴 수 없을 때는
+// 사용자가 눈앞에서 본 값을 믿는다. 이 기기에서 저장하면 그게 서버로 간다.
+async function 나올리기() {
+  if (!sb || !세션 || !데이터열쇠 || !금고 || !나있음()) return;
+  try { await 금고고치기({ me_cipher: await 글잠그기(JSON.stringify(나)) }); } catch {}
+}
+async function 나받기() {
+  if (나있음() || !데이터열쇠 || !금고?.me_cipher) return;
+  const 글 = await 글풀기(금고.me_cipher);
+  if (!글) return;
+  try { 나 = { ...기본나, ...JSON.parse(글) }; } catch { return; }
+  쓰기(KEY_나, 나);
+  나채우기();
+  if (나있음()) { 원국계산(); 오늘그리기(); }
+}
+// 잠금이 열린 직후마다 부른다. 서버에 있으면 받고, 없으면 이 기기 것을 올린다.
+async function 나맞추기() {
+  await 나받기();
+  if (!금고?.me_cipher) await 나올리기();
+}
+
 const 금고칸들 = ["vaultSetup", "vaultCode", "vaultUnlock", "vaultRecover", "vaultReady"];
 function 금고그리기(보일칸) {
   document.getElementById("vaultBox").hidden = !세션;
@@ -1211,6 +1279,7 @@ async function 금고확인() {
   }
   금고 = data;
   금고그리기(!금고 ? "vaultSetup" : 데이터열쇠 ? "vaultReady" : "vaultUnlock");
+  if (데이터열쇠) await 나맞추기();
 }
 
 // ── 서버와 주고받는 모양 ──────────────────────────────────
@@ -1333,6 +1402,9 @@ async function 동기화() {
     쓰기(KEY_기록, 기록);
     차트그리기();
     목록그리기();
+    오늘상태.채우기(기록[오늘키]);
+    const 오늘글칸 = document.getElementById("todayNote");
+    if (!오늘글칸.value && 기록[오늘키]?.글) 오늘글칸.value = 기록[오늘키].글;
     msg.textContent = `서버로 보냄 ${올릴것.length}개 · 받아옴 ${내림}개 · 이 기기의 기록 ${Object.keys(기록).length}개`;
   } catch (e) {
     msg.textContent = "동기화하지 못했어: " + (e?.message ?? e);
@@ -1399,6 +1471,7 @@ document.getElementById("vpCreate").addEventListener("click", () => 잠깐막고
     비우기("vpNew", "vpNew2");
     금고말("");
     복구코드보여주기(코드);
+    나맞추기();
     동기화();   // 지금까지 이 기기에 쓴 글을 잠가서 올린다
   } catch (e) {
     금고말("잠금을 만들지 못했어: " + (e?.message ?? e));
@@ -1449,6 +1522,7 @@ document.getElementById("vpUnlock").addEventListener("click", () => 잠깐막고
     ? "복구 코드로 열었어. 비밀번호는 그대로야 — 다음 기기에선 네가 정한 비밀번호를 넣으면 돼."
     : "풀렸어. 다른 기기에서 쓴 글을 받아올게.");
   금고그리기("vaultReady");
+  await 나맞추기();
   동기화();
 }));
 
@@ -1468,6 +1542,7 @@ document.getElementById("vrRun").addEventListener("click", () => 잠깐막고("v
   비우기("vrCode", "vrNew");
   금고말("되찾았어. 이제 새 비밀번호로 열려.");
   금고그리기("vaultReady");
+  await 나맞추기();
   동기화();
 }));
 
