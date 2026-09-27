@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<!-- 이 줄이 없으면 폰 브라우저가 페이지를 980px짜리 PC 화면으로 여기고 통째로 줄여 보인다.
+     글씨가 깨알만 해지고 양옆이 휑하게 빈다. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>오늘의 일진</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@400;600&display=swap">
@@ -467,7 +473,7 @@ details .body { padding:18px 16px 20px; }
 
         <div id="vaultCode" hidden>
           <h2 class="label">복구 코드</h2>
-          <p class="hint">비밀번호를 잊었을 때 글을 되찾는 유일한 방법이야. 지금 복사해서 카톡 '나에게 보내기'나 메모에 넣어 둬. 이 화면을 닫으면 다시 볼 수 없어.</p>
+          <p class="hint"><b>평소엔 네가 정한 비밀번호만 쓰면 돼.</b> 복구 코드는 그 비밀번호를 잊었을 때만 쓰는 비상 열쇠야. 지금 복사해서 카톡 '나에게 보내기'나 메모에 넣어 둬. 이 화면을 닫으면 다시 볼 수 없어.</p>
           <div class="code" id="vcText"></div>
           <div class="pair">
             <button class="save ghost" id="vcCopy">복사하기</button>
@@ -477,12 +483,12 @@ details .body { padding:18px 16px 20px; }
 
         <div id="vaultUnlock" hidden>
           <h2 class="label">일기 비밀번호</h2>
-          <p class="hint">이 기기에서는 처음이야. 일기 비밀번호를 넣으면 다른 기기에서 쓴 글이 풀려서 보여. 한 번만 넣으면 이 기기는 기억해.</p>
+          <p class="hint">이 기기에서는 처음이야. 네가 정한 일기 비밀번호를 넣으면 다른 기기에서 쓴 글이 풀려서 보여. 한 번만 넣으면 이 기기는 기억해. 복구 코드를 넣어도 열려.</p>
           <div class="why">
             <b>로그인했는데 비밀번호가 왜 또 필요해?</b>
             네 글은 잠긴 채로 서버에 있고, 푸는 비밀번호는 너만 알아. 로그인만으로 풀리게 하면 서버도, 운영자도 읽을 수 있게 되거든. 카톡 비밀채팅처럼 너 말고는 아무도 못 읽게 한 거야.
           </div>
-          <input type="password" id="vpIn" placeholder="일기 비밀번호" autocomplete="current-password">
+          <input type="password" id="vpIn" placeholder="일기 비밀번호 (또는 복구 코드)" autocomplete="current-password">
           <button class="save" id="vpUnlock">풀기</button>
           <button class="linkish" id="vpForgot">비밀번호를 잊었어</button>
         </div>
@@ -1415,16 +1421,33 @@ document.getElementById("vcDone").addEventListener("click", () => {
 });
 
 document.getElementById("vpUnlock").addEventListener("click", () => 잠깐막고("vpUnlock", async () => {
-  if (!값("vpIn")) { 금고말("일기 비밀번호를 넣어줘."); return; }
+  const 넣은것 = 값("vpIn");
+  if (!넣은것) { 금고말("일기 비밀번호를 넣어줘."); return; }
   금고말("여는 중…");
+
+  // 잠금을 만들 때 복구 코드를 크게 보여주므로, 그걸 비밀번호 칸에 넣는 일이 잦다.
+  // 비밀번호로 안 열리고 모양이 복구 코드면 복구 코드로도 열어 준다. 비밀번호는
+  // 그대로 두므로 다음 기기에서도 원래 비밀번호가 통한다.
+  let 무엇으로 = null;
   try {
-    await 비번으로열기(값("vpIn"));
+    await 비번으로열기(넣은것);
+    무엇으로 = "비번";
   } catch {
-    금고말("비밀번호가 맞지 않아.");
+    if (코드다듬기(넣은것).length === 20) {
+      try {
+        await 열쇠쥐기(await 풀기(await 비번열쇠(코드다듬기(넣은것), b64풀기(금고.salt_r), 200000), 금고.wrap_r));
+        무엇으로 = "코드";
+      } catch {}
+    }
+  }
+  if (!무엇으로) {
+    금고말("비밀번호가 맞지 않아. 네가 정한 일기 비밀번호를 넣어줘.");
     return;
   }
   비우기("vpIn");
-  금고말("풀렸어. 다른 기기에서 쓴 글을 받아올게.");
+  금고말(무엇으로 === "코드"
+    ? "복구 코드로 열었어. 비밀번호는 그대로야 — 다음 기기에선 네가 정한 비밀번호를 넣으면 돼."
+    : "풀렸어. 다른 기기에서 쓴 글을 받아올게.");
   금고그리기("vaultReady");
   동기화();
 }));
