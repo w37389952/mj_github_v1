@@ -399,7 +399,7 @@ details .body { padding:0 0 26px; }
       <p class="hint" id="syncHint"></p>
       <button class="save" id="syncLogin" hidden>카카오로 로그인</button>
       <div class="pair" id="syncActions" hidden>
-        <button class="save" id="syncNow" style="margin:0">지금 맞추기</button>
+        <button class="save" id="syncNow" style="margin:0">지금 동기화</button>
         <button class="save" id="syncOut" style="margin:0; color:var(--ink); background:transparent; border-color:var(--line)">로그아웃</button>
       </div>
       <p class="saved" id="syncMsg"></p>
@@ -991,7 +991,7 @@ function 동기화UI() {
 async function 동기화() {
   const msg = document.getElementById("syncMsg");
   if (!sb || !세션) return;
-  msg.textContent = "맞추는 중…";
+  msg.textContent = "동기화하는 중…";
   try {
     const { data, error } = await sb.from("records").select("*");
     if (error) throw error;
@@ -1023,9 +1023,9 @@ async function 동기화() {
     쓰기(KEY_기록, 기록);
     차트그리기();
     목록그리기();
-    msg.textContent = `올림 ${올릴것.length}개 · 내림 ${내림}개. 지금 기록 ${Object.keys(기록).length}개.`;
+    msg.textContent = `서버로 보냄 ${올릴것.length}개 · 받아옴 ${내림}개 · 이 기기의 기록 ${Object.keys(기록).length}개`;
   } catch (e) {
-    msg.textContent = "맞추지 못했어: " + (e?.message ?? e);
+    msg.textContent = "동기화하지 못했어: " + (e?.message ?? e);
   }
 }
 
