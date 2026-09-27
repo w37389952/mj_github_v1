@@ -162,7 +162,24 @@ h2.label {
 .tag:hover { border-color:var(--ink-faint); }
 .tag[aria-pressed="true"] { color:var(--ink); border-color:currentColor; }
 
-textarea, input[type="date"], input[type="time"], select {
+/* 일기 잠금. 동기화 칸 안에서 선 하나를 긋고 그 아래에 둔다. */
+.vault { margin-top:22px; padding-top:20px; border-top:1px solid var(--line-soft); }
+.stack { display:grid; gap:8px; }
+.vault .pair { margin-top:12px; }
+.vault .pair .save, .stack .save { margin-top:0; }
+.save.ghost { color:var(--ink); background:transparent; border-color:var(--line); }
+.linkish {
+  display:block; margin:14px auto 0; padding:4px 8px; font:inherit; font-size:12px;
+  color:var(--ink-soft); background:none; border:0; text-decoration:underline; cursor:pointer;
+}
+/* 복구 코드는 옮겨 적기 쉽게 크게, 누르면 통째로 잡히게. */
+.code {
+  font-family:"IBM Plex Mono",monospace; font-size:17px; letter-spacing:.08em; text-align:center;
+  padding:16px 10px; background:var(--ground); border:1px dashed var(--line); border-radius:2px;
+  user-select:all; word-break:break-all;
+}
+
+textarea, input[type="date"], input[type="time"], input[type="password"], input[type="text"], select {
   width:100%; font:inherit; font-size:14px; color:var(--ink);
   background:var(--surface); border:1px solid var(--line); border-radius:2px;
   padding:12px 13px;
@@ -426,6 +443,63 @@ details .body { padding:18px 16px 20px; }
         <button class="save" id="syncOut" style="margin:0; color:var(--ink); background:transparent; border-color:var(--line)">로그아웃</button>
       </div>
       <p class="saved" id="syncMsg"></p>
+
+      <div class="vault" id="vaultBox" hidden>
+        <div id="vaultSetup" hidden>
+          <h2 class="label">일기 잠금 만들기</h2>
+          <p class="hint">글을 다른 기기에서도 보려면 잠금을 하나 만들어. 글은 이 기기에서 잠긴 채로만 서버에 올라가고, 푸는 비밀번호는 너만 알아. 서버도 운영자도 못 읽어.</p>
+          <div class="stack">
+            <input type="password" id="vpNew" placeholder="일기 비밀번호 (8자 이상)" autocomplete="new-password">
+            <input type="password" id="vpNew2" placeholder="한 번 더" autocomplete="new-password">
+          </div>
+          <button class="save" id="vpCreate">잠금 만들기</button>
+        </div>
+
+        <div id="vaultCode" hidden>
+          <h2 class="label">복구 코드</h2>
+          <p class="hint">비밀번호를 잊었을 때 글을 되찾는 유일한 방법이야. 지금 복사해서 카톡 '나에게 보내기'나 메모에 넣어 둬. 이 화면을 닫으면 다시 볼 수 없어.</p>
+          <div class="code" id="vcText"></div>
+          <div class="pair">
+            <button class="save ghost" id="vcCopy">복사하기</button>
+            <button class="save" id="vcDone">적어 뒀어</button>
+          </div>
+        </div>
+
+        <div id="vaultUnlock" hidden>
+          <h2 class="label">일기 비밀번호</h2>
+          <p class="hint">이 기기에서는 처음이야. 일기 비밀번호를 넣으면 다른 기기에서 쓴 글이 풀려서 보여.</p>
+          <input type="password" id="vpIn" placeholder="일기 비밀번호" autocomplete="current-password">
+          <button class="save" id="vpUnlock">풀기</button>
+          <button class="linkish" id="vpForgot">비밀번호를 잊었어</button>
+        </div>
+
+        <div id="vaultRecover" hidden>
+          <h2 class="label">복구 코드로 되찾기</h2>
+          <p class="hint">복구 코드로 잠금을 연 다음 새 비밀번호를 정해. 복구 코드는 그대로 계속 쓸 수 있어.</p>
+          <div class="stack">
+            <input type="text" id="vrCode" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <input type="password" id="vrNew" placeholder="새 일기 비밀번호 (8자 이상)" autocomplete="new-password">
+          </div>
+          <button class="save" id="vrRun">새 비밀번호로 되찾기</button>
+          <button class="linkish" id="vrBack">돌아가기</button>
+        </div>
+
+        <div id="vaultReady" hidden>
+          <h2 class="label">일기 잠금 켜짐</h2>
+          <p class="hint">글은 이 기기에서 잠긴 채로 올라간다. 다른 기기에서는 카카오 로그인 뒤 일기 비밀번호를 한 번 넣으면 풀린다.</p>
+          <div class="pair">
+            <button class="save ghost" id="vpChange">비밀번호 바꾸기</button>
+            <button class="save ghost" id="vcRenew">복구 코드 새로 만들기</button>
+          </div>
+          <div class="stack" id="vpChangeForm" hidden>
+            <input type="password" id="vpC1" placeholder="새 일기 비밀번호 (8자 이상)" autocomplete="new-password">
+            <input type="password" id="vpC2" placeholder="한 번 더" autocomplete="new-password">
+            <button class="save" id="vpChangeSave">바꾸기</button>
+          </div>
+        </div>
+
+        <p class="saved" id="vaultMsg"></p>
+      </div>
     </div>
   </details>
 
@@ -961,9 +1035,10 @@ document.getElementById("meSave").addEventListener("click", () => {
 });
 
 // ── 동기화 ────────────────────────────────────────────────
-// 서버에는 점수와 태그와 그날의 간지만 올린다. 일기 본문은 올리지 않는다.
-// 새어 나갔을 때 누구의 무슨 일인지 드러나는 것은 본문뿐이고, 분석에 필요한 것은
-// 본문이 아니기 때문이다. 생년월일시도 올리지 않는다.
+// 점수·태그·그날의 간지는 그대로 서버에 올린다. 일기 본문은 이 기기에서 잠근 뒤에만
+// 올리고, 푸는 열쇠는 서버에 두지 않는다. 새어 나갔을 때 누구의 무슨 일인지 드러나는
+// 것은 본문뿐이라, 본문만큼은 서버도 운영자도 읽을 수 없게 한다. 생년월일시는 올리지 않는다.
+
 // 로그인이 실패하면 Supabase는 에러를 주소에 실어 돌려보낸다. 그걸 화면에 띄우지
 // 않으면 사용자에게는 아무 일도 없었던 것처럼 보이므로, SDK가 주소를 치우기 전에
 // 먼저 읽어 둔다.
@@ -986,24 +1061,170 @@ const 동기화켜짐 = Boolean(설정.SUPABASE_URL && 설정.SUPABASE_ANON_KEY 
 const sb = 동기화켜짐 ? window.supabase.createClient(설정.SUPABASE_URL, 설정.SUPABASE_ANON_KEY) : null;
 let 세션 = null;
 
-// 서버에 올릴 모양. 글이 빠져 있는 것은 빠뜨린 것이 아니라 이 앱의 약속이다.
-const 서버모양 = (날짜, r) => ({
-  date: 날짜,
-  score: r.점수,
-  areas: r.영역 ?? [],
-  iljin: r.일진 ?? null,
-  gan_ohaeng: r.천간오행 ?? null,
-  ji_ohaeng: r.지지오행 ?? null,
-  sip_gan: r.십성?.천간 ?? null,
-  sip_ji: r.십성?.지지 ?? null,
-  predicted: r.예측 ?? null,
-  weekday: r.요일 ?? null,
-  retro: r.소급 === true,
-  certainty: r.확실성 ?? null,
-  updated_at: r.수정시각 ?? new Date().toISOString(),
-});
+// ── 일기 잠금 ─────────────────────────────────────────────
+// 글을 잠그는 데이터 열쇠는 사용자마다 하나다. 그 열쇠를 다시 두 번 잠가 서버에 둔다.
+// 한 번은 일기 비밀번호로, 한 번은 복구 코드로. 서버는 비밀번호도 복구 코드도 받지
+// 않으므로 어느 쪽도 풀 수 없다.
+//
+// 비밀번호를 잊으면 복구 코드로 데이터 열쇠를 꺼내 새 비밀번호로 다시 잠근다.
+// 데이터 열쇠 자체는 바뀌지 않으므로 이미 올린 글을 다시 잠글 필요가 없다.
+//
+// 풀린 열쇠는 이 기기에 둔다. 이 기기에는 어차피 글 원문이 그대로 있으므로 열쇠를
+// 곁에 둔다고 새로 드러나는 것은 없고, 올 때마다 비밀번호를 묻지 않아도 된다.
+const KEY_열쇠 = "iljin:dk";
+let 데이터열쇠 = null;   // 글을 잠그고 푸는 열쇠
+let 열쇠원본 = null;     // 비밀번호·복구 코드로 다시 잠글 때 쓰는 32바이트
+let 금고 = null;         // 서버의 vault 한 줄
 
-// 서버에서 내려온 줄을 이 기기의 모양으로 되돌린다. 글은 손대지 않는다.
+const 글바이트 = (s) => new TextEncoder().encode(s);
+const 난수 = (n) => crypto.getRandomValues(new Uint8Array(n));
+function b64(buf) {
+  const u = new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+const b64풀기 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+
+// 비밀번호에서 열쇠를 뽑는다. 60만 번 되풀이하는 것은 서버의 잠긴 열쇠가 새더라도
+// 비밀번호를 하나씩 대어 보는 공격이 한없이 느려지게 하려는 것이다.
+async function 비번열쇠(비번, 소금, 횟수 = 600000) {
+  const 바탕 = await crypto.subtle.importKey("raw", 글바이트(비번), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: 소금, iterations: 횟수, hash: "SHA-256" },
+    바탕, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function 잠그기(열쇠, 바이트) {
+  const iv = 난수(12);
+  const 봉투 = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, 열쇠, 바이트);
+  return b64(iv) + "." + b64(봉투);
+}
+// 열쇠가 틀리면 AES-GCM이 스스로 알아채고 던진다. 비밀번호가 맞는지는 이것으로 가린다.
+async function 풀기(열쇠, 문자열) {
+  const [iv, 봉투] = 문자열.split(".");
+  return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64풀기(iv) }, 열쇠, b64풀기(봉투)));
+}
+const 데이터열쇠로 = (원본) => crypto.subtle.importKey("raw", 원본, "AES-GCM", false, ["encrypt", "decrypt"]);
+
+// 복구 코드는 헷갈리는 글자(0·O·1·I·L·U)를 뺀 30자 가운데 20자를 뽑는다. 약 98비트라
+// 하나씩 대어 보아서는 찾을 수 없다. 240 이상은 버려 글자마다 뽑힐 확률을 고르게 한다.
+const 코드글자 = "23456789ABCDEFGHJKMNPQRSTVWXYZ";
+function 복구코드만들기() {
+  const 뽑은 = [];
+  while (뽑은.length < 20) {
+    for (const b of 난수(32)) if (b < 240 && 뽑은.length < 20) 뽑은.push(코드글자[b % 30]);
+  }
+  return 뽑은.join("").match(/.{4}/g).join("-");
+}
+const 코드다듬기 = (s) => s.toUpperCase().replace(/[^0-9A-Z]/g, "");
+
+async function 비번자물쇠(비번, 원본) {
+  const 소금 = 난수(16);
+  return { salt_p: b64(소금), wrap_p: await 잠그기(await 비번열쇠(비번, 소금), 원본) };
+}
+async function 코드자물쇠(코드, 원본) {
+  const 소금 = 난수(16);
+  return { salt_r: b64(소금), wrap_r: await 잠그기(await 비번열쇠(코드다듬기(코드), 소금, 200000), 원본) };
+}
+
+async function 열쇠쥐기(원본) {
+  열쇠원본 = 원본;
+  데이터열쇠 = await 데이터열쇠로(원본);
+  쓰기(KEY_열쇠, { uid: 세션.user.id, k: b64(원본) });
+}
+// 다른 카카오 계정의 열쇠를 잘못 집지 않도록, 둘 때 함께 적은 사용자와 맞을 때만 쓴다.
+async function 열쇠불러오기() {
+  const 둔것 = 읽기(KEY_열쇠, null);
+  if (!둔것 || 둔것.uid !== 세션?.user.id) { 데이터열쇠 = null; 열쇠원본 = null; return; }
+  열쇠원본 = b64풀기(둔것.k);
+  데이터열쇠 = await 데이터열쇠로(열쇠원본);
+}
+
+async function 잠금만들기(비번) {
+  const 원본 = 난수(32);
+  const 코드 = 복구코드만들기();
+  const 줄 = { user_id: 세션.user.id, ...(await 비번자물쇠(비번, 원본)), ...(await 코드자물쇠(코드, 원본)) };
+  const { data, error } = await sb.from("vault").insert(줄).select().single();
+  if (error) throw error;
+  금고 = data;
+  await 열쇠쥐기(원본);
+  return 코드;
+}
+async function 금고고치기(바꿀것) {
+  const { data, error } = await sb.from("vault")
+    .update({ ...바꿀것, updated_at: new Date().toISOString() })
+    .eq("user_id", 세션.user.id).select().single();
+  if (error) throw error;
+  금고 = data;
+}
+async function 비번으로열기(비번) {
+  await 열쇠쥐기(await 풀기(await 비번열쇠(비번, b64풀기(금고.salt_p)), 금고.wrap_p));
+}
+async function 코드로열기(코드, 새비번) {
+  const 원본 = await 풀기(await 비번열쇠(코드다듬기(코드), b64풀기(금고.salt_r), 200000), 금고.wrap_r);
+  await 열쇠쥐기(원본);
+  await 금고고치기(await 비번자물쇠(새비번, 원본));
+}
+
+const 글잠그기 = (글) => 잠그기(데이터열쇠, 글바이트(글));
+async function 글풀기(문자열) {
+  try { return new TextDecoder().decode(await 풀기(데이터열쇠, 문자열)); } catch { return null; }
+}
+
+const 금고칸들 = ["vaultSetup", "vaultCode", "vaultUnlock", "vaultRecover", "vaultReady"];
+function 금고그리기(보일칸) {
+  document.getElementById("vaultBox").hidden = !세션;
+  for (const id of 금고칸들) document.getElementById(id).hidden = id !== 보일칸;
+}
+
+async function 금고확인() {
+  const msg = document.getElementById("vaultMsg");
+  msg.textContent = "";
+  await 열쇠불러오기();
+  const { data, error } = await sb.from("vault").select("*").maybeSingle();
+  if (error) {
+    금고그리기(null);
+    msg.textContent = /vault|relation|schema/i.test(error.message)
+      ? "일기 잠금용 표가 아직 없어. Supabase에서 supabase.sql을 다시 한 번 실행해줘."
+      : "잠금 상태를 못 읽었어: " + error.message;
+    return;
+  }
+  금고 = data;
+  금고그리기(!금고 ? "vaultSetup" : 데이터열쇠 ? "vaultReady" : "vaultUnlock");
+}
+
+// ── 서버와 주고받는 모양 ──────────────────────────────────
+
+// 서버에 올릴 모양. 글은 잠근 채로만 싣는다.
+//
+// 열쇠가 없는 기기에서는 글 칸을 아예 빼서, 다른 기기가 올려 둔 잠긴 글을 지우지
+// 않게 한다. 이 기기의 글이 비어 있을 때도 같다. 빈 글은 남의 글을 지우지 않는다.
+// 서버글을 넘기면 빈 글 자리에 그것을 그대로 되실어, 한꺼번에 올리는 줄들이 모두
+// 같은 칸을 갖게 한다. 칸이 들쭉날쭉하면 서버가 한꺼번에 받지 않는다.
+async function 서버모양(날짜, r, 서버글) {
+  const 줄 = {
+    date: 날짜,
+    score: r.점수,
+    areas: r.영역 ?? [],
+    iljin: r.일진 ?? null,
+    gan_ohaeng: r.천간오행 ?? null,
+    ji_ohaeng: r.지지오행 ?? null,
+    sip_gan: r.십성?.천간 ?? null,
+    sip_ji: r.십성?.지지 ?? null,
+    predicted: r.예측 ?? null,
+    weekday: r.요일 ?? null,
+    retro: r.소급 === true,
+    certainty: r.확실성 ?? null,
+    updated_at: r.수정시각 ?? new Date().toISOString(),
+  };
+  if (데이터열쇠) {
+    if (r.글) 줄.note_cipher = await 글잠그기(r.글);
+    else if (서버글 !== undefined) 줄.note_cipher = 서버글;
+  }
+  return 줄;
+}
+
+// 서버에서 내려온 줄을 이 기기의 모양으로 되돌린다. 글은 따로 푼다.
 const 로컬모양 = (s) => ({
   점수: s.score,
   영역: s.areas ?? [],
@@ -1033,13 +1254,13 @@ function 동기화UI() {
     login.hidden = true; actions.hidden = true;
   } else if (!세션) {
     hint.textContent =
-      "로그인하면 점수와 태그가 서버에도 남아 기기를 바꿔도 이어진다. 일기 본문과 생년월일시는 올라가지 않고 이 기기에만 남는다.";
+      "로그인하면 기록이 서버에도 남아 기기를 바꿔도 이어진다. 일기 본문은 이 기기에서 잠근 뒤에만 올라가고, 생년월일시는 올라가지 않는다.";
     login.hidden = false; actions.hidden = true;
   } else {
-    hint.textContent =
-      "로그인되어 있다. 기록할 때마다 서버에 함께 올라간다. 일기 본문은 여전히 이 기기에만 있다.";
+    hint.textContent = "로그인되어 있다. 기록할 때마다 서버에 함께 올라간다.";
     login.hidden = true; actions.hidden = false;
   }
+  if (!세션) 금고그리기(null);
 }
 
 // 양쪽을 맞춘다. 같은 날짜가 겹치면 수정시각이 새것인 쪽을 쓴다.
@@ -1057,17 +1278,31 @@ async function 동기화() {
     let 내림 = 0;
     for (const s of data ?? []) {
       const r = 기록[s.date];
-      if (!r || 새것(s.updated_at, r.수정시각)) {
-        기록[s.date] = { ...(r ?? {}), ...로컬모양(s) };   // 글은 이 기기 것을 그대로 둔다
+      const 서버가새것 = !r || 새것(s.updated_at, r.수정시각);
+      if (서버가새것) {
+        기록[s.date] = { ...(r ?? {}), ...로컬모양(s) };
         내림++;
+      }
+      // 잠긴 글은 풀 수 있을 때만 받는다. 서버 쪽이 새것이거나 이 기기의 글이 비어 있을 때.
+      // 서버에 글이 없으면 이 기기의 글을 그대로 둔다.
+      if (s.note_cipher && 데이터열쇠 && (서버가새것 || !기록[s.date].글)) {
+        const 글 = await 글풀기(s.note_cipher);
+        if (글 !== null && 글 !== 기록[s.date].글) {
+          기록[s.date].글 = 글;
+          if (!서버가새것) 내림++;
+        }
       }
     }
 
+    // 이 기기 쪽이 새것이면 올린다. 서버에 글만 빠져 있는 줄도 올린다. 잠금을 처음
+    // 만들었거나 열쇠 없이 쓰던 기기가 이제 열쇠를 얻은 경우다.
     const 올릴것 = [];
     for (const [날짜, r] of Object.entries(기록)) {
       const s = 서버맵[날짜];
-      if (!s || 새것(r.수정시각, s.updated_at)) {
-        올릴것.push({ ...서버모양(날짜, r), user_id: 세션.user.id });
+      const 새로 = !s || 새것(r.수정시각, s.updated_at);
+      const 글만빠짐 = Boolean(데이터열쇠 && r.글 && s && !s.note_cipher);
+      if (새로 || 글만빠짐) {
+        올릴것.push({ ...(await 서버모양(날짜, r, s ? s.note_cipher ?? null : null)), user_id: 세션.user.id });
       }
     }
     if (올릴것.length) {
@@ -1085,11 +1320,11 @@ async function 동기화() {
 }
 
 // 기록할 때마다 그 한 줄만 조용히 올린다. 실패해도 이 기기의 기록은 그대로 남으므로
-// 화면을 막지 않는다. 다음 '지금 맞추기'에서 따라잡는다.
+// 화면을 막지 않는다. 다음 '지금 동기화'에서 따라잡는다.
 async function 서버로밀기(날짜) {
   if (!sb || !세션 || !기록[날짜]) return;
   try {
-    await sb.from("records").upsert({ ...서버모양(날짜, 기록[날짜]), user_id: 세션.user.id });
+    await sb.from("records").upsert({ ...(await 서버모양(날짜, 기록[날짜])), user_id: 세션.user.id });
   } catch {}
 }
 
@@ -1106,9 +1341,134 @@ document.getElementById("syncNow").addEventListener("click", 동기화);
 document.getElementById("syncOut").addEventListener("click", async () => {
   await sb.auth.signOut();
   세션 = null;
+  데이터열쇠 = null;
+  열쇠원본 = null;
   동기화UI();
   document.getElementById("syncMsg").textContent = "로그아웃했어. 기록은 이 기기에 그대로 있어.";
 });
+
+// ── 일기 잠금 버튼들 ──────────────────────────────────────
+const 값 = (id) => document.getElementById(id).value;
+const 비우기 = (...ids) => ids.forEach((id) => { document.getElementById(id).value = ""; });
+const 금고말 = (s) => { document.getElementById("vaultMsg").textContent = s; };
+
+// 버튼을 누르는 동안에는 막아 둔다. 열쇠를 뽑는 데 1초 안팎이 걸려 두 번 누르기 쉽다.
+async function 잠깐막고(버튼id, 일) {
+  const b = document.getElementById(버튼id);
+  b.disabled = true;
+  try { await 일(); } finally { b.disabled = false; }
+}
+
+function 새비번확인(a, b) {
+  if (a.length < 8) { 금고말("일기 비밀번호는 8자 이상으로 해줘."); return false; }
+  if (b !== undefined && a !== b) { 금고말("두 번 넣은 비밀번호가 달라."); return false; }
+  return true;
+}
+
+function 복구코드보여주기(코드) {
+  document.getElementById("vcText").textContent = 코드;
+  금고그리기("vaultCode");
+}
+
+document.getElementById("vpCreate").addEventListener("click", () => 잠깐막고("vpCreate", async () => {
+  const a = 값("vpNew"), b = 값("vpNew2");
+  if (!새비번확인(a, b)) return;
+  금고말("잠금을 만드는 중…");
+  try {
+    const 코드 = await 잠금만들기(a);
+    비우기("vpNew", "vpNew2");
+    금고말("");
+    복구코드보여주기(코드);
+    동기화();   // 지금까지 이 기기에 쓴 글을 잠가서 올린다
+  } catch (e) {
+    금고말("잠금을 만들지 못했어: " + (e?.message ?? e));
+  }
+}));
+
+document.getElementById("vcCopy").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(document.getElementById("vcText").textContent);
+    금고말("복사했어. 카톡 '나에게 보내기' 같은 곳에 붙여 둬.");
+  } catch {
+    금고말("복사가 안 됐어. 코드를 길게 눌러 직접 복사해줘.");
+  }
+});
+
+document.getElementById("vcDone").addEventListener("click", () => {
+  document.getElementById("vcText").textContent = "";
+  금고말("");
+  금고그리기("vaultReady");
+});
+
+document.getElementById("vpUnlock").addEventListener("click", () => 잠깐막고("vpUnlock", async () => {
+  if (!값("vpIn")) { 금고말("일기 비밀번호를 넣어줘."); return; }
+  금고말("여는 중…");
+  try {
+    await 비번으로열기(값("vpIn"));
+  } catch {
+    금고말("비밀번호가 맞지 않아.");
+    return;
+  }
+  비우기("vpIn");
+  금고말("풀렸어. 다른 기기에서 쓴 글을 받아올게.");
+  금고그리기("vaultReady");
+  동기화();
+}));
+
+document.getElementById("vpForgot").addEventListener("click", () => { 금고말(""); 금고그리기("vaultRecover"); });
+document.getElementById("vrBack").addEventListener("click", () => { 금고말(""); 금고그리기("vaultUnlock"); });
+
+document.getElementById("vrRun").addEventListener("click", () => 잠깐막고("vrRun", async () => {
+  if (코드다듬기(값("vrCode")).length !== 20) { 금고말("복구 코드는 20글자야. 다시 확인해줘."); return; }
+  if (!새비번확인(값("vrNew"))) return;
+  금고말("되찾는 중…");
+  try {
+    await 코드로열기(값("vrCode"), 값("vrNew"));
+  } catch {
+    금고말("복구 코드가 맞지 않아.");
+    return;
+  }
+  비우기("vrCode", "vrNew");
+  금고말("되찾았어. 이제 새 비밀번호로 열려.");
+  금고그리기("vaultReady");
+  동기화();
+}));
+
+document.getElementById("vpChange").addEventListener("click", () => {
+  const f = document.getElementById("vpChangeForm");
+  f.hidden = !f.hidden;
+  금고말("");
+});
+
+// 비밀번호는 이미 열린 기기에서 옛 비밀번호 없이 바꿀 수 있다. 데이터 열쇠를 이미
+// 쥐고 있으니 새 비밀번호로 한 번 더 잠그기만 하면 된다. 다른 기기는 새 비밀번호로 연다.
+document.getElementById("vpChangeSave").addEventListener("click", () => 잠깐막고("vpChangeSave", async () => {
+  const a = 값("vpC1"), b = 값("vpC2");
+  if (!새비번확인(a, b)) return;
+  금고말("바꾸는 중…");
+  try {
+    await 금고고치기(await 비번자물쇠(a, 열쇠원본));
+  } catch (e) {
+    금고말("바꾸지 못했어: " + (e?.message ?? e));
+    return;
+  }
+  비우기("vpC1", "vpC2");
+  document.getElementById("vpChangeForm").hidden = true;
+  금고말("바꿨어. 다른 기기에서 새로 열 때는 새 비밀번호를 넣어줘.");
+}));
+
+document.getElementById("vcRenew").addEventListener("click", () => 잠깐막고("vcRenew", async () => {
+  if (!confirm("복구 코드를 새로 만들면 예전 코드는 더는 못 써. 계속할까?")) return;
+  const 코드 = 복구코드만들기();
+  try {
+    await 금고고치기(await 코드자물쇠(코드, 열쇠원본));
+  } catch (e) {
+    금고말("만들지 못했어: " + (e?.message ?? e));
+    return;
+  }
+  금고말("");
+  복구코드보여주기(코드);
+}));
 
 if (로그인에러) {
   document.getElementById("syncBox").open = true;
@@ -1116,11 +1476,14 @@ if (로그인에러) {
 }
 
 if (sb) {
-  sb.auth.getSession().then(({ data, error }) => {
+  sb.auth.getSession().then(async ({ data, error }) => {
     if (error) document.getElementById("syncMsg").textContent = "로그인이 안 됐어 — " + error.message;
     세션 = data?.session ?? null;
     동기화UI();
-    if (세션) 동기화();
+    if (세션) {
+      await 금고확인();
+      동기화();
+    }
   });
   sb.auth.onAuthStateChange((_e, s) => { 세션 = s; 동기화UI(); });
 } else {
