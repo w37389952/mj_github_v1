@@ -180,17 +180,31 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 .saved { font-size:12px; color:var(--ink-faint); text-align:center; margin:10px 0 0; min-height:1em; }
 
-/* 접히는 자리. 오늘 화면이 주인이고 나머지는 필요할 때만 편다. */
-details { border-top:1px solid var(--line-soft); }
+/* 접히는 자리. 오늘 화면이 주인이고 나머지는 필요할 때만 편다.
+   칸마다 테두리로 감싸 한 장의 카드로 만든다. 선 한 줄로만 나누면 펴기 표시가
+   위 칸 것인지 아래 칸 것인지 헷갈린다. 제목 아래에는 지금 상태를 한 줄로 적어
+   펴지 않고도 무엇이 들어 있는지 보이게 한다. */
+.drawers { display:grid; gap:8px; margin-top:36px; }
+details { background:var(--surface); border:1px solid var(--line); border-radius:4px; }
 details > summary {
-  list-style:none; cursor:pointer; padding:18px 2px;
-  display:flex; justify-content:space-between; align-items:center;
-  font-size:11px; font-weight:600; letter-spacing:.18em; color:var(--ink-faint);
+  list-style:none; cursor:pointer; padding:14px 16px;
+  display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:14px; row-gap:3px;
+  border-radius:4px;
 }
 details > summary::-webkit-details-marker { display:none; }
-details > summary::after { content:"펴기"; font-weight:400; letter-spacing:.04em; }
-details[open] > summary::after { content:"접기"; }
-details .body { padding:0 0 26px; }
+details > summary:hover { background:var(--ground); }
+.s-title { font-size:14.5px; font-weight:600; color:var(--ink); }
+.s-meta { grid-column:1; font-size:12px; color:var(--ink-faint); }
+.s-meta.on { color:var(--mok); }
+details > summary::after {
+  content:""; grid-column:2; grid-row:1 / span 2;
+  width:8px; height:8px; margin:0 4px 4px 0;
+  border-right:1.5px solid var(--ink-soft); border-bottom:1.5px solid var(--ink-soft);
+  transform:rotate(45deg); transition:transform .15s;
+}
+details[open] > summary::after { transform:rotate(-135deg); margin:4px 4px 0 0; }
+details[open] > summary { border-bottom:1px solid var(--line-soft); border-radius:4px 4px 0 0; }
+details .body { padding:18px 16px 20px; }
 .hint { font-size:11.5px; line-height:1.75; color:var(--ink-faint); margin:0 0 16px; }
 
 .field { margin-bottom:12px; }
@@ -311,8 +325,9 @@ details .body { padding:0 0 26px; }
     <p class="why">70일이 되면 열 개의 천간이 모든 요일을 한 번씩 만난다. 월요일이라서 나빴던 것과 일진이라서 나빴던 것이 그때 비로소 갈린다.</p>
   </section>
 
+  <div class="drawers">
   <details id="pastBox">
-    <summary>지난 날 적기</summary>
+    <summary><span class="s-title">지난 날 적기</span><span class="s-meta">기억나는 날을 지금 남겨 두기</span></summary>
     <div class="body">
       <p class="hint">
         기억에 남은 날이 있으면 지금 남겨 둬. 그날 너는 운세를 모르고 하루를 보냈으니,
@@ -358,12 +373,12 @@ details .body { padding:0 0 26px; }
   </details>
 
   <details id="logBox">
-    <summary>기록 보기</summary>
+    <summary><span class="s-title">기록 보기</span><span class="s-meta" id="logMeta">아직 기록이 없어</span></summary>
     <div class="body"><div id="log"></div></div>
   </details>
 
   <details id="meBox">
-    <summary>내 정보</summary>
+    <summary><span class="s-title">내 정보</span><span class="s-meta" id="meMeta">생년월일시를 넣어줘</span></summary>
     <div class="body">
       <p class="hint">
         브라우저에만 저장된다. 서버도 로그인도 없어서 이 기기 밖으로 나가지 않는다.
@@ -402,7 +417,7 @@ details .body { padding:0 0 26px; }
   </details>
 
   <details id="syncBox">
-    <summary>동기화</summary>
+    <summary><span class="s-title">동기화</span><span class="s-meta" id="syncMeta">이 기기에만 저장 중</span></summary>
     <div class="body">
       <p class="hint" id="syncHint"></p>
       <button class="save" id="syncLogin" hidden>카카오로 로그인</button>
@@ -415,7 +430,7 @@ details .body { padding:0 0 26px; }
   </details>
 
   <details id="backupBox">
-    <summary>내보내기 · 가져오기</summary>
+    <summary><span class="s-title">내보내기 · 가져오기</span><span class="s-meta">기록을 파일로 빼 두거나 되살리기</span></summary>
     <div class="body">
       <p class="hint">
         기록은 이 브라우저 안에만 있다. 브라우저 데이터를 지우거나 기기를 바꾸면
@@ -440,6 +455,7 @@ details .body { padding:0 0 26px; }
       <p class="saved" id="impMsg"></p>
     </div>
   </details>
+  </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -511,6 +527,8 @@ function 원국계산() {
   용신 = 판정.억부.용신;
   기신 = 판정.억부.기신;
   일간오행 = 원국.일간오행;
+  document.getElementById("meMeta").textContent =
+    [원국.연주, 원국.월주, 원국.일주, 원국.시주 ?? "시주 모름"].join(" ");
 }
 
 // 임시 점수. 용신을 돕는 오행이면 올리고 기신이면 내린다.
@@ -754,6 +772,10 @@ function 기록판(prefix, 초기 = {}) {
 // ── 지난 기록 목록 ────────────────────────────────────────
 function 목록그리기() {
   const 키들 = Object.keys(기록).sort().reverse();
+  const 소급 = 키들.filter((k) => 기록[k].소급).length;
+  document.getElementById("logMeta").textContent = 키들.length
+    ? `기록 ${키들.length}개` + (소급 ? ` · 그중 소급 ${소급}개` : "")
+    : "아직 기록이 없어";
   const el = document.getElementById("log");
   if (!키들.length) {
     el.innerHTML = `<p class="empty">아직 기록이 없어. 오늘부터 시작하거나, 기억나는 지난 날을 먼저 넣어도 돼.</p>`;
@@ -998,6 +1020,10 @@ const 로컬모양 = (s) => ({
 
 function 동기화UI() {
   const hint = document.getElementById("syncHint");
+  const meta = document.getElementById("syncMeta");
+  meta.textContent = !동기화켜짐 ? "꺼짐 · 이 기기에만 저장 중"
+    : 세션 ? "카카오 로그인됨 · 서버에도 저장 중" : "로그인 안 함 · 이 기기에만 저장 중";
+  meta.classList.toggle("on", Boolean(동기화켜짐 && 세션));
   const login = document.getElementById("syncLogin");
   const actions = document.getElementById("syncActions");
 
