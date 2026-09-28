@@ -233,6 +233,11 @@
   ul.check .why { display: block; font-size: 12.5px; color: var(--ink-faint); margin-top: 2px; }
   ul.check .mark { flex-shrink: 0; }
 
+  .note.areacold { background: #fbeee4; color: #8a3b12; border: 1px solid #efc9ae; }
+  .note.areawarm { background: var(--ok-bg); color: var(--ok); }
+  @media (prefers-color-scheme: dark) {
+    .note.areacold { background: #3a2418; color: #f0b48e; border-color: #5a3422; }
+  }
   .note {
     margin-top: 10px; padding: 11px 14px; border-radius: 10px;
     background: var(--accent-soft); color: var(--accent); font-size: 13.5px;
@@ -1709,11 +1714,63 @@ function grade(total, want) {
    2. 내가 적은 말과 겹치는 주제어 — 동네에 매이지 않아 경쟁이 딴판이다.
       '합정동 카페'는 글 25만 건인데 '핸드드립'은 관심도 47.9짜리 별도 자리다.
    3. 고유명 — 가게 이름과 그 집만의 메뉴. 경쟁자가 아예 없다. */
+/* 동네가 얼마나 찾히는 동네인지. 순위보다 먼저 이것이 조회수의 천장을 정한다.
+
+   2026-09-27에 재어 보니 9/13~9/24 글 12편은 85%가 30위 안에 들었다(그 전
+   12편은 47%). 그런데 조회수는 오히려 내려갔다. 걸린 말을 보니 관심도 10이
+   넘는 말에 걸린 글은 3편뿐이었고 셋 다 연희동·서울숲이었다. 나머지 가운데
+   5편(까치산·석촌·광흥창·홍제동·약수)은 동네 자체를 잴 값이 안 나왔다.
+   1위를 해도 칠 사람이 없는 동네였다. 쓰기 전에 알려 줘야 한다. */
+function areaHeat(area) {
+  if (!KW || !KW.demand || !area) return null;
+  const a = area.trim().replace(/역$/, "");
+  const forms = [a, a.endsWith("동") ? a.slice(0, -1) : a + "동"];
+  for (const f of forms) {
+    const cafe = KW.demand[`${f} 카페`];
+    const eat = KW.demand[`${f} 맛집`];
+    if (cafe != null || eat != null) return { name: f, cafe, eat };
+  }
+  return { name: a, cafe: null, eat: null };
+}
+
+function areaNote(v) {
+  const h = areaHeat(v.area);
+  if (!h) return null;
+  const isCafe = /카페|커피|디저트|베이커리|빵/.test(v.type || "카페");
+  const want = isCafe ? h.cafe : h.eat;
+  const kind = isCafe ? "카페" : "맛집";
+  const el = document.createElement("div");
+  const top = "홍대·용산·연남동·잠실·서촌·성수동·한남동·을지로·연희동·해방촌";
+  if (want == null) {
+    el.className = "note areacold";
+    el.innerHTML = `<b>‘${h.name}’${particle(h.name, "은", "는")} 밤마다 재는 동네에 없습니다.</b> 대개 찾는 사람이 `
+      + `너무 적어서입니다. 9월 글 중 까치산·석촌·광흥창·홍제동·약수가 이랬고, `
+      + `1위를 해도 조회수는 거의 안 붙었습니다.<br>`
+      + `같은 가게라도 제목에 <b>가까운 큰 동네</b>(${top} 중)를 함께 넣을 수 있으면 넣으세요.`;
+  } else if (want < 10) {
+    el.className = "note areacold";
+    el.innerHTML = `<b>‘${h.name} ${kind}’ 관심도 ${want.toFixed(1)} — 찾는 사람이 거의 없는 동네입니다.</b> `
+      + `‘성수동 카페’가 100입니다. 1위를 해도 조회수는 거의 안 붙습니다.<br>`
+      + `가까운 큰 동네(${top} 중)를 제목에 함께 넣을 수 있으면 넣으세요.`;
+  } else if (want < 50) {
+    el.className = "note";
+    el.innerHTML = `‘${h.name} ${kind}’ 관심도 ${want.toFixed(1)} — 보통 크기의 동네입니다.`;
+  } else {
+    el.className = "note areawarm";
+    el.innerHTML = `<b>‘${h.name} ${kind}’ 관심도 ${want.toFixed(1)} — 사람이 찾는 동네입니다.</b> `
+      + `여기서 10~20위만 들어도 조회수가 붙습니다. 9월에 걸린 큰 말 셋이 전부 이런 동네였습니다.`;
+  }
+  return el;
+}
+
 function renderPicks(v) {
   const box = $("picks");
   box.innerHTML = "";
   const t = v.type || "카페";
   const rows = [];
+
+  const heatNote = areaNote(v);
+  if (heatNote) box.append(heatNote);
 
   const ranked = measuredQueries(v);
 
