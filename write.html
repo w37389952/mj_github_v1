@@ -1001,6 +1001,57 @@ function endsWithRieul(word) {
   return last % 28 === 8;                    // 종성 ㄹ
 }
 
+/* ㅣ 오른쪽에 올 구절을 모든 칸에서 뽑는다.
+
+   9월 내 제목의 오른쪽은 거의 두 꼴이다.
+     테라스 감성 즐기기 좋은 · 차분히 커피마시기 좋은 · 누구나 방문하기 좋은   (~기 좋은)
+     커피가 맛있는 · 필터커피가 맛있는                                        (~가 맛있는)
+   줄글을 아무 데서나 자르면 비문이 된다('주차는 불가 직접 내려주시는 필터 커피').
+   그런데 이 두 꼴은 틀이 정해져 있어 잘라 와도 말이 된다. 그래서 이 둘만 뽑는다.
+
+   특징 칸에 구절로 적은 것('테라스 감성 즐기기 좋은')도 전에는 검색어 꼴이
+   아니라며 본문 재료(proseBits)로만 보냈다. 오른쪽 자리에는 바로 그런 구절이 온다. */
+function titlePhrases(v) {
+  const out = [];
+  const add = p => {
+    const x = (p || "").replace(/\s+/g, " ").trim();
+    if (x.length >= 4 && x.length <= 16 && !out.includes(x)) out.push(x);
+  };
+  // 특징 칸에 이미 꾸밈 구절로 적어 둔 것은 그대로 쓴다.
+  [...(v.proseBits || []), ...v.traits].forEach(s => {
+    const x = (s || "").trim().replace(/[.!?,]+$/, "");
+    if (/(좋은|있는|맛있는|예쁜|편한|넓은|조용한|아늑한|같은|느낌의|감성의)$/.test(x)) add(x);
+  });
+
+  const text = [...(v.proseBits || []), ...v.traits,
+    v.taste, v.mood, v.seat, v.sound, v.wait, v.price, v.who, v.memo]
+    .filter(Boolean).join("\n");
+  // 앞 낱말이 '을/를'로 끝나면 조사만 떼어 붙이고('커피를 마시기' → '커피 마시기'),
+  // 다른 조사로 끝나면 그 낱말은 버린다('자리가 작업하기' → '작업하기').
+  const OBJ = /(을|를)$/;
+  const STOP = /(은|는|이|가|에|에서|도|의|로|으로|와|과|랑|이랑|하고|께|한테|보다)$/;
+  const NOT_FOOD = /^(것|거|게|이것|그것|이게|그게|다|좀|제일|더|다들|모두)$/;
+  text.split(/[.!?\n·]/).forEach(sent => {
+    const good = /((?:[가-힣A-Za-z0-9]+\s)?)([가-힣]+기)\s?(좋은|좋다|좋았다|좋았던|좋아서|좋고|좋을)/g;
+    let m;
+    while ((m = good.exec(sent)) !== null) {
+      const after = sent.slice(good.lastIndex, good.lastIndex + 10);
+      if (NEGATION.test(after)) continue;
+      let prev = m[1].trim();
+      if (prev && OBJ.test(prev)) prev = prev.replace(OBJ, "");
+      else if (prev && STOP.test(prev)) prev = "";
+      add(`${prev ? prev + " " : ""}${m[2]} 좋은`);
+    }
+    const tasty = /([가-힣]{1,8})(이|가)\s?맛있(는|다|었|어)/g;
+    while ((m = tasty.exec(sent)) !== null) {
+      const after = sent.slice(tasty.lastIndex, tasty.lastIndex + 10);
+      if (NEGATION.test(after) || NOT_FOOD.test(m[1])) continue;
+      add(`${m[1]}${m[2]} 맛있는`);
+    }
+  });
+  return out;
+}
+
 function wordsFromNotes(v) {
   const text = [v.taste, v.mood, v.seat, v.sound, v.wait, v.who, v.memo]
     .filter(Boolean).join(" ");
@@ -1296,7 +1347,9 @@ function titleCandidates(v) {
      늘 비어서, ㅣ 칸을 켜도 ㅣ가 한 번도 안 나왔다. 오른쪽은 내가 특징 칸에
      적은 구절로 채운다 — '테라스 감성 즐기기 좋은'처럼 적어 두면 그대로 쓴다. */
   if (bar && name) {
+    // '~기 좋은 · ~가 맛있는' 구절을 먼저, 그다음 특징 낱말과 메뉴를 쓴다.
     const phrases = [...new Set([
+      ...titlePhrases(v),
       ...v.traits.map(s => (s || "").trim().replace(/[.!?,]+$/, ""))
         .filter(s => s.length >= 2 && s.length <= 16),
       special ? `${special} 맛집` : "",
@@ -1307,22 +1360,33 @@ function titleCandidates(v) {
       [v.station || v.area, t, name],
       [v.area, t, name],
     ];
+    /* 채우는 말은 구절과 업종 사이에 넣는다. 내 제목이 그 차례다 —
+       '즐기기 좋은 [쇼룸 겸] 카페', '커피마시기 좋은 [로컬 감성] 카페'.
+       특징 칸의 꾸밈 낱말만 쓴다. 메뉴 이름이나 줄글 낱말로 메우면
+       '필터커피가 맛있는 휘낭시에 노트북 카페'처럼 말이 안 된다.
+       모자라면 안 채운다 — 서른 자가 안 돼도 말이 되는 쪽이 낫다. */
+    const traitWords = [...new Set(v.traits.map(asWord).filter(Boolean))];
     const barTaken = new Set();
     for (let k = 0; k < Math.min(3, phrases.length); k++) {
       const L = clean(lefts[k]);
       const phrase = phrases[k];
-      let R = phrase.endsWith(t) || /맛집$|집$|바$/.test(phrase) && t !== "카페"
-        ? phrase : `${phrase} ${t}`;
-      // 짧으면 아직 안 쓴 말을 구절 앞에 하나둘 더 얹는다.
-      for (const bit of spare) {
-        if ((L + "ㅣ " + R).length + emoji.length >= LEN_FILL) break;
-        const flat = (L + R).replace(/\s/g, "");
-        if (barTaken.has(bit) || flat.includes(bit.replace(/\s/g, ""))) continue;
-        const wider = `${bit} ${R}`;
-        if ((L + "ㅣ " + wider).length + emoji.length > LEN_MAX) continue;
-        R = wider;
+      const ends = phrase.endsWith(t) || (/맛집$|집$|바$/.test(phrase) && t !== "카페");
+      const mids = [];
+      const make = () => ends ? [phrase, ...mids].join(" ")
+                              : [phrase, ...mids, t].join(" ");
+      // 다른 후보가 안 쓴 낱말을 먼저 집는다. 다 쓰였으면 다시 써도 된다.
+      const fillPool = [...traitWords.filter(w => !barTaken.has(w)),
+                        ...traitWords.filter(w => barTaken.has(w))];
+      for (const bit of fillPool) {
+        if ((L + "ㅣ " + make()).length + emoji.length >= LEN_MIN) break;
+        if (mids.length >= 2) break;
+        const flat = (L + make()).replace(/\s/g, "");
+        if (flat.includes(bit.replace(/\s/g, ""))) continue;
+        mids.push(bit);
+        if ((L + "ㅣ " + make()).length + emoji.length > LEN_MAX) { mids.pop(); continue; }
         barTaken.add(bit);
       }
+      const R = make();
       const x = `${L}ㅣ${emoji} ${R}`;
       if (x.length > LEN_MAX + emoji.length) continue;
       if (!out.some(o => o.title === x)) out.push({ title: x, why: "ㅣ로 나눈 꼴" });
