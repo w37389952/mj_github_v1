@@ -7,6 +7,7 @@
 이 단계가 통째로 건너뛴다.
 """
 
+import html as htmllib
 import json
 import os
 import re
@@ -21,7 +22,10 @@ DATA = ROOT / "data"
 
 BLOG_ID = os.environ.get("MY_BLOG_IDS", "haranalice").split(",")[0].strip()
 HOW_MANY = int(os.environ.get("STYLE_SAMPLE_COUNT", "3"))
-MAX_CHARS = int(os.environ.get("STYLE_SAMPLE_CHARS", "1800"))
+# 한 편을 통째로 보여 준다. 1800자로 자르던 때는 정보 칸과 도입부만 담기고
+# 내부 묘사·메뉴·마무리 추천 문장이 잘려, 정작 본문의 결을 못 보여 줬다.
+# 내 글은 2천 자 안팎이다.
+MAX_CHARS = int(os.environ.get("STYLE_SAMPLE_CHARS", "4000"))
 
 # 협찬·초대 글은 말투가 평소와 다르다. 흉내 낼 본보기로 삼으면 안 된다.
 SPONSORED = [
@@ -62,16 +66,44 @@ def recent(limit):
 
 
 def body_of(log_no):
-    """글 본문을 글자만 남겨 뽑는다."""
+    """글 본문을 줄 모양 그대로 뽑는다.
+
+    전에는 공백을 모두 한 칸으로 뭉쳐 글 한 편이 한 줄이 되었다. 그런데 내 글의
+    결은 줄 모양에 있다 — 한 줄에 한 구절, 줄마다 빈 줄, 가운데 정렬. 약수역
+    엔프트커피 글이 2,133자에 83줄이다. 그걸 한 덩어리로 보여 주니 모델은
+    서너 줄짜리 문단으로 이어 썼고, 사용자가 '여전히 수필 같다'고 했다.
+    그래서 문단(<p>) 하나를 한 줄로 살리고, 빈 문단은 빈 줄로 둔다.
+    """
     html = fetch(f"https://m.blog.naver.com/{BLOG_ID}/{log_no}", HEADERS)
     body = re.search(r"(?s)se-main-container(.*)", html)
     if not body:
         return ""
     text = re.sub(r"(?s)<(script|style).*?</\1>", " ", body.group(1))
-    text = re.sub(r"<[^>]+>", " ", text)
-    text = (text.replace("&nbsp;", " ").replace("&amp;", "&")
-                .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"'))
-    return re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"(?i)</p>|<br\s*/?>", "\n", text)
+    text = re.sub(r'(?i)<div class="se-component ', '\n<div class="', text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = htmllib.unescape(text).replace("​", "")
+    # 'se-main-container">'에서 잘랐으므로 여는 꺾쇠 찌꺼기가 맨 앞에 남는다.
+    text = text.lstrip()
+    if text.startswith('">'):
+        text = text[2:]
+
+    lines = []
+    blank = False
+    for raw in text.split("\n"):
+        line = re.sub(r"[ \t\r\xa0]+", " ", raw).strip()
+        # 본문 뒤에 붙는 글 정보(JSON)부터는 글이 아니다.
+        if line.startswith('{"title"'):
+            break
+        # 지도 칸의 버튼 글자와 여는 꺾쇠 찌꺼기는 버린다.
+        if not line or line in ('">', "이 블로그의 체크인", "이 장소의 다른 글"):
+            blank = True
+            continue
+        if lines and blank:
+            lines.append("")
+        blank = False
+        lines.append(line)
+    return "\n".join(lines).strip()
 
 
 def main():
@@ -105,7 +137,9 @@ def main():
             time.sleep(0.4)
             continue
 
-        samples.append({"title": title, "body": text[:MAX_CHARS]})
+        # 자를 때는 줄 끝에서 자른다. 줄 가운데서 끊으면 그 줄이 말이 안 된다.
+        cut = text if len(text) <= MAX_CHARS else text[:MAX_CHARS].rsplit("\n", 1)[0]
+        samples.append({"title": title, "body": cut})
         print(f"  담음: {title[:40]} ({len(text)}자 중 앞 {MAX_CHARS}자)")
         time.sleep(0.6)
 
