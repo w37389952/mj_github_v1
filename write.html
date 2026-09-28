@@ -233,6 +233,11 @@
   ul.check .why { display: block; font-size: 12.5px; color: var(--ink-faint); margin-top: 2px; }
   ul.check .mark { flex-shrink: 0; }
 
+  .note.areacold { background: #fbeee4; color: #8a3b12; border: 1px solid #efc9ae; }
+  .note.areawarm { background: var(--ok-bg); color: var(--ok); }
+  @media (prefers-color-scheme: dark) {
+    .note.areacold { background: #3a2418; color: #f0b48e; border-color: #5a3422; }
+  }
   .note {
     margin-top: 10px; padding: 11px 14px; border-radius: 10px;
     background: var(--accent-soft); color: var(--accent); font-size: 13.5px;
@@ -584,9 +589,10 @@ function load() {
           renderPicks(v); renderCompetition(v);
           $("prompt").textContent = buildPrompt(v, titleCandidates(v));
           const tags = buildTags(v);
-          $("tags").textContent = tags.map(x => "#" + x).join(" ");
-          $("tagCount").textContent = `${tags.length}개 / 최대 30개`;
-          $("tags").dataset.plain = tags.join(",");
+          $("tags").textContent = tags.slice(0, TAG_LIMIT).map(x => "#" + x).join(" ");
+          $("tagCount").textContent = `후보 ${tags.length}개 · 한 줄 복사는 앞 ${TAG_LIMIT}개`;
+          $("tags").dataset.plain = tags.slice(0, TAG_LIMIT).join(",");
+          drawTagChips(tags);
         } else {
           render({ quiet: true });
         }
@@ -995,6 +1001,57 @@ function endsWithRieul(word) {
   return last % 28 === 8;                    // 종성 ㄹ
 }
 
+/* ㅣ 오른쪽에 올 구절을 모든 칸에서 뽑는다.
+
+   9월 내 제목의 오른쪽은 거의 두 꼴이다.
+     테라스 감성 즐기기 좋은 · 차분히 커피마시기 좋은 · 누구나 방문하기 좋은   (~기 좋은)
+     커피가 맛있는 · 필터커피가 맛있는                                        (~가 맛있는)
+   줄글을 아무 데서나 자르면 비문이 된다('주차는 불가 직접 내려주시는 필터 커피').
+   그런데 이 두 꼴은 틀이 정해져 있어 잘라 와도 말이 된다. 그래서 이 둘만 뽑는다.
+
+   특징 칸에 구절로 적은 것('테라스 감성 즐기기 좋은')도 전에는 검색어 꼴이
+   아니라며 본문 재료(proseBits)로만 보냈다. 오른쪽 자리에는 바로 그런 구절이 온다. */
+function titlePhrases(v) {
+  const out = [];
+  const add = p => {
+    const x = (p || "").replace(/\s+/g, " ").trim();
+    if (x.length >= 4 && x.length <= 16 && !out.includes(x)) out.push(x);
+  };
+  // 특징 칸에 이미 꾸밈 구절로 적어 둔 것은 그대로 쓴다.
+  [...(v.proseBits || []), ...v.traits].forEach(s => {
+    const x = (s || "").trim().replace(/[.!?,]+$/, "");
+    if (/(좋은|있는|맛있는|예쁜|편한|넓은|조용한|아늑한|같은|느낌의|감성의)$/.test(x)) add(x);
+  });
+
+  const text = [...(v.proseBits || []), ...v.traits,
+    v.taste, v.mood, v.seat, v.sound, v.wait, v.price, v.who, v.memo]
+    .filter(Boolean).join("\n");
+  // 앞 낱말이 '을/를'로 끝나면 조사만 떼어 붙이고('커피를 마시기' → '커피 마시기'),
+  // 다른 조사로 끝나면 그 낱말은 버린다('자리가 작업하기' → '작업하기').
+  const OBJ = /(을|를)$/;
+  const STOP = /(은|는|이|가|에|에서|도|의|로|으로|와|과|랑|이랑|하고|께|한테|보다)$/;
+  const NOT_FOOD = /^(것|거|게|이것|그것|이게|그게|다|좀|제일|더|다들|모두)$/;
+  text.split(/[.!?\n·]/).forEach(sent => {
+    const good = /((?:[가-힣A-Za-z0-9]+\s)?)([가-힣]+기)\s?(좋은|좋다|좋았다|좋았던|좋아서|좋고|좋을)/g;
+    let m;
+    while ((m = good.exec(sent)) !== null) {
+      const after = sent.slice(good.lastIndex, good.lastIndex + 10);
+      if (NEGATION.test(after)) continue;
+      let prev = m[1].trim();
+      if (prev && OBJ.test(prev)) prev = prev.replace(OBJ, "");
+      else if (prev && STOP.test(prev)) prev = "";
+      add(`${prev ? prev + " " : ""}${m[2]} 좋은`);
+    }
+    const tasty = /([가-힣]{1,8})(이|가)\s?맛있(는|다|었|어)/g;
+    while ((m = tasty.exec(sent)) !== null) {
+      const after = sent.slice(tasty.lastIndex, tasty.lastIndex + 10);
+      if (NEGATION.test(after) || NOT_FOOD.test(m[1])) continue;
+      add(`${m[1]}${m[2]} 맛있는`);
+    }
+  });
+  return out;
+}
+
 function wordsFromNotes(v) {
   const text = [v.taste, v.mood, v.seat, v.sound, v.wait, v.who, v.memo]
     .filter(Boolean).join(" ");
@@ -1281,6 +1338,61 @@ function titleCandidates(v) {
     : ["", "", "", "", ""];
   const T = i => (tails[i] ? [tails[i]] : []);
 
+  /* ㅣ 로 나눈 꼴. 9월 들어 내 제목은 거의 다 이 꼴이다.
+       홍제동 카페 레저ㅣ 차분히 커피마시기 좋은 로컬 감성 카페
+       광흥창역 맛집 시루밥ㅣ 집밥같은 아기자기한 감성의 콩나물밥집
+     왼쪽은 '동네(또는 역) 업종 가게이름', 오른쪽은 꾸밈 구절에 업종을 한 번 더.
+
+     전에는 ㅣ를 '후기·추천' 꼬리를 붙일 때만 넣었다. 그 칸을 안 켜면 오른쪽이
+     늘 비어서, ㅣ 칸을 켜도 ㅣ가 한 번도 안 나왔다. 오른쪽은 내가 특징 칸에
+     적은 구절로 채운다 — '테라스 감성 즐기기 좋은'처럼 적어 두면 그대로 쓴다. */
+  if (bar && name) {
+    // '~기 좋은 · ~가 맛있는' 구절을 먼저, 그다음 특징 낱말과 메뉴를 쓴다.
+    const phrases = [...new Set([
+      ...titlePhrases(v),
+      ...v.traits.map(s => (s || "").trim().replace(/[.!?,]+$/, ""))
+        .filter(s => s.length >= 2 && s.length <= 16),
+      special ? `${special} 맛집` : "",
+      ...proven,
+    ].filter(Boolean))];
+    const lefts = [
+      [v.area, t, name],
+      [v.station || v.area, t, name],
+      [v.area, t, name],
+    ];
+    /* 채우는 말은 구절과 업종 사이에 넣는다. 내 제목이 그 차례다 —
+       '즐기기 좋은 [쇼룸 겸] 카페', '커피마시기 좋은 [로컬 감성] 카페'.
+       특징 칸의 꾸밈 낱말만 쓴다. 메뉴 이름이나 줄글 낱말로 메우면
+       '필터커피가 맛있는 휘낭시에 노트북 카페'처럼 말이 안 된다.
+       모자라면 안 채운다 — 서른 자가 안 돼도 말이 되는 쪽이 낫다. */
+    const traitWords = [...new Set(v.traits.map(asWord).filter(Boolean))];
+    const barTaken = new Set();
+    for (let k = 0; k < Math.min(3, phrases.length); k++) {
+      const L = clean(lefts[k]);
+      const phrase = phrases[k];
+      const ends = phrase.endsWith(t) || (/맛집$|집$|바$/.test(phrase) && t !== "카페");
+      const mids = [];
+      const make = () => ends ? [phrase, ...mids].join(" ")
+                              : [phrase, ...mids, t].join(" ");
+      // 다른 후보가 안 쓴 낱말을 먼저 집는다. 다 쓰였으면 다시 써도 된다.
+      const fillPool = [...traitWords.filter(w => !barTaken.has(w)),
+                        ...traitWords.filter(w => barTaken.has(w))];
+      for (const bit of fillPool) {
+        if ((L + "ㅣ " + make()).length + emoji.length >= LEN_MIN) break;
+        if (mids.length >= 2) break;
+        const flat = (L + make()).replace(/\s/g, "");
+        if (flat.includes(bit.replace(/\s/g, ""))) continue;
+        mids.push(bit);
+        if ((L + "ㅣ " + make()).length + emoji.length > LEN_MAX) { mids.pop(); continue; }
+        barTaken.add(bit);
+      }
+      const R = make();
+      const x = `${L}ㅣ${emoji} ${R}`;
+      if (x.length > LEN_MAX + emoji.length) continue;
+      if (!out.some(o => o.title === x)) out.push({ title: x, why: "ㅣ로 나눈 꼴" });
+    }
+  }
+
   // ① 특징을 꾸밈말 자리에 — 내가 가장 자주 쓰는 꼴이다
   if (trait1) push("특징을 앞세움", [v.area, asWord(trait1), t, name], T(0));
   // ② 그 집만의 메뉴를 꾸밈말 자리에 — '파블로바 맛집 카페 틈틈틈'
@@ -1360,6 +1472,7 @@ function buildTags(v) {
      '서울숲카페', '서울숲카페추천'. 가게 이름과 그 집만의 메뉴는 예외다.
      그건 경쟁자가 없어 홀로도 1위를 먹는다. */
   const stationArea = (v.station || "").replace(/역$/, "");
+  const short = shortArea(v.area);           // 성수동 → 성수. 줄여 쓰는 게 확인된 것만
   const base = [
     v.name, special,
     ...areaCombos,
@@ -1373,6 +1486,31 @@ function buildTags(v) {
     "신상카페", "내돈내산", "솔직후기",
     "데이트코스", `${v.area}데이트`,
     "모임장소", "가볼만한곳", "서울가볼만한곳",
+
+    /* 여기부터는 골라 쓰라고 넉넉히 내놓는 후보다. 네이버는 30개까지 받는데
+       위의 것만으로는 스무 개 남짓이라 칸이 남았다. 늘리되 검색어 꼴만 넣는다.
+
+       2026-09-16 유입분석에서 실제로 들어온 사람이 친 말의 꼴을 그대로 쓴다:
+         줄인 동네 + 가게 이름 — 성수미유 · 망원녹취록 · 용산코르츠
+         가게 이름 + 업종      — 미유카페 · 녹취록카페
+         줄인 동네 + 업종      — 문래카페 · 삼각지카페
+         메뉴 + 맛집           — 샌드위치맛집 · 나폴리탄스파게티맛집
+         동네 + 메뉴           — 문래파르페 */
+    short ? `${short}${t}` : "",
+    short && v.name ? `${short}${v.name}` : "",
+    v.name ? `${v.name}${t}` : "",
+    special ? `${special}맛집` : "",
+    special && short ? `${short}${special}` : "",
+    special ? `${v.area}${special}` : "",
+    ...v.menus.filter(m => m !== special && !COMMON_MENUS.has(m.replace(/\s/g, "")))
+      .map(m => `${m}맛집`),
+    `${v.area}신상${t}`, `서울신상${t}`, `서울${t}추천`,
+    `${v.area}가볼만한곳`, `${v.area}데이트코스`,
+    stationArea ? `${stationArea}${t}추천` : "",
+    stationArea ? `${stationArea}가볼만한곳` : "",
+    v.near ? `${v.near}가볼만한곳` : "",
+    t === "카페" ? `${v.area}카페투어` : "",
+    t === "카페" ? "서울카페투어" : "",
   ];
 
   /* 홀로 선 동네·역·업종 이름이 다른 길로 끼어들 수도 있다(특징 칸에 '성수동'을
@@ -1408,7 +1546,8 @@ function buildTags(v) {
     return (known[tag] != null || known[spaced] != null) ? 1 : 2;
   };
   tags.sort((a, b) => rank(a) - rank(b));
-  return tags.slice(0, 30);
+  // 한 줄 복사는 앞 30개만 쓴다(TAG_LIMIT). 칩에는 넉넉히 보여 골라 쓰게 한다.
+  return tags.slice(0, 50);
 }
 
 function buildPrompt(v, cands) {
@@ -1444,8 +1583,26 @@ ${[["영업시간", v.hours], ["주차", v.park], ["위치 / 인스타", v.insta
   찾은 사람들을 자연스럽게 쉬게 만든다." — 무엇을 봤는지가 없다.
   좋은 보기: "옅은 회색 벽에 우드 테이블을 놓았다. 의자는 등받이가 낮아
   오래 앉기보다 잠깐 쉬어 가는 자리에 가까웠다."
-- **줄을 짧게 끊어 쓴다.** 한 문장을 두세 줄로 나눠 적는 일이 잦다.
-  긴 문장을 한 줄에 몰아 쓰면 내 글이 아니다.
+- **줄 모양이 가장 중요하다. 한 줄에 한 구절(15~25자), 줄마다 빈 줄 하나.**
+  한 문장은 두세 줄에 나눠 적는다. 네이버 에디터에서 가운데 정렬로 올리는
+  글이라 휴대폰 화면에 한 줄씩 떨어져 보여야 한다. 서너 문장을 이어 붙인
+  문단은 이 블로그에 한 번도 없다. 실제 내 글이 이렇게 생겼다:
+
+    들어서자마자 긴 공용테이블과
+
+    우드 카운터 바가 눈길을 사로잡는 공간.
+
+    세로가 긴 직사각형 형태의 하늘색 테이블은
+
+    다른 사람들과 함께 합석해야 하는 구조.
+
+    의자 모양이 제각각 개성이 있어
+
+    어딘가 모르게 개성있는 전시회에 온 듯한 기분.
+
+  틀린 꼴(쓰지 마라): "남가좌동의 골목길을 따라 걷다 보면 만나는 소토.
+  노출콘크리트 건물의 1층에 자리한 이곳은 큰 간판보다는 작고 차분한
+  느낌으로 가게를 소개하고 있었다. 입구에서부터 …" — 수필이다.
 
 - 맺음은 2026-09-10에 내 글 60편(본문 2,434줄)을 세어 얻은 것이다.
   비율까지 맞출 것은 없지만, 어느 쪽이 몸통인지는 지켜라.
@@ -1482,7 +1639,8 @@ ${[["영업시간", v.hours], ["주차", v.park], ["위치 / 인스타", v.insta
       풀이하는 말투를 쓰지 마라. 본 것을 적고 끝내거나 '~할 듯'으로 남긴다.
 
 - 한 가지 맺음이 세 줄 넘게 이어지면 안 된다.
-- 한 문단은 네 줄에서 여섯 줄. 문단마다 하나의 이야기만 담아라.
+- 같은 이야기를 담은 한 덩어리는 짧은 줄 네~여덟 개다(줄마다 빈 줄).
+  덩어리마다 하나의 이야기만 담아라. '줄'은 문장이 아니라 위 보기의 한 줄이다.
 - 미사여구를 겹치지 마라. '고즈넉함을 준다', '성의가 느껴지는 곳' 같은
   뭉뚱그린 말 대신 무엇을 보고 그렇게 생각했는지를 적어라.
 
@@ -1491,7 +1649,7 @@ ${[["영업시간", v.hours], ["주차", v.park], ["위치 / 인스타", v.insta
 - 길이는 없는 말을 지어내서가 아니라, **내가 적은 것을 하나도 빠뜨리지 않고
   하나씩 풀어 써서** 채운다. 내가 채운 칸은 저마다 한 문단 이상이 된다.
   한 칸을 한 줄로 요약하고 넘어가면 글이 절반으로 줄어든다.
-- 한 문단은 네 줄에서 여섯 줄. 두 줄짜리 문단을 늘어놓지 마라.
+- 한 덩어리는 짧은 줄 네~여덟 개. 두 줄로 끝나는 덩어리를 늘어놓지 마라.
 - 풀어 쓴다는 것은: 무엇이 있었는지 → 그래서 어땠는지 → 그때 든 생각.
   '조명이 낮았다'로 끝내지 말고, 낮아서 무엇이 어떻게 보였고 그 자리에
   앉아 있는 기분이 어땠는지까지 쓴다.
@@ -1709,11 +1867,63 @@ function grade(total, want) {
    2. 내가 적은 말과 겹치는 주제어 — 동네에 매이지 않아 경쟁이 딴판이다.
       '합정동 카페'는 글 25만 건인데 '핸드드립'은 관심도 47.9짜리 별도 자리다.
    3. 고유명 — 가게 이름과 그 집만의 메뉴. 경쟁자가 아예 없다. */
+/* 동네가 얼마나 찾히는 동네인지. 순위보다 먼저 이것이 조회수의 천장을 정한다.
+
+   2026-09-27에 재어 보니 9/13~9/24 글 12편은 85%가 30위 안에 들었다(그 전
+   12편은 47%). 그런데 조회수는 오히려 내려갔다. 걸린 말을 보니 관심도 10이
+   넘는 말에 걸린 글은 3편뿐이었고 셋 다 연희동·서울숲이었다. 나머지 가운데
+   5편(까치산·석촌·광흥창·홍제동·약수)은 동네 자체를 잴 값이 안 나왔다.
+   1위를 해도 칠 사람이 없는 동네였다. 쓰기 전에 알려 줘야 한다. */
+function areaHeat(area) {
+  if (!KW || !KW.demand || !area) return null;
+  const a = area.trim().replace(/역$/, "");
+  const forms = [a, a.endsWith("동") ? a.slice(0, -1) : a + "동"];
+  for (const f of forms) {
+    const cafe = KW.demand[`${f} 카페`];
+    const eat = KW.demand[`${f} 맛집`];
+    if (cafe != null || eat != null) return { name: f, cafe, eat };
+  }
+  return { name: a, cafe: null, eat: null };
+}
+
+function areaNote(v) {
+  const h = areaHeat(v.area);
+  if (!h) return null;
+  const isCafe = /카페|커피|디저트|베이커리|빵/.test(v.type || "카페");
+  const want = isCafe ? h.cafe : h.eat;
+  const kind = isCafe ? "카페" : "맛집";
+  const el = document.createElement("div");
+  const top = "홍대·용산·연남동·잠실·서촌·성수동·한남동·을지로·연희동·해방촌";
+  if (want == null) {
+    el.className = "note areacold";
+    el.innerHTML = `<b>‘${h.name}’${particle(h.name, "은", "는")} 밤마다 재는 동네에 없습니다.</b> 대개 찾는 사람이 `
+      + `너무 적어서입니다. 9월 글 중 까치산·석촌·광흥창·홍제동·약수가 이랬고, `
+      + `1위를 해도 조회수는 거의 안 붙었습니다.<br>`
+      + `같은 가게라도 제목에 <b>가까운 큰 동네</b>(${top} 중)를 함께 넣을 수 있으면 넣으세요.`;
+  } else if (want < 10) {
+    el.className = "note areacold";
+    el.innerHTML = `<b>‘${h.name} ${kind}’ 관심도 ${want.toFixed(1)} — 찾는 사람이 거의 없는 동네입니다.</b> `
+      + `‘성수동 카페’가 100입니다. 1위를 해도 조회수는 거의 안 붙습니다.<br>`
+      + `가까운 큰 동네(${top} 중)를 제목에 함께 넣을 수 있으면 넣으세요.`;
+  } else if (want < 50) {
+    el.className = "note";
+    el.innerHTML = `‘${h.name} ${kind}’ 관심도 ${want.toFixed(1)} — 보통 크기의 동네입니다.`;
+  } else {
+    el.className = "note areawarm";
+    el.innerHTML = `<b>‘${h.name} ${kind}’ 관심도 ${want.toFixed(1)} — 사람이 찾는 동네입니다.</b> `
+      + `여기서 10~20위만 들어도 조회수가 붙습니다. 9월에 걸린 큰 말 셋이 전부 이런 동네였습니다.`;
+  }
+  return el;
+}
+
 function renderPicks(v) {
   const box = $("picks");
   box.innerHTML = "";
   const t = v.type || "카페";
   const rows = [];
+
+  const heatNote = areaNote(v);
+  if (heatNote) box.append(heatNote);
 
   const ranked = measuredQueries(v);
 
@@ -2052,9 +2262,9 @@ function render(opts) {
   refreshTitleCost();
 
   const tags = buildTags(v);
-  $("tags").textContent = tags.map(x => "#" + x).join(" ");
-  $("tagCount").textContent = `${tags.length}개 / 최대 30개`;
-  $("tags").dataset.plain = tags.join(",");
+  $("tags").textContent = tags.slice(0, TAG_LIMIT).map(x => "#" + x).join(" ");
+  $("tagCount").textContent = `후보 ${tags.length}개 · 한 줄 복사는 앞 ${TAG_LIMIT}개`;
+  $("tags").dataset.plain = tags.slice(0, TAG_LIMIT).join(",");
   drawTagChips(tags);
 
   $("out").classList.add("show");
@@ -2069,37 +2279,58 @@ function render(opts) {
 let TAGS = [];
 let tagAt = 0;
 
+/* 넣은 태그를 순서가 아니라 낱낱이 기억한다.
+
+   전에는 몇 번째까지 넣었는지만 셌다. 그래서 다섯 번째 칩을 누르면 앞의 넷이
+   안 넣었는데도 '넣음'으로 흐려졌다. 후보를 넉넉히 내놓고 골라 쓰게 하려면
+   건너뛸 수 있어야 한다. 네이버는 한 글에 30개까지다. */
+const TAG_LIMIT = 30;
+const USED_TAGS = new Set();
+
+function nextUnusedTag() {
+  return TAGS.find(t => !USED_TAGS.has(t));
+}
+
 function drawTagChips(tags) {
   TAGS = tags.slice();
   tagAt = 0;
+  USED_TAGS.clear();
   drawTagState();
 }
 
 function drawTagState() {
   const box = $("tagChips");
   box.innerHTML = "";
-  TAGS.forEach((tag, i) => {
+  const next = nextUnusedTag();
+  const full = USED_TAGS.size >= TAG_LIMIT;
+  TAGS.forEach(tag => {
+    const used = USED_TAGS.has(tag);
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "chip" + (i < tagAt ? "" : i === tagAt ? " hot" : "");
-    b.style.opacity = i < tagAt ? "0.4" : "1";
-    b.textContent = (i < tagAt ? "✓ " : "") + "#" + tag;
+    b.className = "chip" + (!used && tag === next && !full ? " hot" : "");
+    b.style.opacity = used ? "0.4" : full ? "0.6" : "1";
+    b.textContent = (used ? "✓ " : "") + "#" + tag;
     /* 화면에는 #을 붙여 보여 주되, 복사할 때는 뗀다. 네이버 태그란은
        낱말만 치면 앞에 #을 알아서 붙이고, 스페이스를 누르면 다음 칸으로
        넘어간다. #까지 붙여 넣으면 ##이 된다. */
-    b.title = "누르면 이 태그만 복사합니다 (# 없이)";
+    b.title = used ? "넣은 것으로 표시됨 — 다시 누르면 표시를 풉니다"
+                   : "누르면 이 태그만 복사합니다 (# 없이)";
     b.addEventListener("click", () => {
-      copyText(tag);
-      tagAt = i + 1;
+      if (used) {
+        USED_TAGS.delete(tag);
+      } else {
+        copyText(tag);
+        USED_TAGS.add(tag);
+      }
       drawTagState();
     });
     box.append(b);
   });
-  $("tagProgress").textContent = TAGS.length
-    ? (tagAt >= TAGS.length ? `${TAGS.length}개를 다 넣었습니다`
-        : `${tagAt} / ${TAGS.length}개 넣음 · 다음은 #${TAGS[tagAt]}`)
-    : "";
-  $("nextTag").disabled = tagAt >= TAGS.length;
+  $("tagProgress").textContent = !TAGS.length ? ""
+    : full ? `${TAG_LIMIT}개를 다 채웠습니다 — 네이버는 한 글에 ${TAG_LIMIT}개까지입니다`
+    : `${USED_TAGS.size} / ${TAG_LIMIT}개 넣음 · 후보 ${TAGS.length}개 중 골라 쓰세요`
+      + (next ? ` · 다음은 #${next}` : "");
+  $("nextTag").disabled = !next || full;
 }
 
 function copyText(text) {
@@ -2828,7 +3059,9 @@ function styleBlock() {
 [내가 전에 쓴 글 — 이 결을 그대로 따라라]
 아래는 내가 실제로 쓴 글이다. 규칙을 읽는 것보다 이 글을 읽는 것이 빠르다.
 따라야 할 것은 소재가 아니라 결이다:
-- 문장의 길이와 리듬. 짧게 끊는 자리와 길게 이어 가는 자리.
+- **줄 모양. 아래 글의 줄바꿈과 빈 줄을 그대로 따라라.** 한 줄에 한 구절이고
+  줄마다 빈 줄이 있다. 여러 문장을 한 문단으로 이어 붙인 자리는 한 곳도 없다.
+- 문장의 길이와 리듬. 한 문장을 몇 줄에 나눠 끊는지.
 - 무엇을 관찰로 적고 무엇을 느낌으로 적는지, 그 사이의 비율.
 - 정보 블록과 <요약> ✔ 줄의 생김새.
 - 감정을 드러내는 세기. 넘치지도 밋밋하지도 않은 그 정도.
@@ -3383,15 +3616,15 @@ $("clear").addEventListener("click", () => {
 $("copyPrompt").addEventListener("click", e => copy($("prompt").textContent, e.target, "지시문 복사"));
 $("copyTags").addEventListener("click", e => copy($("tags").textContent, e.target, "전부 한 줄로 복사"));
 $("nextTag").addEventListener("click", e => {
-  if (tagAt >= TAGS.length) return;
-  const tag = TAGS[tagAt];
+  const tag = nextUnusedTag();
+  if (!tag || USED_TAGS.size >= TAG_LIMIT) return;
   copyText(tag);                       // #은 네이버가 붙인다
-  tagAt += 1;
+  USED_TAGS.add(tag);
   drawTagState();
   e.target.textContent = `${tag} 복사됨 — 붙여넣고 스페이스`;
   setTimeout(() => { e.target.textContent = "다음 태그 복사"; }, 1400);
 });
-$("resetTag").addEventListener("click", () => { tagAt = 0; drawTagState(); });
+$("resetTag").addEventListener("click", () => { USED_TAGS.clear(); drawTagState(); });
 F.forEach(id => $(id).addEventListener("change", save));
 
 load();
