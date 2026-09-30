@@ -112,7 +112,29 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .todo-proj .cnt { margin-left: auto; color: var(--text-3); font-weight: 500; font-size: 12px; }
 .todo-list li { display: flex; gap: 9px; align-items: flex-start; padding: 6px 0; border-top: 1px solid var(--line-soft); }
 .todo-list li:first-child { border-top: 0; }
-.todo-list .check { width: 14px; height: 14px; border: 1.5px solid var(--text-3); border-radius: 4px; flex: none; margin-top: 3px; }
+.todo-list .check { width: 16px; height: 16px; margin: 2px 0 0; flex: none; accent-color: var(--accent); cursor: pointer; }
+.todo-list li.done .t > .tt { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--text-3); }
+.todo-list li.done .meta { opacity: .6; }
+.todo-list li.saving { opacity: .6; }
+
+.sync { margin-left: auto; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.sync.on { color: var(--good); }
+.sync + .filters { margin-left: 0; }
+.modal { position: fixed; inset: 0; background: rgba(10,12,18,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+.modal[hidden] { display: none; }
+.modal-box { width: 100%; max-width: 520px; padding: 18px 20px; max-height: 90vh; overflow: auto; }
+.modal-box h3 { margin: 0 0 8px; font-size: 16px; }
+.modal-box p, .modal-box ol { font-size: 13px; color: var(--text-2); margin: 6px 0; }
+.modal-box ol { padding-left: 20px; }
+.modal-box li { margin: 3px 0; }
+.modal-box code { font-size: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.modal-box .small { font-size: 12px; color: var(--text-3); }
+.modal-box input { width: 100%; font: inherit; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); margin-top: 8px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+.modal-actions button { border-radius: 8px; padding: 7px 14px; font-weight: 600; font-size: 13px; border: 1px solid var(--line); background: var(--panel); }
+.modal-actions .primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 9px 14px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 30; max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; }
 .todo-list .t { flex: 1; min-width: 0; }
 .todo-list .meta { color: var(--text-3); font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .empty { color: var(--text-3); font-size: 13px; padding: 10px 0 14px; }
@@ -206,6 +228,7 @@ tr.done td.title { text-decoration: line-through; }
       <h1>작업 현황판</h1>
       <div class="sub" id="updated">불러오는 중…</div>
     </div>
+    <button class="sync" id="syncBtn" type="button"></button>
     <div class="filters" id="filters" role="tablist" aria-label="그룹">
       <button data-g="all" class="on">전체</button>
       <button data-g="코드">코드</button>
@@ -215,6 +238,31 @@ tr.done td.title { text-decoration: line-through; }
 
   <div id="root"></div>
 </div>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-box panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">체크를 저장소에 저장하기</h3>
+    <p>체크한 할 일을 저장소의 <code>dashboard/checks.json</code>에 적어 두면, 다른 기기와 Claude 창도 끝난 일로 알아봐요.
+      그러려면 이 브라우저에 GitHub 열쇠(토큰)를 한 번 넣어야 해요. 폰과 PC는 따로 한 번씩 넣어요.</p>
+    <ol>
+      <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub 토큰 만들기</a>를 열어요.</li>
+      <li>Token name은 아무거나(예: 현황판 체크), Expiration은 1년 정도로.</li>
+      <li>Repository access에서 <b>Only select repositories</b> → <b>mj_github_v1</b>만 골라요.</li>
+      <li>Permissions → Repository permissions → <b>Contents</b>를 <b>Read and write</b>로.</li>
+      <li>Generate token을 누르고 나온 <code>github_pat_…</code>을 아래에 붙여 넣어요.</li>
+    </ol>
+    <input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+    <p class="small">열쇠는 이 브라우저 안에만 저장되고 저장소나 페이지에는 올라가지 않아요.</p>
+    <div class="modal-actions">
+      <button type="button" id="tokenForget" class="ghost">이 기기에서 지우기</button>
+      <span style="flex:1"></span>
+      <button type="button" id="tokenCancel" class="ghost">닫기</button>
+      <button type="button" id="tokenSave" class="primary">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="tip" id="tip"></div>
 
@@ -239,6 +287,13 @@ tr.done td.title { text-decoration: line-through; }
   let data = null;
   let group = "all";
   let showDone = false;
+  // MJ가 현황판에서 체크한 할 일. 키는 "프로젝트id::할 일 제목", 값은 체크한 날(한국 시간).
+  // 저장소의 dashboard/checks.json에 저장되고, Claude 창들도 이 파일을 읽는다.
+  let checks = {};
+  const REPO = "w37389952/mj_github_v1";
+  const CHECKS_PATH = "dashboard/checks.json";
+  let token = "";
+  try { token = localStorage.getItem("dash.token") || ""; } catch (e) {}
   let logLimit = 8;
 
   try { group = localStorage.getItem("dash.group") || "all"; } catch (e) {}
@@ -270,7 +325,9 @@ tr.done td.title { text-decoration: line-through; }
   const inGroup = id => group === "all" || projOf(id).group === group;
   const tone = s => STATUS_TONE[s] || "muted";
   const dotFor = g => GROUP_CLASS[g] ? `<i class="dot ${GROUP_CLASS[g]}"></i>` : `<i class="dot" style="background:var(--text-3)"></i>`;
-  const isDone = t => t.status === "완료";
+  const taskKey = t => `${t.project}::${t.title}`;
+  const isDone = t => t.status === "완료" || !!checks[taskKey(t)];
+  const doneDate = t => checks[taskKey(t)] || t.done || "";
   const emojiOf = p => p.emoji || EMOJI[p.id] || (p.group === "수익화" ? "💰" : "🛠️");
   const chip = p => `<span class="chip ${GROUP_CLASS[p.group] || ""}"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}</span>`;
 
@@ -300,8 +357,12 @@ tr.done td.title { text-decoration: line-through; }
     const today = kstToday();
     const weekAgo = addDays(today, -6);
 
-    const mine = open.filter(t => t.owner === "MJ").sort(byDue);
-    const claude = open.filter(t => t.owner !== "MJ").sort(byDue);
+    // 목록에는 남은 일 + 오늘 끝낸 일(줄 그어서)만 둔다. 끝낸 날이 지나면 빠진다.
+    const listed = tasks.filter(t => !isDone(t) || doneDate(t) >= today);
+    const mine = open.filter(t => t.owner === "MJ");
+    const claude = open.filter(t => t.owner !== "MJ");
+    const mineListed = listed.filter(t => t.owner === "MJ").sort(byDue);
+    const claudeListed = listed.filter(t => t.owner !== "MJ").sort(byDue);
     const running = projects.filter(p => p.status === "운영 중" || p.status === "진행 중").length;
     const waiting = projects.filter(p => tone(p.status) === "warn" || tone(p.status) === "bad");
     const weekLogs = logs.filter(l => l.date >= weekAgo && l.date <= today).length;
@@ -310,10 +371,10 @@ tr.done td.title { text-decoration: line-through; }
       <div class="section-title first"><h2>프로젝트</h2><span class="hint">막대는 목표 대비 진행도</span></div>
       <div class="cards">${projects.map(card).join("") || `<div class="empty">프로젝트가 없어요.</div>`}</div>
 
-      <div class="section-title"><h2>할 일</h2><span class="hint">마감이 가까운 순</span></div>
+      <div class="section-title"><h2>할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
       <div class="todo-cols">
-        ${todoCol("내가 할 일", mine)}
-        ${todoCol("Claude가 할 일", claude)}
+        ${todoCol("내가 할 일", mineListed)}
+        ${todoCol("Claude가 할 일", claudeListed)}
       </div>
 
       <div class="section-title"><h2>한눈에</h2></div>
@@ -344,6 +405,9 @@ tr.done td.title { text-decoration: line-through; }
     `;
 
     drawChart(logs, today);
+    root.querySelectorAll("input.check").forEach(cb => {
+      cb.onchange = () => toggleCheck(cb.dataset.key, cb.checked, cb);
+    });
     const more = $("#more");
     if (more) more.onclick = () => { logLimit += 20; render(); };
     $("#showDone").onchange = e => {
@@ -361,23 +425,37 @@ tr.done td.title { text-decoration: line-through; }
     return `<div class="panel tile"><div class="label">${esc(label)}</div><div class="num">${num}</div><div class="foot">${esc(foot)}</div></div>`;
   }
 
-  // 할 일을 프로젝트별로 묶는다. list가 이미 마감순이라 먼저 나온 프로젝트가 위로 간다.
+  // 프로젝트를 최근에 작업한 순서로 줄 세운다. 기준은 한 일 기록(log)의 가장 최근 날짜,
+  // 같은 날이면 log에서 더 앞(나중에 올린 것)에 있는 쪽이 먼저. 기록이 없으면 맨 뒤.
+  function recentRank() {
+    const rank = {};
+    (data.log || []).map((l, i) => ({ l, i }))
+      .sort((a, b) => b.l.date.localeCompare(a.l.date) || a.i - b.i)
+      .forEach(({ l }, n) => { if (!(l.project in rank)) rank[l.project] = n; });
+    return id => (id in rank ? rank[id] : 1e9);
+  }
+
+  // 할 일을 프로젝트별로 묶는다. 묶음 안은 남은 일 먼저, 그다음 마감순.
   function todoCol(title, list) {
+    const rankOf = recentRank();
     const groups = [];
     for (const t of list) {
       let g = groups.find(x => x.id === t.project);
       if (!g) groups.push(g = { id: t.project, items: [] });
       g.items.push(t);
     }
+    groups.sort((a, b) => rankOf(a.id) - rankOf(b.id));
+    groups.forEach(g => g.items.sort((a, b) => (isDone(a) - isDone(b)) || byDue(a, b)));
+    const left = list.filter(t => !isDone(t)).length;
     const body = groups.map(g => {
       const p = projOf(g.id);
       return `<div class="todo-group ${GROUP_CLASS[p.group] || ""}">
-        <div class="todo-proj"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}<span class="cnt">${g.items.length}</span></div>
-        <ul class="todo-list">${g.items.map(t => `<li><span class="check" aria-hidden="true"></span><div class="t">${esc(t.title)}${
-          t.status !== "할 일" || t.due ? `<div class="meta">${t.status !== "할 일" ? `<span class="badge ${tone(t.status)}">${esc(t.status)}</span>` : ""}${dueHtml(t.due)}</div>` : ""}</div></li>`).join("")}</ul>
+        <div class="todo-proj"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}<span class="cnt">${g.items.filter(t => !isDone(t)).length}</span></div>
+        <ul class="todo-list">${g.items.map(t => `<li class="${isDone(t) ? "done" : ""}"><input type="checkbox" class="check" data-key="${esc(taskKey(t))}" ${isDone(t) ? "checked" : ""} ${t.status === "완료" ? "disabled title=\"Claude가 완료로 적은 일\"" : ""} aria-label="${esc(t.title)} 끝냄"><div class="t"><span class="tt">${esc(t.title)}</span>${
+          (t.status !== "할 일" && t.status !== "완료") || t.due ? `<div class="meta">${t.status !== "할 일" && t.status !== "완료" ? `<span class="badge ${tone(t.status)}">${esc(t.status)}</span>` : ""}${dueHtml(t.due)}</div>` : ""}</div></li>`).join("")}</ul>
       </div>`;
     }).join("");
-    return `<div class="panel todo-col"><h3>${esc(title)} <span class="cnt">${list.length}</span></h3>
+    return `<div class="panel todo-col"><h3>${esc(title)} <span class="cnt">${left}</span></h3>
       ${body || `<div class="empty">남은 일이 없어요.</div>`}</div>`;
   }
 
@@ -430,7 +508,7 @@ tr.done td.title { text-decoration: line-through; }
           <td class="nowrap">${chip(p)}</td>
           <td class="nowrap">${t.owner === "MJ" ? "나" : esc(t.owner || "Claude")}</td>
           <td class="nowrap"><span class="badge ${tone(t.status)}">${esc(t.status)}</span></td>
-          <td class="nowrap">${isDone(t) ? (t.done ? md(t.done) + " 완료" : "") : (dueHtml(t.due) || "-")}</td></tr>`;
+          <td class="nowrap">${isDone(t) ? (doneDate(t) ? md(doneDate(t)) + " 완료" : "") : (dueHtml(t.due) || "-")}</td></tr>`;
       }).join("")}</tbody></table>`;
   }
 
@@ -514,16 +592,138 @@ tr.done td.title { text-decoration: line-through; }
     });
   }
 
+  // ── 체크 저장 (GitHub API로 checks.json을 main에 커밋) ──
+  const b64enc = str => { const bytes = new TextEncoder().encode(str); let bin = ""; bytes.forEach(b => bin += String.fromCharCode(b)); return btoa(bin); };
+  const b64dec = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), c => c.charCodeAt(0)));
+  const api = (path, opts = {}) => fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    cache: "no-store", ...opts,
+    headers: { "Accept": "application/vnd.github+json", "Authorization": `Bearer ${token}`, ...(opts.headers || {}) }
+  });
+
+  async function readRemoteChecks() {
+    const r = await api(`${CHECKS_PATH}?ref=main&t=${Date.now()}`);
+    if (r.status === 404) return { sha: null, obj: { checks: {} } };
+    if (!r.ok) throw new Error(r.status === 401 ? "열쇠가 맞지 않거나 만료됐어요" : `GitHub ${r.status}`);
+    const j = await r.json();
+    const obj = JSON.parse(b64dec(j.content));
+    if (!obj.checks || typeof obj.checks !== "object") obj.checks = {};
+    return { sha: j.sha, obj };
+  }
+
+  // 다른 창이 같은 때 고쳐도 잃지 않게, 매번 최신본을 받아 내 변경만 얹는다.
+  async function writeCheck(key, date) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { sha, obj } = await readRemoteChecks();
+      if (date) obj.checks[key] = date; else delete obj.checks[key];
+      const body = {
+        message: `현황판: MJ 체크 ${date ? "완료" : "취소"} - ${key}`,
+        content: b64enc(JSON.stringify(obj, null, 2) + "\n"),
+        branch: "main"
+      };
+      if (sha) body.sha = sha;
+      const r = await api(CHECKS_PATH, { method: "PUT", body: JSON.stringify(body) });
+      if (r.ok) return obj.checks;
+      if (r.status === 409 || r.status === 422) continue;
+      if (r.status === 401) throw new Error("열쇠가 맞지 않거나 만료됐어요");
+      if (r.status === 403 || r.status === 404) throw new Error("열쇠에 저장소 쓰기 권한이 없어요");
+      throw new Error(`GitHub ${r.status}`);
+    }
+    throw new Error("동시에 고치는 곳이 많아 저장하지 못했어요. 잠시 뒤 다시 눌러 주세요");
+  }
+
+  let saving = Promise.resolve();
+  function toggleCheck(key, on, cb) {
+    if (!token) {
+      cb.checked = !on;
+      openModal();
+      return;
+    }
+    const prev = checks[key];
+    if (on) checks[key] = kstToday(); else delete checks[key];
+    render();
+    saving = saving.then(() => writeCheck(key, on ? kstToday() : null))
+      .then(remote => { checks = remote; render(); toast(on ? "체크를 저장했어요" : "체크를 풀었어요"); })
+      .catch(err => {
+        if (prev) checks[key] = prev; else delete checks[key];
+        render();
+        toast("저장하지 못했어요: " + err.message, 5000);
+      });
+  }
+
+  let toastTimer;
+  function toast(msg, ms = 2200) {
+    const el = $("#toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), ms);
+  }
+
+  function updateSyncBtn() {
+    const b = $("#syncBtn");
+    b.textContent = token ? "✓ 체크 저장 연결됨" : "체크 저장 연결하기";
+    b.classList.toggle("on", !!token);
+  }
+  function openModal() {
+    $("#tokenInput").value = "";
+    $("#tokenForget").hidden = !token;
+    $("#modal").hidden = false;
+    $("#tokenInput").focus();
+  }
+  $("#syncBtn").onclick = openModal;
+  $("#tokenCancel").onclick = () => { $("#modal").hidden = true; };
+  $("#modal").onclick = e => { if (e.target.id === "modal") $("#modal").hidden = true; };
+  $("#tokenForget").onclick = () => {
+    token = "";
+    try { localStorage.removeItem("dash.token"); } catch (e) {}
+    $("#modal").hidden = true;
+    updateSyncBtn();
+    toast("이 기기에서 열쇠를 지웠어요");
+  };
+  $("#tokenSave").onclick = async () => {
+    const v = $("#tokenInput").value.trim();
+    if (!v) return;
+    const old = token;
+    token = v;
+    try {
+      const { obj } = await readRemoteChecks();
+      checks = obj.checks;
+      try { localStorage.setItem("dash.token", token); } catch (e) {}
+      $("#modal").hidden = true;
+      updateSyncBtn();
+      render();
+      toast("연결했어요. 이제 체크하면 저장돼요");
+    } catch (err) {
+      token = old;
+      toast("연결하지 못했어요: " + err.message, 5000);
+    }
+  };
+  updateSyncBtn();
+
+  // 체크는 열쇠가 있으면 GitHub에서 바로(배포를 기다리지 않게), 없으면 배포된 파일에서 읽는다.
+  function loadChecks() {
+    const fromPages = () => fetch("checks.json?t=" + Date.now(), { cache: "no-store" })
+      .then(r => r.ok ? r.json() : { checks: {} })
+      .then(j => (j && j.checks) || {})
+      .catch(() => ({}));
+    if (!token) return fromPages();
+    return readRemoteChecks().then(x => x.obj.checks).catch(fromPages);
+  }
+
   let resizeTimer;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => { if (data) render(); }, 150);
   });
 
-  fetch("data.json?t=" + Date.now(), { cache: "no-store" })
-    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(json => {
+  Promise.all([
+    fetch("data.json?t=" + Date.now(), { cache: "no-store" })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+    loadChecks()
+  ])
+    .then(([json, ch]) => {
       data = json;
+      checks = ch;
       const u = data.updated;
       $("#updated").textContent = u ? `마지막 갱신 ${relTime(u)} · ${u.slice(0, 16).replace("T", " ")}` : "";
       setupFilters();

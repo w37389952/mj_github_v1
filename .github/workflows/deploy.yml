@@ -29,7 +29,9 @@ jobs:
       - uses: actions/checkout@v4
       # 여러 창이 현황판 파일을 직접 고친다. 깨진 JSON은 배포하지 않고 이전 화면을 남긴다.
       - name: 현황판 데이터 확인
-        run: python3 -m json.tool dashboard/data.json > /dev/null
+        run: |
+          python3 -m json.tool dashboard/data.json > /dev/null
+          python3 -m json.tool dashboard/checks.json > /dev/null
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
