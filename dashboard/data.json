@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-30T16:29:00+09:00",
+  "updated": "2026-09-30T16:32:00+09:00",
   "projects": [
     {
       "id": "tistory",
@@ -60,13 +60,17 @@
       "name": "단톡 정리함",
       "group": "코드",
       "status": "운영 중",
-      "summary": "오픈채팅 대화를 날짜별 요약·프롬프트·파일·링크로 정리해 본다.",
+      "summary": "오픈채팅 대화를 날짜별 요약·프롬프트·파일·링크로 정리한다. 사진은 zip으로 넣어 보고, AI 요약은 본인 키를 넣었을 때만 쓴다. 공개 주소로 배포 완료.",
       "link": "../talk/",
       "links": [{ "label": "단톡 정리함 열기", "url": "https://w37389952.github.io/mj_github_v1/talk/" }],
-      "progress": 80
+      "progress": 90
     }
   ],
   "tasks": [
+    { "project": "talk", "title": "폰에서 열어보고 좁은 화면이 쓸 만한지 확인", "owner": "MJ", "status": "할 일" },
+    { "project": "talk", "title": "며칠 써보고 AI 요약 지시문에서 고칠 점 모으기", "owner": "MJ", "status": "할 일" },
+    { "project": "talk", "title": "기기 간 동기화(내보내기·가져오기) — 필요해지면 만들기", "owner": "Claude", "status": "할 일" },
+    { "project": "talk", "title": "main에 병합하고 공개 주소로 배포", "owner": "MJ", "status": "완료", "done": "2026-09-30" },
     { "project": "iljin", "title": "매일 점수·태그 기록 쌓기 (첫 목표 70일)", "owner": "MJ", "status": "진행 중" },
     { "project": "iljin", "title": "기억나는 지난 날 소급해서 적기", "owner": "MJ", "status": "할 일" },
     { "project": "iljin", "title": "기록이 한 달쯤 쌓이면 분석 화면 만들기 (오행·십성별 평균, 예측 적중률)", "owner": "Claude", "status": "할 일" },
@@ -91,6 +95,7 @@
     { "project": "radar", "title": "지금까지 한 일 요약을 현황판에 올리기", "owner": "Claude", "status": "완료", "done": "2026-09-30" }
   ],
   "log": [
+    { "date": "2026-09-30", "project": "talk", "text": "공개 주소로 배포하고, 방·탭마다 보던 자리를 기억하게 하고 프롬프트를 더 넓게 찾도록 고쳤다." },
     { "date": "2026-09-30", "project": "radar", "text": "조회수가 준 원인이 검색량 없는 동네 선택임을 순위 기록으로 확인하고, 제목·태그·이모지·말투 지시를 그에 맞게 손봤다." },
     { "date": "2026-09-30", "project": "현황판", "text": "작업 현황판 페이지를 만들었다." },
     { "date": "2026-09-30", "project": "tistory", "text": "블로그 세팅을 마치고 첫 글을 발행, 10/1~10/6 글 6편을 예약했다." },
