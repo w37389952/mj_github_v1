@@ -20,7 +20,9 @@ MJ의 모든 작업(코드·수익화)을 한 화면에 모아 보는 페이지�
       "group": "수익화",                // "코드" 또는 "수익화"
       "status": "운영 중",              // 운영 중 | 진행 중 | 확인 대기 | 확인 필요 | 막힘 | 기획
       "summary": "한두 문장",
-      "link": "https://...",            // 선택
+      "links": [                        // 선택. 페이지가 있는 것만. 카드에 바로가기 버튼으로 뜬다
+        { "label": "블로그 열기", "url": "https://..." }
+      ],
       "progress": 40,                   // 0~100, 또는 아래 goal 중 하나
       "goal": { "label": "애드센스 신청까지 글 수", "current": 7, "target": 20 }
     }
@@ -54,7 +56,8 @@ MJ의 모든 작업(코드·수익화)을 한 화면에 모아 보는 페이지�
   1) log 맨 앞에 {"date": 오늘 날짜, "project": 이 작업의 id, "text": 한 일 한 문장} 추가
   2) 이 작업의 tasks에서 끝난 건 status를 "완료"로 바꾸고 done 날짜 적기, 새로 생긴 할 일은 추가
      (내가 해야 하는 건 owner "MJ", 네가 할 건 "Claude")
-  3) projects에서 이 작업의 status, summary, progress(또는 goal.current)를 지금 상태로
+  3) projects에서 이 작업의 status, summary, progress(또는 goal.current)를 지금 상태로.
+     열어볼 수 있는 웹페이지 주소가 생겼으면 links에 {"label": 버튼 이름, "url": 주소}로 추가
   4) 맨 위 updated를 지금 한국 시각으로
 - 이 작업이 projects에 없으면 새로 추가해. id는 영문 소문자, group은 "코드" 또는 "수익화".
 - 다른 프로젝트 항목은 건드리지 마.
