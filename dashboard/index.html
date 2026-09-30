@@ -82,6 +82,15 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .section-title h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
 .section-title .hint { color: var(--text-3); font-size: 12px; }
 
+.section-title.first { margin-top: 4px; }
+
+/* 프로젝트 이름표: 이모지 + 이름, 그룹 색 테두리 */
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 6px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); }
+.chip.code { border-color: color-mix(in srgb, var(--g-code) 45%, transparent); background: color-mix(in srgb, var(--g-code) 9%, var(--panel)); }
+.chip.money { border-color: color-mix(in srgb, var(--g-money) 45%, transparent); background: color-mix(in srgb, var(--g-money) 9%, var(--panel)); }
+.em { font-size: 14px; line-height: 1; }
+.card-em { font-size: 22px; line-height: 1; flex: none; }
+
 /* 숫자 타일 */
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .tile { padding: 14px 16px; }
@@ -95,8 +104,15 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .todo-col h3 { margin: 0 0 6px; font-size: 14px; display: flex; gap: 6px; align-items: center; }
 .todo-col h3 .cnt { color: var(--text-3); font-weight: 500; font-size: 12px; }
 .todo-list { list-style: none; margin: 0; padding: 0; }
-.todo-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.todo-group { margin: 10px 0 12px; padding: 8px 12px 4px; border-radius: 10px; border-left: 4px solid var(--text-3); background: var(--panel-2); }
+.todo-group.code { border-left-color: var(--g-code); }
+.todo-group.money { border-left-color: var(--g-money); }
+.todo-proj { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 13.5px; padding-bottom: 2px; }
+.todo-proj .em { font-size: 17px; }
+.todo-proj .cnt { margin-left: auto; color: var(--text-3); font-weight: 500; font-size: 12px; }
+.todo-list li { display: flex; gap: 9px; align-items: flex-start; padding: 6px 0; border-top: 1px solid var(--line-soft); }
 .todo-list li:first-child { border-top: 0; }
+.todo-list .check { width: 14px; height: 14px; border: 1.5px solid var(--text-3); border-radius: 4px; flex: none; margin-top: 3px; }
 .todo-list .t { flex: 1; min-width: 0; }
 .todo-list .meta { color: var(--text-3); font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .empty { color: var(--text-3); font-size: 13px; padding: 10px 0 14px; }
@@ -154,7 +170,7 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .log-day .date { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
 .log-day .date small { display: block; color: var(--text-3); font-weight: 500; font-size: 11.5px; }
 .log-day ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.log-day li { display: flex; gap: 8px; align-items: baseline; }
+.log-day li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .log-day li .p { color: var(--text-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .log-day li .dot { position: relative; top: -1px; }
 .more { display: block; width: 100%; border: 0; border-top: 1px solid var(--line-soft); background: transparent; padding: 10px; color: var(--accent); font-weight: 600; font-size: 13px; }
@@ -214,6 +230,11 @@ tr.done td.title { text-decoration: line-through; }
     "기획": "muted"
   };
   const DAYS = 14;
+  // data.json 프로젝트에 emoji가 없으면 이 기본값을 쓴다.
+  const EMOJI = {
+    tistory: "📝", threads: "🛍️", shorts: "👻", suno: "🎵",
+    radar: "🍽️", iljin: "🔮", talk: "💬", "cafe-alert": "☕"
+  };
 
   let data = null;
   let group = "all";
@@ -250,6 +271,8 @@ tr.done td.title { text-decoration: line-through; }
   const tone = s => STATUS_TONE[s] || "muted";
   const dotFor = g => GROUP_CLASS[g] ? `<i class="dot ${GROUP_CLASS[g]}"></i>` : `<i class="dot" style="background:var(--text-3)"></i>`;
   const isDone = t => t.status === "완료";
+  const emojiOf = p => p.emoji || EMOJI[p.id] || (p.group === "수익화" ? "💰" : "🛠️");
+  const chip = p => `<span class="chip ${GROUP_CLASS[p.group] || ""}"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}</span>`;
 
   function dueHtml(d) {
     if (!d) return "";
@@ -284,12 +307,8 @@ tr.done td.title { text-decoration: line-through; }
     const weekLogs = logs.filter(l => l.date >= weekAgo && l.date <= today).length;
 
     root.innerHTML = `
-      <div class="tiles">
-        ${tile("돌아가는 프로젝트", running, `전체 ${projects.length}개 중`)}
-        ${tile("내가 할 일", mine.length, `Claude 몫 ${claude.length}개`)}
-        ${tile("확인이 필요한 곳", waiting.length, waiting.map(p => p.name).slice(0, 2).join(", ") || "없음")}
-        ${tile("최근 7일 기록", weekLogs, `${md(weekAgo)} ~ ${md(today)}`)}
-      </div>
+      <div class="section-title first"><h2>프로젝트</h2><span class="hint">막대는 목표 대비 진행도</span></div>
+      <div class="cards">${projects.map(card).join("") || `<div class="empty">프로젝트가 없어요.</div>`}</div>
 
       <div class="section-title"><h2>할 일</h2><span class="hint">마감이 가까운 순</span></div>
       <div class="todo-cols">
@@ -297,8 +316,13 @@ tr.done td.title { text-decoration: line-through; }
         ${todoCol("Claude가 할 일", claude)}
       </div>
 
-      <div class="section-title"><h2>프로젝트</h2><span class="hint">막대는 목표 대비 진행도</span></div>
-      <div class="cards">${projects.map(card).join("") || `<div class="empty">프로젝트가 없어요.</div>`}</div>
+      <div class="section-title"><h2>한눈에</h2></div>
+      <div class="tiles">
+        ${tile("돌아가는 프로젝트", running, `전체 ${projects.length}개 중`)}
+        ${tile("내가 할 일", mine.length, `Claude 몫 ${claude.length}개`)}
+        ${tile("확인이 필요한 곳", waiting.length, waiting.map(p => p.name).slice(0, 2).join(", ") || "없음")}
+        ${tile("최근 7일 기록", weekLogs, `${md(weekAgo)} ~ ${md(today)}`)}
+      </div>
 
       <div class="section-title"><h2>최근 ${DAYS}일 작업량</h2><span class="hint">하루에 남긴 기록 수</span></div>
       <div class="panel chart-panel">
@@ -337,14 +361,24 @@ tr.done td.title { text-decoration: line-through; }
     return `<div class="panel tile"><div class="label">${esc(label)}</div><div class="num">${num}</div><div class="foot">${esc(foot)}</div></div>`;
   }
 
+  // 할 일을 프로젝트별로 묶는다. list가 이미 마감순이라 먼저 나온 프로젝트가 위로 간다.
   function todoCol(title, list) {
-    const items = list.map(t => {
-      const p = projOf(t.project);
-      return `<li>${dotFor(p.group)}<div class="t">${esc(t.title)}
-        <div class="meta"><span>${esc(p.name)}</span>${t.status !== "할 일" ? `<span class="badge ${tone(t.status)}">${esc(t.status)}</span>` : ""}${dueHtml(t.due)}</div></div></li>`;
+    const groups = [];
+    for (const t of list) {
+      let g = groups.find(x => x.id === t.project);
+      if (!g) groups.push(g = { id: t.project, items: [] });
+      g.items.push(t);
+    }
+    const body = groups.map(g => {
+      const p = projOf(g.id);
+      return `<div class="todo-group ${GROUP_CLASS[p.group] || ""}">
+        <div class="todo-proj"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}<span class="cnt">${g.items.length}</span></div>
+        <ul class="todo-list">${g.items.map(t => `<li><span class="check" aria-hidden="true"></span><div class="t">${esc(t.title)}${
+          t.status !== "할 일" || t.due ? `<div class="meta">${t.status !== "할 일" ? `<span class="badge ${tone(t.status)}">${esc(t.status)}</span>` : ""}${dueHtml(t.due)}</div>` : ""}</div></li>`).join("")}</ul>
+      </div>`;
     }).join("");
     return `<div class="panel todo-col"><h3>${esc(title)} <span class="cnt">${list.length}</span></h3>
-      ${items ? `<ul class="todo-list">${items}</ul>` : `<div class="empty">남은 일이 없어요.</div>`}</div>`;
+      ${body || `<div class="empty">남은 일이 없어요.</div>`}</div>`;
   }
 
   function card(p) {
@@ -359,7 +393,7 @@ tr.done td.title { text-decoration: line-through; }
     const buttons = links.length ? `<div class="links">${links.map((l, i) =>
       `<a class="go${i === 0 ? " primary" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label || "열기")} ↗</a>`).join("")}</div>` : "";
     return `<div class="panel card">
-      <div class="head">${dotFor(p.group)}<div class="name">${name}</div><span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
+      <div class="head"><span class="card-em">${esc(emojiOf(p))}</span><div class="name">${name}</div><span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
       <div class="summary">${esc(p.summary)}</div>
       <div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
       ${p.goal ? `<div class="foot"><span>${esc(p.goal.label)}</span></div>` : ""}
@@ -381,7 +415,7 @@ tr.done td.title { text-decoration: line-through; }
       <div class="date">${md(d.date)} (${wd(d.date)})<small>${d.date.slice(0, 4)}</small></div>
       <ul>${d.items.map(l => {
         const p = projOf(l.project);
-        return `<li>${dotFor(p.group)}<span class="p">${esc(p.name)}</span><span>${esc(l.text)}</span></li>`;
+        return `<li>${chip(p)}<span>${esc(l.text)}</span></li>`;
       }).join("")}</ul></div>`).join("");
   }
 
@@ -393,7 +427,7 @@ tr.done td.title { text-decoration: line-through; }
       ${rows.map(t => {
         const p = projOf(t.project);
         return `<tr class="${isDone(t) ? "done" : ""}"><td class="title">${esc(t.title)}</td>
-          <td class="nowrap">${dotFor(p.group)} ${esc(p.name)}</td>
+          <td class="nowrap">${chip(p)}</td>
           <td class="nowrap">${t.owner === "MJ" ? "나" : esc(t.owner || "Claude")}</td>
           <td class="nowrap"><span class="badge ${tone(t.status)}">${esc(t.status)}</span></td>
           <td class="nowrap">${isDone(t) ? (t.done ? md(t.done) + " 완료" : "") : (dueHtml(t.due) || "-")}</td></tr>`;
