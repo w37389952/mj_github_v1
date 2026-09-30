@@ -126,6 +126,11 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .bar-row .pct { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
 .card .next { font-size: 12.5px; color: var(--text-2); border-top: 1px solid var(--line-soft); padding-top: 8px; margin-top: auto; }
 .card .next b { color: var(--text); font-weight: 600; }
+.card .links { display: flex; flex-wrap: wrap; gap: 6px; }
+.card .go { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 12.5px; font-weight: 600; text-decoration: none; }
+.card .go:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.card .go.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.card .go.primary:hover { filter: brightness(1.08); color: #fff; }
 .card .foot { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); }
 
 /* 활동 차트 */
@@ -347,12 +352,18 @@ tr.done td.title { text-decoration: line-through; }
     const next = (data.tasks || []).filter(t => t.project === p.id && !isDone(t)).sort(byDue)[0];
     const last = (data.log || []).filter(l => l.project === p.id).map(l => l.date).sort().pop();
     const color = p.group === "수익화" ? "var(--g-money)" : "var(--g-code)";
-    const name = p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.name)}</a>` : esc(p.name);
+    // links가 있으면 그것을, 예전 형식인 link 하나만 있으면 '열기' 버튼 하나로 쓴다.
+    const links = (Array.isArray(p.links) ? p.links : p.link ? [{ label: "열기", url: p.link }] : [])
+      .filter(l => l && /^(https?:\/\/|\.\.?\/)/.test(l.url || ""));
+    const name = links.length ? `<a href="${esc(links[0].url)}" target="_blank" rel="noopener">${esc(p.name)}</a>` : esc(p.name);
+    const buttons = links.length ? `<div class="links">${links.map((l, i) =>
+      `<a class="go${i === 0 ? " primary" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label || "열기")} ↗</a>`).join("")}</div>` : "";
     return `<div class="panel card">
       <div class="head">${dotFor(p.group)}<div class="name">${name}</div><span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
       <div class="summary">${esc(p.summary)}</div>
       <div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
       ${p.goal ? `<div class="foot"><span>${esc(p.goal.label)}</span></div>` : ""}
+      ${buttons}
       <div class="next">${next ? `다음: <b>${esc(next.title)}</b> · ${next.owner === "MJ" ? "내 차례" : "Claude"}` : "남은 할 일 없음"}</div>
       <div class="foot"><span>${esc(p.group)}</span><span>${last ? `마지막 기록 ${md(last)}` : "기록 없음"}</span></div>
     </div>`;
