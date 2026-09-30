@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>작업 현황판</title>
+<style>
+/* 내용은 전부 data.json에 있다. 이 파일은 그리는 일만 한다.
+   갱신 규칙은 같은 폴더의 README.md 참고. */
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel-2: #fbfbfd;
+  --line: #e3e6ec;
+  --line-soft: #eef0f4;
+  --text: #1b1f27;
+  --text-2: #5c6474;
+  --text-3: #8a91a1;
+  --accent: #2a78d6;
+  --accent-soft: #e8f1fc;
+  --grid: #eceef2;
+  /* 그룹 색: 코드 = 1번(파랑), 수익화 = 2번(주황). 순서 고정. */
+  --g-code: #2a78d6;
+  --g-money: #eb6834;
+  /* 상태 색은 그룹 색과 따로 둔다. 항상 글자와 함께 쓴다. */
+  --good: #0f7b5f;   --good-soft: #e6f5ef;
+  --warn: #9a5b00;   --warn-soft: #fff3dc;
+  --bad: #b3261e;    --bad-soft: #fde8e6;
+  --muted-soft: #eef0f4;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16,20,30,.04), 0 4px 14px rgba(16,20,30,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131519;
+    --panel: #1b1e24;
+    --panel-2: #20242b;
+    --line: #2d323c;
+    --line-soft: #252932;
+    --text: #e8eaf0;
+    --text-2: #a6adbb;
+    --text-3: #7a8292;
+    --accent: #6da7ec;
+    --accent-soft: #1d2a3d;
+    --grid: #262a33;
+    --g-code: #3987e5;
+    --g-money: #d95926;
+    --good: #5cc9a3;   --good-soft: #17302a;
+    --warn: #e5ac52;   --warn-soft: #33291a;
+    --bad: #f08a80;    --bad-soft: #3a1f1d;
+    --muted-soft: #262a33;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.2);
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Segoe UI", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; margin-bottom: 18px; }
+header.top h1 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
+.filters { margin-left: auto; display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.filters button { border: 0; background: transparent; padding: 5px 12px; border-radius: 7px; font-weight: 600; font-size: 13px; color: var(--text-2); }
+.filters button.on { background: var(--accent-soft); color: var(--accent); }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.section-title { display: flex; align-items: baseline; gap: 8px; margin: 28px 0 10px; }
+.section-title h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+.section-title .hint { color: var(--text-3); font-size: 12px; }
+
+/* 숫자 타일 */
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.tile { padding: 14px 16px; }
+.tile .label { color: var(--text-2); font-size: 12px; font-weight: 600; }
+.tile .num { font-size: 28px; font-weight: 700; letter-spacing: -.03em; line-height: 1.2; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tile .foot { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+
+/* 할 일 두 칸 */
+.todo-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.todo-col { padding: 14px 16px 8px; }
+.todo-col h3 { margin: 0 0 6px; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+.todo-col h3 .cnt { color: var(--text-3); font-weight: 500; font-size: 12px; }
+.todo-list { list-style: none; margin: 0; padding: 0; }
+.todo-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.todo-list li:first-child { border-top: 0; }
+.todo-list .t { flex: 1; min-width: 0; }
+.todo-list .meta { color: var(--text-3); font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.empty { color: var(--text-3); font-size: 13px; padding: 10px 0 14px; }
+
+.dot { width: 8px; height: 8px; border-radius: 3px; flex: none; display: inline-block; }
+.dot.code { background: var(--g-code); }
+.dot.money { background: var(--g-money); }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.badge.good { background: var(--good-soft); color: var(--good); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); }
+.badge.muted { background: var(--muted-soft); color: var(--text-2); }
+.due { font-variant-numeric: tabular-nums; }
+.due.soon { color: var(--warn); font-weight: 600; }
+.due.late { color: var(--bad); font-weight: 600; }
+
+/* 프로젝트 카드 */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.card .head { display: flex; align-items: center; gap: 8px; }
+.card .name { font-weight: 700; font-size: 15px; letter-spacing: -.02em; flex: 1; min-width: 0; }
+.card .summary { color: var(--text-2); font-size: 13px; }
+.bar-row { display: flex; align-items: center; gap: 10px; }
+.bar { flex: 1; height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 4px; }
+.bar-row .pct { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+.card .next { font-size: 12.5px; color: var(--text-2); border-top: 1px solid var(--line-soft); padding-top: 8px; margin-top: auto; }
+.card .next b { color: var(--text); font-weight: 600; }
+.card .foot { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); }
+
+/* 활동 차트 */
+.chart-panel { padding: 14px 16px 10px; position: relative; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+#chart svg { display: block; width: 100%; height: 180px; overflow: visible; }
+#chart text { fill: var(--text-3); font-size: 11px; font-family: inherit; }
+#chart .gridline { stroke: var(--grid); stroke-width: 1; }
+#chart .hit { fill: transparent; }
+#chart .col:hover .hit { fill: var(--accent-soft); opacity: .6; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 8px; padding: 8px 10px; font-size: 12px; min-width: 150px; display: none; z-index: 5; }
+.tip .d { font-weight: 700; margin-bottom: 4px; }
+.tip .r { display: flex; align-items: center; gap: 6px; color: var(--text-2); }
+.tip .r b { margin-left: auto; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* 기록 */
+.log { padding: 4px 16px; }
+.log-day { padding: 12px 0; border-top: 1px solid var(--line-soft); display: grid; grid-template-columns: 88px 1fr; gap: 12px; }
+.log-day:first-child { border-top: 0; }
+.log-day .date { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+.log-day .date small { display: block; color: var(--text-3); font-weight: 500; font-size: 11.5px; }
+.log-day ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.log-day li { display: flex; gap: 8px; align-items: baseline; }
+.log-day li .p { color: var(--text-2); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.log-day li .dot { position: relative; top: -1px; }
+.more { display: block; width: 100%; border: 0; border-top: 1px solid var(--line-soft); background: transparent; padding: 10px; color: var(--accent); font-weight: 600; font-size: 13px; }
+
+/* 전체 표 */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 9px 12px; border-top: 1px solid var(--line-soft); vertical-align: top; }
+th { color: var(--text-2); font-size: 12px; font-weight: 600; border-top: 0; white-space: nowrap; }
+td.nowrap { white-space: nowrap; }
+td.title { min-width: 200px; }
+tr.done td { color: var(--text-3); }
+tr.done td.title { text-decoration: line-through; }
+.tbl-tools { display: flex; gap: 8px; align-items: center; padding: 10px 12px 0; font-size: 12.5px; color: var(--text-2); }
+.tbl-tools label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
+.error { padding: 16px; color: var(--bad); }
+
+@media (max-width: 760px) {
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .todo-cols { grid-template-columns: 1fr; }
+  .filters { margin-left: 0; }
+  .log-day { grid-template-columns: 1fr; gap: 6px; }
+  table { min-width: 640px; }
+  .log-day .date small { display: inline; margin-left: 6px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>작업 현황판</h1>
+      <div class="sub" id="updated">불러오는 중…</div>
+    </div>
+    <div class="filters" id="filters" role="tablist" aria-label="그룹">
+      <button data-g="all" class="on">전체</button>
+      <button data-g="코드">코드</button>
+      <button data-g="수익화">수익화</button>
+    </div>
+  </header>
+
+  <div id="root"></div>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+(() => {
+  const GROUP_CLASS = { "코드": "code", "수익화": "money" };
+  const GROUPS = ["코드", "수익화"];
+  const STATUS_TONE = {
+    "운영 중": "good", "완료": "good",
+    "진행 중": "good",
+    "확인 대기": "warn", "확인 필요": "warn", "대기": "warn",
+    "막힘": "bad", "중단": "bad",
+    "기획": "muted"
+  };
+  const DAYS = 14;
+
+  let data = null;
+  let group = "all";
+  let showDone = false;
+  let logLimit = 8;
+
+  try { group = localStorage.getItem("dash.group") || "all"; } catch (e) {}
+  try { showDone = localStorage.getItem("dash.done") === "1"; } catch (e) {}
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // 날짜는 모두 한국 시간 기준 YYYY-MM-DD 문자열로 다룬다.
+  const kstToday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  const addDays = (d, n) => { const t = new Date(d + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  const diffDays = (a, b) => Math.round((new Date(a + "T00:00:00Z") - new Date(b + "T00:00:00Z")) / 864e5);
+  const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+  const md = d => { const [, m, dd] = d.split("-"); return `${+m}/${+dd}`; };
+  const wd = d => WEEK[new Date(d + "T00:00:00Z").getUTCDay()];
+
+  function relTime(iso) {
+    const t = new Date(iso);
+    if (isNaN(t)) return iso;
+    const min = Math.round((Date.now() - t) / 60000);
+    if (min < 1) return "방금";
+    if (min < 60) return `${min}분 전`;
+    if (min < 60 * 24) return `${Math.round(min / 60)}시간 전`;
+    return `${Math.round(min / 1440)}일 전`;
+  }
+
+  const projMap = () => Object.fromEntries((data.projects || []).map(p => [p.id, p]));
+  const projOf = id => projMap()[id] || { id, name: id, group: "" };
+  const inGroup = id => group === "all" || projOf(id).group === group;
+  const tone = s => STATUS_TONE[s] || "muted";
+  const dotFor = g => GROUP_CLASS[g] ? `<i class="dot ${GROUP_CLASS[g]}"></i>` : `<i class="dot" style="background:var(--text-3)"></i>`;
+  const isDone = t => t.status === "완료";
+
+  function dueHtml(d) {
+    if (!d) return "";
+    const n = diffDays(d, kstToday());
+    const cls = n < 0 ? "late" : n <= 3 ? "soon" : "";
+    const word = n < 0 ? `${-n}일 지남` : n === 0 ? "오늘" : n === 1 ? "내일" : `${n}일 남음`;
+    return `<span class="due ${cls}">${md(d)}(${wd(d)}) · ${word}</span>`;
+  }
+
+  function progressOf(p) {
+    if (p.goal && p.goal.target) {
+      const v = Math.max(0, Math.min(100, Math.round(p.goal.current / p.goal.target * 100)));
+      return { pct: v, label: `${p.goal.current}/${p.goal.target}`, title: p.goal.label };
+    }
+    const v = Math.max(0, Math.min(100, +p.progress || 0));
+    return { pct: v, label: `${v}%`, title: "진행도" };
+  }
+
+  function render() {
+    const root = $("#root");
+    const projects = (data.projects || []).filter(p => group === "all" || p.group === group);
+    const tasks = (data.tasks || []).filter(t => inGroup(t.project));
+    const logs = (data.log || []).filter(l => inGroup(l.project)).slice().sort((a, b) => b.date.localeCompare(a.date));
+    const open = tasks.filter(t => !isDone(t));
+    const today = kstToday();
+    const weekAgo = addDays(today, -6);
+
+    const mine = open.filter(t => t.owner === "MJ").sort(byDue);
+    const claude = open.filter(t => t.owner !== "MJ").sort(byDue);
+    const running = projects.filter(p => p.status === "운영 중" || p.status === "진행 중").length;
+    const waiting = projects.filter(p => tone(p.status) === "warn" || tone(p.status) === "bad");
+    const weekLogs = logs.filter(l => l.date >= weekAgo && l.date <= today).length;
+
+    root.innerHTML = `
+      <div class="tiles">
+        ${tile("돌아가는 프로젝트", running, `전체 ${projects.length}개 중`)}
+        ${tile("내가 할 일", mine.length, `Claude 몫 ${claude.length}개`)}
+        ${tile("확인이 필요한 곳", waiting.length, waiting.map(p => p.name).slice(0, 2).join(", ") || "없음")}
+        ${tile("최근 7일 기록", weekLogs, `${md(weekAgo)} ~ ${md(today)}`)}
+      </div>
+
+      <div class="section-title"><h2>할 일</h2><span class="hint">마감이 가까운 순</span></div>
+      <div class="todo-cols">
+        ${todoCol("내가 할 일", mine)}
+        ${todoCol("Claude가 할 일", claude)}
+      </div>
+
+      <div class="section-title"><h2>프로젝트</h2><span class="hint">막대는 목표 대비 진행도</span></div>
+      <div class="cards">${projects.map(card).join("") || `<div class="empty">프로젝트가 없어요.</div>`}</div>
+
+      <div class="section-title"><h2>최근 ${DAYS}일 작업량</h2><span class="hint">하루에 남긴 기록 수</span></div>
+      <div class="panel chart-panel">
+        <div class="legend">${GROUPS.filter(g => group === "all" || g === group).map(g => `<span>${dotFor(g)}${g}</span>`).join("")}</div>
+        <div id="chart"></div>
+      </div>
+
+      <div class="section-title"><h2>한 일 기록</h2><span class="hint">각 창에서 올린 내용</span></div>
+      <div class="panel">
+        <div class="log">${logHtml(logs)}</div>
+        ${logs.length > logLimit ? `<button class="more" id="more">이전 기록 더 보기 (${logs.length - logLimit}개)</button>` : ""}
+      </div>
+
+      <div class="section-title"><h2>할 일 전체</h2></div>
+      <div class="panel">
+        <div class="tbl-tools"><label><input type="checkbox" id="showDone" ${showDone ? "checked" : ""}> 끝난 일도 보기</label></div>
+        <div class="table-wrap">${taskTable(tasks)}</div>
+      </div>
+    `;
+
+    drawChart(logs, today);
+    const more = $("#more");
+    if (more) more.onclick = () => { logLimit += 20; render(); };
+    $("#showDone").onchange = e => {
+      showDone = e.target.checked;
+      try { localStorage.setItem("dash.done", showDone ? "1" : "0"); } catch (err) {}
+      render();
+    };
+  }
+
+  function byDue(a, b) {
+    return (a.due || "9999").localeCompare(b.due || "9999");
+  }
+
+  function tile(label, num, foot) {
+    return `<div class="panel tile"><div class="label">${esc(label)}</div><div class="num">${num}</div><div class="foot">${esc(foot)}</div></div>`;
+  }
+
+  function todoCol(title, list) {
+    const items = list.map(t => {
+      const p = projOf(t.project);
+      return `<li>${dotFor(p.group)}<div class="t">${esc(t.title)}
+        <div class="meta"><span>${esc(p.name)}</span>${t.status !== "할 일" ? `<span class="badge ${tone(t.status)}">${esc(t.status)}</span>` : ""}${dueHtml(t.due)}</div></div></li>`;
+    }).join("");
+    return `<div class="panel todo-col"><h3>${esc(title)} <span class="cnt">${list.length}</span></h3>
+      ${items ? `<ul class="todo-list">${items}</ul>` : `<div class="empty">남은 일이 없어요.</div>`}</div>`;
+  }
+
+  function card(p) {
+    const pr = progressOf(p);
+    const next = (data.tasks || []).filter(t => t.project === p.id && !isDone(t)).sort(byDue)[0];
+    const last = (data.log || []).filter(l => l.project === p.id).map(l => l.date).sort().pop();
+    const color = p.group === "수익화" ? "var(--g-money)" : "var(--g-code)";
+    const name = p.link ? `<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.name)}</a>` : esc(p.name);
+    return `<div class="panel card">
+      <div class="head">${dotFor(p.group)}<div class="name">${name}</div><span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
+      <div class="summary">${esc(p.summary)}</div>
+      <div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
+      ${p.goal ? `<div class="foot"><span>${esc(p.goal.label)}</span></div>` : ""}
+      <div class="next">${next ? `다음: <b>${esc(next.title)}</b> · ${next.owner === "MJ" ? "내 차례" : "Claude"}` : "남은 할 일 없음"}</div>
+      <div class="foot"><span>${esc(p.group)}</span><span>${last ? `마지막 기록 ${md(last)}` : "기록 없음"}</span></div>
+    </div>`;
+  }
+
+  function logHtml(logs) {
+    if (!logs.length) return `<div class="empty">아직 기록이 없어요.</div>`;
+    const shown = logs.slice(0, logLimit);
+    const days = [];
+    for (const l of shown) {
+      if (!days.length || days[days.length - 1].date !== l.date) days.push({ date: l.date, items: [] });
+      days[days.length - 1].items.push(l);
+    }
+    return days.map(d => `<div class="log-day">
+      <div class="date">${md(d.date)} (${wd(d.date)})<small>${d.date.slice(0, 4)}</small></div>
+      <ul>${d.items.map(l => {
+        const p = projOf(l.project);
+        return `<li>${dotFor(p.group)}<span class="p">${esc(p.name)}</span><span>${esc(l.text)}</span></li>`;
+      }).join("")}</ul></div>`).join("");
+  }
+
+  function taskTable(tasks) {
+    const rows = tasks.filter(t => showDone || !isDone(t)).slice().sort((a, b) =>
+      (isDone(a) - isDone(b)) || byDue(a, b));
+    if (!rows.length) return `<div class="empty" style="padding:12px">표시할 일이 없어요.</div>`;
+    return `<table><thead><tr><th>할 일</th><th>프로젝트</th><th>누가</th><th>상태</th><th>마감</th></tr></thead><tbody>
+      ${rows.map(t => {
+        const p = projOf(t.project);
+        return `<tr class="${isDone(t) ? "done" : ""}"><td class="title">${esc(t.title)}</td>
+          <td class="nowrap">${dotFor(p.group)} ${esc(p.name)}</td>
+          <td class="nowrap">${t.owner === "MJ" ? "나" : esc(t.owner || "Claude")}</td>
+          <td class="nowrap"><span class="badge ${tone(t.status)}">${esc(t.status)}</span></td>
+          <td class="nowrap">${isDone(t) ? (t.done ? md(t.done) + " 완료" : "") : (dueHtml(t.due) || "-")}</td></tr>`;
+      }).join("")}</tbody></table>`;
+  }
+
+  function drawChart(logs, today) {
+    const el = $("#chart");
+    const groups = GROUPS.filter(g => group === "all" || g === group);
+    const days = Array.from({ length: DAYS }, (_, i) => addDays(today, i - DAYS + 1));
+    const counts = days.map(d => {
+      const c = Object.fromEntries(groups.map(g => [g, 0]));
+      for (const l of logs) if (l.date === d) { const g = projOf(l.project).group; if (g in c) c[g]++; }
+      return c;
+    });
+    const totals = counts.map(c => groups.reduce((s, g) => s + c[g], 0));
+    const max = Math.max(4, ...totals);
+    const step = max <= 6 ? 1 : max <= 12 ? 2 : Math.ceil(max / 5);
+    const top = Math.ceil(max / step) * step;
+
+    const W = Math.max(300, el.clientWidth || 720), H = 180, L = 26, R = 6, T = 8, B = 26;
+    const cw = (W - L - R) / DAYS, bw = Math.min(28, cw * 0.56);
+    const y = v => T + (H - T - B) * (1 - v / top);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="최근 ${DAYS}일 날짜별 기록 수">`;
+    for (let v = 0; v <= top; v += step) {
+      svg += `<line class="gridline" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`;
+      svg += `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+    }
+    days.forEach((d, i) => {
+      const x = L + cw * i + (cw - bw) / 2;
+      svg += `<g class="col" data-i="${i}"><rect class="hit" x="${L + cw * i}" y="${T}" width="${cw}" height="${H - T - B}" rx="4"/>`;
+      let base = 0;
+      const segs = groups.filter(g => counts[i][g] > 0);
+      segs.forEach((g, k) => {
+        const v = counts[i][g];
+        const y0 = y(base), y1 = y(base + v);
+        const isTop = k === segs.length - 1;
+        // 칸 사이 2px 틈. 맨 위 조각만 둥글게.
+        const h = Math.max(1, y0 - y1 - (k > 0 ? 2 : 0));
+        const yy = y1;
+        const fill = g === "수익화" ? "var(--g-money)" : "var(--g-code)";
+        svg += isTop
+          ? `<path d="${roundTop(x, yy, bw, h, Math.min(4, h / 2, bw / 2))}" fill="${fill}"/>`
+          : `<rect x="${x}" y="${yy}" width="${bw}" height="${h}" fill="${fill}"/>`;
+        base += v;
+      });
+      const showLabel = i === DAYS - 1 || i % 2 === (DAYS - 1) % 2;
+      if (showLabel) svg += `<text x="${L + cw * i + cw / 2}" y="${H - 8}" text-anchor="middle">${md(d)}</text>`;
+      svg += `</g>`;
+    });
+    svg += `</svg>`;
+    el.innerHTML = svg;
+
+    const tip = $("#tip");
+    el.querySelectorAll(".col").forEach(g => {
+      g.addEventListener("mousemove", ev => {
+        const i = +g.dataset.i;
+        tip.innerHTML = `<div class="d">${md(days[i])} (${wd(days[i])})</div>` +
+          groups.map(gr => `<div class="r">${dotFor(gr)}${gr}<b>${counts[i][gr]}건</b></div>`).join("");
+        tip.style.display = "block";
+        const pad = 14;
+        let left = ev.pageX + pad, topPx = ev.pageY + pad;
+        if (left + tip.offsetWidth > window.scrollX + document.documentElement.clientWidth - 8) left = ev.pageX - tip.offsetWidth - pad;
+        tip.style.left = left + "px";
+        tip.style.top = topPx + "px";
+      });
+      g.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+    });
+  }
+
+  function roundTop(x, y, w, h, r) {
+    return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+  }
+
+  function setupFilters() {
+    document.querySelectorAll("#filters button").forEach(b => {
+      b.classList.toggle("on", b.dataset.g === group);
+      b.onclick = () => {
+        group = b.dataset.g;
+        try { localStorage.setItem("dash.group", group); } catch (e) {}
+        setupFilters();
+        render();
+      };
+    });
+  }
+
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (data) render(); }, 150);
+  });
+
+  fetch("data.json?t=" + Date.now(), { cache: "no-store" })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(json => {
+      data = json;
+      const u = data.updated;
+      $("#updated").textContent = u ? `마지막 갱신 ${relTime(u)} · ${u.slice(0, 16).replace("T", " ")}` : "";
+      setupFilters();
+      render();
+    })
+    .catch(err => {
+      $("#updated").textContent = "";
+      $("#root").innerHTML = `<div class="panel error">data.json을 읽지 못했어요 (${esc(err.message)}). 파일을 그냥 더블클릭해 열었다면 주소창이 file:// 이라 막힌 것이니, 배포된 주소로 열어 주세요.</div>`;
+    });
+})();
+</script>
+</body>
+</html>
