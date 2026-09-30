@@ -163,6 +163,16 @@ main { flex: 1 1 auto; min-height: 0; display: flex; overflow: hidden; }
   background: var(--accent-soft); color: var(--accent);
 }
 .topic-meta .tag.cat { background: var(--line-soft); color: var(--text-2); }
+.topic-meta .tag.read { background: transparent; color: var(--text-3); font-weight: 600; padding: 0; }
+
+/* 한 번 열어본 요약 — 지나간 것처럼 가라앉혀 아직 안 본 것이 눈에 띄게 한다 */
+.topic.seen { background: transparent; border-color: var(--line-soft); }
+.topic.seen .topic-title { color: var(--text-3); }
+.topic.seen .topic-body { color: var(--text-3); }
+.topic.seen.on { background: var(--accent-soft); border-color: var(--accent); }
+.topic.seen.on .topic-title { color: var(--accent); }
+.mini.seen { color: var(--text-3); }
+.mini.seen .t { opacity: .6; }
 
 /* 오른쪽 정리 패널 */
 .right-body { flex: 1 1 auto; min-height: 0; display: flex; overflow: hidden; }
@@ -1405,6 +1415,7 @@ const S = {
   hideChatter: true,
   query: "",
   roomState: {},   // 방마다 마지막으로 보던 자리. 키는 방id
+  seen: {},        // 한 번 열어본 요약. 방id -> { 요약id: 1 }
   lastRoom: null,  // 마지막에 보던 방
   sums: {},        // AI 요약 결과. 키는 "방id|날짜"
   month: null,     // 월간 탭에서 고른 달
@@ -1632,6 +1643,13 @@ async function runSummary(label, fn) {
 const VIEW_STORE = "dantok-view";
 let viewSaveTimer = null;
 
+// 한 번 열어본 요약에는 표시를 남긴다. 40일치를 오가며 읽을 때 어디까지 봤는지가 남아야 한다.
+// 날짜를 펼쳤을 때 그냥 보이는 것은 읽은 것이 아니므로, 카드를 직접 누를 때만 적는다.
+const isSeen = id => !!(S.seen[S.roomId] || {})[id];
+function markSeen(id) {
+  (S.seen[S.roomId] || (S.seen[S.roomId] = {}))[id] = 1;
+}
+
 // 탭마다 보던 것이 다르다. 요약은 날짜와 고른 요약, 자료함은 날짜와 갈래, 월간은 달,
 // 검색은 검색어다. 한 덩어리로 묶어두면 탭을 옮길 때마다 서로를 덮어써서 자리를 잃는다.
 function keepRoomState() {
@@ -1648,7 +1666,8 @@ function keepRoomState() {
   clearTimeout(viewSaveTimer);
   viewSaveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(VIEW_STORE, JSON.stringify({ rooms: S.roomState, last: S.lastRoom }));
+      localStorage.setItem(VIEW_STORE,
+        JSON.stringify({ rooms: S.roomState, last: S.lastRoom, seen: S.seen }));
     } catch (_) {}
   }, 400);
 }
@@ -1772,7 +1791,8 @@ function renderSummary(main) {
     }
     for (const t of d.topics) {
       const ai = aiTopic(r, d.date, t.id);
-      const b = el("button", "topic" + (t.id === S.topicId ? " on" : "") + (ai ? " ai" : ""));
+      const b = el("button", "topic" + (t.id === S.topicId ? " on" : "") + (ai ? " ai" : "") +
+        (isSeen(t.id) ? " seen" : ""));
       b.dataset.topic = t.id;
       b.innerHTML = `<div class="topic-title">${esc(ai && ai.title ? ai.title : t.title)}</div>
         <div class="topic-body"><ul>${t.bullets.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
@@ -1782,8 +1802,10 @@ function renderSummary(main) {
           ${t.hasPrompt ? '<span class="tag">프롬프트</span>' : ""}
           ${t.hasFile ? '<span class="tag">파일</span>' : ""}
           ${t.hasLink ? '<span class="tag">링크</span>' : ""}
+          ${isSeen(t.id) ? '<span class="tag read">읽음</span>' : ""}
         </div>`;
       b.onclick = () => {
+        markSeen(t.id);
         S.date = d.date; S.topicId = t.id;
         renderKeeping(`[data-topic="${CSS.escape(t.id)}"]`);
         jumpTo(t.anchor, t.marks);
@@ -1928,9 +1950,9 @@ function renderDigest(d) {
   if (d.topics.length) {
     box.appendChild(el("div", "sec", `이 날 오간 이야기 ${d.topics.length}가지`));
     for (const t of d.topics) {
-      const b = el("button", "mini");
+      const b = el("button", "mini" + (isSeen(t.id) ? " seen" : ""));
       b.innerHTML = `<span class="t">${t.time.slice(0, 5)}</span>${esc(t.title)}`;
-      b.onclick = () => { S.topicId = t.id; render(); jumpTo(t.anchor, t.marks); };
+      b.onclick = () => { markSeen(t.id); S.topicId = t.id; render(); jumpTo(t.anchor, t.marks); };
       box.appendChild(b);
     }
   }
@@ -3121,6 +3143,7 @@ const SAMPLE = `AI 자동화 연구소 님과 카카오톡 대화
     const v = JSON.parse(localStorage.getItem(VIEW_STORE) || "{}") || {};
     S.roomState = v.rooms || {};
     S.lastRoom = v.last || null;
+    S.seen = v.seen || {};
   } catch (_) {}
   for (const rec of await sumGetAll()) S.sums[rec.id] = rec;
   const saved = await dbAll();
