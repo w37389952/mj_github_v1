@@ -8,6 +8,7 @@
       "status": "운영 중",
       "summary": "생활 정보 5편 + 살림 추천 2편을 매주 예약 발행한다. 9/30 첫 글, 10/1~10/6 6편 예약 완료.",
       "link": "https://yuyongtip.tistory.com/",
+      "links": [{ "label": "블로그 열기", "url": "https://yuyongtip.tistory.com/" }],
       "goal": { "label": "애드센스 신청까지 글 수", "current": 7, "target": 20 }
     },
     {
@@ -41,6 +42,7 @@
       "status": "운영 중",
       "summary": "새로 문 연 음식점과 블로그 글을 매일 밤 자동 수집. 글쓰기 도구(제목·태그·말투·동네 검색량)와 블로그탭·통합검색 순위 추적 포함.",
       "link": "../",
+      "links": [{ "label": "신상 레이더", "url": "https://w37389952.github.io/mj_github_v1/" }, { "label": "순위 추적", "url": "https://w37389952.github.io/mj_github_v1/ranks.html" }, { "label": "글쓰기 도구", "url": "https://w37389952.github.io/mj_github_v1/write.html" }],
       "progress": 90
     },
     {
@@ -50,6 +52,7 @@
       "status": "운영 중",
       "summary": "사주 기반 일진 기록 앱. 카카오 로그인과 기기 간 암호화 동기화를 마치고 PC·폰에서 매일 기록을 쌓는 중. 한 달쯤 쌓이면 분석 화면을 붙인다.",
       "link": "../iljin/",
+      "links": [{ "label": "일진일기 열기", "url": "https://w37389952.github.io/mj_github_v1/iljin/" }],
       "progress": 90
     },
     {
@@ -59,6 +62,7 @@
       "status": "운영 중",
       "summary": "오픈채팅 대화를 날짜별 요약·프롬프트·파일·링크로 정리해 본다.",
       "link": "../talk/",
+      "links": [{ "label": "단톡 정리함 열기", "url": "https://w37389952.github.io/mj_github_v1/talk/" }],
       "progress": 80
     }
   ],
