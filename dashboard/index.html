@@ -116,6 +116,11 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .todo-list li.done .t > .tt { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--text-3); }
 .todo-list li.done .meta { opacity: .6; }
 .todo-list li.saving { opacity: .6; }
+.long-panel { padding: 6px 14px 4px; background: var(--panel-2); border-style: dashed; }
+.long-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0 12px; align-items: start; }
+.long-panel .todo-group { background: var(--panel); }
+.who { display: inline-block; font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 999px; background: var(--muted-soft); color: var(--text-2); vertical-align: 1px; }
+.who.me { background: var(--accent-soft); color: var(--accent); }
 
 .sync { margin-left: auto; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 6px 11px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
 .sync.on { color: var(--good); }
@@ -328,6 +333,8 @@ tr.done td.title { text-decoration: line-through; }
   const taskKey = t => `${t.project}::${t.title}`;
   const isDone = t => t.status === "완료" || !!checks[taskKey(t)];
   const doneDate = t => checks[taskKey(t)] || t.done || "";
+  // 장기 과제: term이 "장기"인 일, 그리고 아직 기획 단계인 프로젝트의 일. 나머지는 지금 할 일.
+  const isLong = t => t.term === "장기" || (t.term !== "단기" && projOf(t.project).status === "기획");
   const emojiOf = p => p.emoji || EMOJI[p.id] || (p.group === "수익화" ? "💰" : "🛠️");
   const chip = p => `<span class="chip ${GROUP_CLASS[p.group] || ""}"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}</span>`;
 
@@ -359,10 +366,13 @@ tr.done td.title { text-decoration: line-through; }
 
     // 목록에는 남은 일 + 오늘 끝낸 일(줄 그어서)만 둔다. 끝낸 날이 지나면 빠진다.
     const listed = tasks.filter(t => !isDone(t) || doneDate(t) >= today);
-    const mine = open.filter(t => t.owner === "MJ");
-    const claude = open.filter(t => t.owner !== "MJ");
-    const mineListed = listed.filter(t => t.owner === "MJ").sort(byDue);
-    const claudeListed = listed.filter(t => t.owner !== "MJ").sort(byDue);
+    const shortOpen = open.filter(t => !isLong(t));
+    const mine = shortOpen.filter(t => t.owner === "MJ");
+    const claude = shortOpen.filter(t => t.owner !== "MJ");
+    const shortListed = listed.filter(t => !isLong(t));
+    const longListed = listed.filter(isLong).sort(byDue);
+    const mineListed = shortListed.filter(t => t.owner === "MJ").sort(byDue);
+    const claudeListed = shortListed.filter(t => t.owner !== "MJ").sort(byDue);
     const running = projects.filter(p => p.status === "운영 중" || p.status === "진행 중").length;
     const waiting = projects.filter(p => tone(p.status) === "warn" || tone(p.status) === "bad");
     const weekLogs = logs.filter(l => l.date >= weekAgo && l.date <= today).length;
@@ -371,16 +381,21 @@ tr.done td.title { text-decoration: line-through; }
       <div class="section-title first"><h2>프로젝트</h2><span class="hint">막대는 목표 대비 진행도</span></div>
       <div class="cards">${projects.map(card).join("") || `<div class="empty">프로젝트가 없어요.</div>`}</div>
 
-      <div class="section-title"><h2>할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
+      <div class="section-title"><h2>⚡ 지금 할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
       <div class="todo-cols">
         ${todoCol("내가 할 일", mineListed)}
         ${todoCol("Claude가 할 일", claudeListed)}
       </div>
 
+      <div class="section-title"><h2>🗓️ 장기 과제</h2><span class="hint">꾸준히 쌓아 가는 일, 때가 되면 할 일, 아직 기획 중인 채널</span></div>
+      <div class="panel long-panel">
+        ${longListed.length ? `<div class="long-grid">${groupsHtml(longListed, true)}</div>` : `<div class="empty">장기 과제이 없어요.</div>`}
+      </div>
+
       <div class="section-title"><h2>한눈에</h2></div>
       <div class="tiles">
         ${tile("돌아가는 프로젝트", running, `전체 ${projects.length}개 중`)}
-        ${tile("내가 할 일", mine.length, `Claude 몫 ${claude.length}개`)}
+        ${tile("지금 내가 할 일", mine.length, `Claude 몫 ${claude.length}개 · 장기 ${open.filter(isLong).length}개`)}
         ${tile("확인이 필요한 곳", waiting.length, waiting.map(p => p.name).slice(0, 2).join(", ") || "없음")}
         ${tile("최근 7일 기록", weekLogs, `${md(weekAgo)} ~ ${md(today)}`)}
       </div>
@@ -436,7 +451,8 @@ tr.done td.title { text-decoration: line-through; }
   }
 
   // 할 일을 프로젝트별로 묶는다. 묶음 안은 남은 일 먼저, 그다음 마감순.
-  function todoCol(title, list) {
+  // withOwner면 할 일마다 누가 할 일인지(나/Claude) 붙인다.
+  function groupsHtml(list, withOwner) {
     const rankOf = recentRank();
     const groups = [];
     for (const t of list) {
@@ -446,15 +462,19 @@ tr.done td.title { text-decoration: line-through; }
     }
     groups.sort((a, b) => rankOf(a.id) - rankOf(b.id));
     groups.forEach(g => g.items.sort((a, b) => (isDone(a) - isDone(b)) || byDue(a, b)));
-    const left = list.filter(t => !isDone(t)).length;
-    const body = groups.map(g => {
+    return groups.map(g => {
       const p = projOf(g.id);
       return `<div class="todo-group ${GROUP_CLASS[p.group] || ""}">
         <div class="todo-proj"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}<span class="cnt">${g.items.filter(t => !isDone(t)).length}</span></div>
-        <ul class="todo-list">${g.items.map(t => `<li class="${isDone(t) ? "done" : ""}"><input type="checkbox" class="check" data-key="${esc(taskKey(t))}" ${isDone(t) ? "checked" : ""} ${t.status === "완료" ? "disabled title=\"Claude가 완료로 적은 일\"" : ""} aria-label="${esc(t.title)} 끝냄"><div class="t"><span class="tt">${esc(t.title)}</span>${
+        <ul class="todo-list">${g.items.map(t => `<li class="${isDone(t) ? "done" : ""}"><input type="checkbox" class="check" data-key="${esc(taskKey(t))}" ${isDone(t) ? "checked" : ""} ${t.status === "완료" ? "disabled title=\"Claude가 완료로 적은 일\"" : ""} aria-label="${esc(t.title)} 끝냄"><div class="t"><span class="tt">${esc(t.title)}</span>${withOwner ? ` <span class="who ${t.owner === "MJ" ? "me" : ""}">${t.owner === "MJ" ? "나" : "Claude"}</span>` : ""}${
           (t.status !== "할 일" && t.status !== "완료") || t.due ? `<div class="meta">${t.status !== "할 일" && t.status !== "완료" ? `<span class="badge ${tone(t.status)}">${esc(t.status)}</span>` : ""}${dueHtml(t.due)}</div>` : ""}</div></li>`).join("")}</ul>
       </div>`;
     }).join("");
+  }
+
+  function todoCol(title, list) {
+    const left = list.filter(t => !isDone(t)).length;
+    const body = groupsHtml(list, false);
     return `<div class="panel todo-col"><h3>${esc(title)} <span class="cnt">${left}</span></h3>
       ${body || `<div class="empty">남은 일이 없어요.</div>`}</div>`;
   }
