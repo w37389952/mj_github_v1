@@ -47,10 +47,10 @@
       "id": "iljin",
       "name": "일진일기",
       "group": "코드",
-      "status": "확인 대기",
-      "summary": "사주 기반 일진 기록 앱. 카카오 로그인과 기기 간 암호화 동기화까지 완성.",
+      "status": "운영 중",
+      "summary": "사주 기반 일진 기록 앱. 카카오 로그인과 기기 간 암호화 동기화를 마치고 PC·폰에서 매일 기록을 쌓는 중. 한 달쯤 쌓이면 분석 화면을 붙인다.",
       "link": "../iljin/",
-      "progress": 85
+      "progress": 90
     },
     {
       "id": "talk",
@@ -63,7 +63,12 @@
     }
   ],
   "tasks": [
-    { "project": "iljin", "title": "폰에서 카카오 로그인 되는지 확인", "owner": "MJ", "status": "할 일" },
+    { "project": "iljin", "title": "매일 점수·태그 기록 쌓기 (첫 목표 70일)", "owner": "MJ", "status": "진행 중" },
+    { "project": "iljin", "title": "기억나는 지난 날 소급해서 적기", "owner": "MJ", "status": "할 일" },
+    { "project": "iljin", "title": "기록이 한 달쯤 쌓이면 분석 화면 만들기 (오행·십성별 평균, 예측 적중률)", "owner": "Claude", "status": "할 일" },
+    { "project": "iljin", "title": "출시 전 카카오 앱의 회사명을 사업자 상호로 바꾸기", "owner": "MJ", "status": "할 일" },
+    { "project": "iljin", "title": "출시할 때 별도 저장소로 분리", "owner": "Claude", "status": "할 일" },
+    { "project": "iljin", "title": "폰에서 카카오 로그인 되는지 확인", "owner": "MJ", "status": "완료", "done": "2026-09-27" },
     { "project": "tistory", "title": "2주차 글 7편 작성·예약 (월요일 자동 루틴)", "owner": "Claude", "status": "할 일", "due": "2026-10-05" },
     { "project": "tistory", "title": "이미 올린 7편 표 스타일 바꿀지 결정", "owner": "MJ", "status": "할 일" },
     { "project": "tistory", "title": "블로그 메뉴에 소개 페이지 링크 추가", "owner": "Claude", "status": "할 일" },
@@ -89,8 +94,10 @@
     { "date": "2026-09-30", "project": "talk", "text": "한 번 열어본 요약에 읽음 표시를 남기게 했다." },
     { "date": "2026-09-30", "project": "radar", "text": "블로그 글쓰기 도구: 문장 줄바꿈과 말투를 다듬고 제목마다 이모지를 고르게 했다." },
     { "date": "2026-09-28", "project": "radar", "text": "글쓰기 도구에 제목·태그 후보를 늘리고 동네 검색량을 바로 보여주게 했다." },
+    { "date": "2026-09-27", "project": "iljin", "text": "카카오 로그인을 완성하고, 점수를 0~100 슬라이더로 바꾸고, 생극 방향이 거꾸로 표시되던 오류를 바로잡았다." },
     { "date": "2026-09-27", "project": "iljin", "text": "일기와 생년월일시를 잠가서 기기 사이로 동기화, 폰 화면 맞춤, 로그인 오류 안내." },
-    { "date": "2026-09-25", "project": "iljin", "text": "생년월일시를 Supabase로 옮기고 문장 조사를 받침에 맞췄다." },
-    { "date": "2026-09-18", "project": "radar", "text": "가게 이름으로 인허가 자료를 찾는 도구를 만들었다." }
+    { "date": "2026-09-25", "project": "iljin", "text": "사이트에 배포하고 서버를 연결, 생년월일시를 코드에서 빼고 문장 조사를 받침에 맞췄다." },
+    { "date": "2026-09-18", "project": "radar", "text": "가게 이름으로 인허가 자료를 찾는 도구를 만들었다." },
+    { "date": "2026-09-10", "project": "iljin", "text": "만세력·용신 판정·기록·백업을 갖춘 일진일기 첫 버전을 만들었다." }
   ]
 }
