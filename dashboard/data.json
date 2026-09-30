@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-30T15:10:00+09:00",
+  "updated": "2026-09-30T16:29:00+09:00",
   "projects": [
     {
       "id": "tistory",
@@ -39,7 +39,7 @@
       "name": "서울 신상 레이더",
       "group": "코드",
       "status": "운영 중",
-      "summary": "새로 문 연 음식점과 블로그 글을 매일 밤 자동 수집. 글쓰기 도구와 순위 추적 포함.",
+      "summary": "새로 문 연 음식점과 블로그 글을 매일 밤 자동 수집. 글쓰기 도구(제목·태그·말투·동네 검색량)와 블로그탭·통합검색 순위 추적 포함.",
       "link": "../",
       "progress": 90
     },
@@ -60,14 +60,6 @@
       "summary": "오픈채팅 대화를 날짜별 요약·프롬프트·파일·링크로 정리해 본다.",
       "link": "../talk/",
       "progress": 80
-    },
-    {
-      "id": "cafe-alert",
-      "name": "신상카페 알림",
-      "group": "코드",
-      "status": "확인 필요",
-      "summary": "이 작업을 한 창에서 오늘 한 일을 올리면 채워진다.",
-      "progress": 0
     }
   ],
   "tasks": [
@@ -80,11 +72,17 @@
     { "project": "threads", "title": "새 계정 만들고 Meta 개발자 앱 등록", "owner": "MJ", "status": "할 일" },
     { "project": "shorts", "title": "채널 개설, 이야기 포맷 정하기", "owner": "MJ", "status": "할 일" },
     { "project": "suno", "title": "수노 유료 플랜 가입 여부 결정", "owner": "MJ", "status": "할 일" },
-    { "project": "cafe-alert", "title": "지금까지 한 일 요약을 현황판에 올리기", "owner": "Claude", "status": "할 일" },
+    { "project": "radar", "title": "글쓰기 도구 수정분 푸시", "owner": "MJ", "status": "할 일" },
+    { "project": "radar", "title": "검색량 있는 동네 가게로 두 편 쓰기", "owner": "MJ", "status": "할 일" },
+    { "project": "radar", "title": "새 말투 지시로 API 글 다시 뽑아 보고 결과 알려주기", "owner": "MJ", "status": "할 일" },
+    { "project": "radar", "title": "API 글이 목표 분량(2,600자)에 못 미치는 문제 살피기", "owner": "Claude", "status": "할 일" },
+    { "project": "radar", "title": "새 글 두 편이 큰 동네 검색어에 걸렸는지 순위 확인", "owner": "Claude", "status": "할 일" },
     { "project": "tistory", "title": "블로그 이름·소개·소개 페이지 만들기", "owner": "Claude", "status": "완료", "done": "2026-09-30" },
-    { "project": "tistory", "title": "1주차 글 7편 발행·예약", "owner": "Claude", "status": "완료", "done": "2026-09-30" }
+    { "project": "tistory", "title": "1주차 글 7편 발행·예약", "owner": "Claude", "status": "완료", "done": "2026-09-30" },
+    { "project": "radar", "title": "지금까지 한 일 요약을 현황판에 올리기", "owner": "Claude", "status": "완료", "done": "2026-09-30" }
   ],
   "log": [
+    { "date": "2026-09-30", "project": "radar", "text": "조회수가 준 원인이 검색량 없는 동네 선택임을 순위 기록으로 확인하고, 제목·태그·이모지·말투 지시를 그에 맞게 손봤다." },
     { "date": "2026-09-30", "project": "현황판", "text": "작업 현황판 페이지를 만들었다." },
     { "date": "2026-09-30", "project": "tistory", "text": "블로그 세팅을 마치고 첫 글을 발행, 10/1~10/6 글 6편을 예약했다." },
     { "date": "2026-09-30", "project": "tistory", "text": "주제를 생활 정보 + 살림 추천으로 정하고 글 스타일 가이드를 만들었다." },
