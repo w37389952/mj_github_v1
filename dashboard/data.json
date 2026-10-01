@@ -1,23 +1,32 @@
 {
-  "updated": "2026-09-30T16:32:00+09:00",
+  "updated": "2026-10-01T17:50:00+09:00",
   "projects": [
     {
       "id": "tistory",
       "name": "티스토리 유용팁 생활노트",
       "group": "수익화",
       "status": "운영 중",
-      "summary": "생활 정보 5편 + 살림 추천 2편을 매주 예약 발행한다. 9/30 첫 글, 10/1~10/6 6편 예약 완료.",
+      "summary": "생활 정보 5편 + 살림 추천 2편을 매주 예약 발행한다. 9/30·10/1 발행, 10/6까지 예약 완료. 글마다 공식 사이트 링크.",
       "link": "https://yuyongtip.tistory.com/",
-      "links": [{ "label": "블로그 열기", "url": "https://yuyongtip.tistory.com/" }],
-      "goal": { "label": "애드센스 신청까지 글 수", "current": 7, "target": 20 }
+      "links": [
+        {
+          "label": "블로그 열기",
+          "url": "https://yuyongtip.tistory.com/"
+        }
+      ],
+      "goal": {
+        "label": "애드센스 신청까지 글 수",
+        "current": 7,
+        "target": 20
+      }
     },
     {
       "id": "threads",
       "name": "쓰레드 쇼핑",
       "group": "수익화",
-      "status": "기획",
-      "summary": "착샷 글은 직접, 상품 추천 글은 자동으로. 새 계정과 앱 등록부터.",
-      "progress": 5
+      "status": "진행 중",
+      "summary": "기존 계정으로 시작. 10/21까지는 착샷·사담으로 계정을 키우고, 10/22쯤부터 쿠팡·토스 링크를 붙인다.",
+      "progress": 15
     },
     {
       "id": "shorts",
@@ -42,7 +51,20 @@
       "status": "운영 중",
       "summary": "새로 문 연 음식점과 블로그 글을 매일 밤 자동 수집. 글쓰기 도구(제목·태그·말투·동네 검색량)와 블로그탭·통합검색 순위 추적 포함.",
       "link": "../",
-      "links": [{ "label": "신상 레이더", "url": "https://w37389952.github.io/mj_github_v1/" }, { "label": "순위 추적", "url": "https://w37389952.github.io/mj_github_v1/ranks.html" }, { "label": "글쓰기 도구", "url": "https://w37389952.github.io/mj_github_v1/write.html" }],
+      "links": [
+        {
+          "label": "신상 레이더",
+          "url": "https://w37389952.github.io/mj_github_v1/"
+        },
+        {
+          "label": "순위 추적",
+          "url": "https://w37389952.github.io/mj_github_v1/ranks.html"
+        },
+        {
+          "label": "글쓰기 도구",
+          "url": "https://w37389952.github.io/mj_github_v1/write.html"
+        }
+      ],
       "progress": 90
     },
     {
@@ -52,7 +74,12 @@
       "status": "운영 중",
       "summary": "사주 기반 일진 기록 앱. 카카오 로그인과 기기 간 암호화 동기화를 마치고 PC·폰에서 매일 기록을 쌓는 중. 한 달쯤 쌓이면 분석 화면을 붙인다.",
       "link": "../iljin/",
-      "links": [{ "label": "일진일기 열기", "url": "https://w37389952.github.io/mj_github_v1/iljin/" }],
+      "links": [
+        {
+          "label": "일진일기 열기",
+          "url": "https://w37389952.github.io/mj_github_v1/iljin/"
+        }
+      ],
       "progress": 90
     },
     {
@@ -62,51 +89,312 @@
       "status": "운영 중",
       "summary": "오픈채팅 대화를 날짜별 요약·프롬프트·파일·링크로 정리한다. 사진은 zip으로 넣어 보고, AI 요약은 본인 키를 넣었을 때만 쓴다. 공개 주소로 배포 완료.",
       "link": "../talk/",
-      "links": [{ "label": "단톡 정리함 열기", "url": "https://w37389952.github.io/mj_github_v1/talk/" }],
+      "links": [
+        {
+          "label": "단톡 정리함 열기",
+          "url": "https://w37389952.github.io/mj_github_v1/talk/"
+        }
+      ],
       "progress": 90
     }
   ],
   "tasks": [
-    { "project": "talk", "title": "폰에서 열어보고 좁은 화면이 쓸 만한지 확인", "owner": "MJ", "status": "할 일" },
-    { "project": "talk", "title": "며칠 써보고 AI 요약 지시문에서 고칠 점 모으기", "owner": "MJ", "status": "할 일" },
-    { "project": "talk", "title": "기기 간 동기화(내보내기·가져오기) — 필요해지면 만들기", "term": "장기", "owner": "Claude", "status": "할 일" },
-    { "project": "talk", "title": "main에 병합하고 공개 주소로 배포", "owner": "MJ", "status": "완료", "done": "2026-09-30" },
-    { "project": "iljin", "title": "매일 점수·태그 기록 쌓기 (첫 목표 70일)", "term": "장기", "owner": "MJ", "status": "진행 중" },
-    { "project": "iljin", "title": "기억나는 지난 날 소급해서 적기", "term": "장기", "owner": "MJ", "status": "할 일" },
-    { "project": "iljin", "title": "기록이 한 달쯤 쌓이면 분석 화면 만들기 (오행·십성별 평균, 예측 적중률)", "term": "장기", "owner": "Claude", "status": "할 일" },
-    { "project": "iljin", "title": "출시 전 카카오 앱의 회사명을 사업자 상호로 바꾸기", "term": "장기", "owner": "MJ", "status": "할 일" },
-    { "project": "iljin", "title": "출시할 때 별도 저장소로 분리", "term": "장기", "owner": "Claude", "status": "할 일" },
-    { "project": "iljin", "title": "폰에서 카카오 로그인 되는지 확인", "owner": "MJ", "status": "완료", "done": "2026-09-27" },
-    { "project": "tistory", "title": "2주차 글 7편 작성·예약 (월요일 자동 루틴)", "owner": "Claude", "status": "할 일", "due": "2026-10-05" },
-    { "project": "tistory", "title": "이미 올린 7편 표 스타일 바꿀지 결정", "owner": "MJ", "status": "할 일" },
-    { "project": "tistory", "title": "블로그 메뉴에 소개 페이지 링크 추가", "owner": "Claude", "status": "할 일" },
-    { "project": "tistory", "title": "임시저장에 남은 소개글 초안 정리", "owner": "Claude", "status": "할 일" },
-    { "project": "tistory", "title": "글 15~20편 쌓이면 애드센스 신청", "term": "장기", "owner": "MJ", "status": "할 일" },
-    { "project": "threads", "title": "새 계정 만들고 Meta 개발자 앱 등록", "owner": "MJ", "status": "할 일" },
-    { "project": "shorts", "title": "채널 개설, 이야기 포맷 정하기", "owner": "MJ", "status": "할 일" },
-    { "project": "suno", "title": "수노 유료 플랜 가입 여부 결정", "owner": "MJ", "status": "할 일" },
-    { "project": "radar", "title": "글쓰기 도구 수정분 푸시", "owner": "MJ", "status": "할 일" },
-    { "project": "radar", "title": "검색량 있는 동네 가게로 두 편 쓰기", "owner": "MJ", "status": "할 일" },
-    { "project": "radar", "title": "새 말투 지시로 API 글 다시 뽑아 보고 결과 알려주기", "owner": "MJ", "status": "할 일" },
-    { "project": "radar", "title": "API 글이 목표 분량(2,600자)에 못 미치는 문제 살피기", "owner": "Claude", "status": "할 일" },
-    { "project": "radar", "title": "새 글 두 편이 큰 동네 검색어에 걸렸는지 순위 확인", "owner": "Claude", "status": "할 일" },
-    { "project": "tistory", "title": "블로그 이름·소개·소개 페이지 만들기", "owner": "Claude", "status": "완료", "done": "2026-09-30" },
-    { "project": "tistory", "title": "1주차 글 7편 발행·예약", "owner": "Claude", "status": "완료", "done": "2026-09-30" },
-    { "project": "radar", "title": "지금까지 한 일 요약을 현황판에 올리기", "owner": "Claude", "status": "완료", "done": "2026-09-30" }
+    {
+      "project": "threads",
+      "title": "쿠팡·토스 링크 글 시작 (3~4개 중 1개)",
+      "owner": "Claude",
+      "status": "할 일",
+      "due": "2026-10-22"
+    },
+    {
+      "project": "threads",
+      "title": "스레드 자동 게시 연결 (메타 개발자 설정 안내)",
+      "owner": "Claude",
+      "status": "할 일",
+      "due": "2026-10-21"
+    },
+    {
+      "project": "threads",
+      "title": "쿠팡 파트너스 가입",
+      "owner": "MJ",
+      "status": "할 일",
+      "due": "2026-10-14"
+    },
+    {
+      "project": "threads",
+      "title": "매일 패션 계정 팔로우 10~20개 + 댓글 1~3개",
+      "owner": "MJ",
+      "status": "진행 중",
+      "due": "2026-10-21"
+    },
+    {
+      "project": "threads",
+      "title": "무신사 체험단 착샷 사진 보내기 (첫 글)",
+      "owner": "MJ",
+      "status": "할 일",
+      "due": "2026-10-07"
+    },
+    {
+      "project": "threads",
+      "title": "프로필 사진·이름·소개글 완성",
+      "owner": "MJ",
+      "status": "할 일",
+      "due": "2026-10-07"
+    },
+    {
+      "project": "tistory",
+      "title": "예약 글 공식 사이트 링크 달기",
+      "owner": "Claude",
+      "status": "완료",
+      "done": "2026-09-30"
+    },
+    {
+      "project": "tistory",
+      "title": "10/5 월요일 아침 9시 전후 PC 켜두기",
+      "owner": "MJ",
+      "status": "할 일",
+      "due": "2026-10-05"
+    },
+    {
+      "project": "talk",
+      "title": "폰에서 열어보고 좁은 화면이 쓸 만한지 확인",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "talk",
+      "title": "며칠 써보고 AI 요약 지시문에서 고칠 점 모으기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "talk",
+      "title": "기기 간 동기화(내보내기·가져오기) — 필요해지면 만들기",
+      "term": "장기",
+      "owner": "Claude",
+      "status": "할 일"
+    },
+    {
+      "project": "talk",
+      "title": "main에 병합하고 공개 주소로 배포",
+      "owner": "MJ",
+      "status": "완료",
+      "done": "2026-09-30"
+    },
+    {
+      "project": "iljin",
+      "title": "매일 점수·태그 기록 쌓기 (첫 목표 70일)",
+      "term": "장기",
+      "owner": "MJ",
+      "status": "진행 중"
+    },
+    {
+      "project": "iljin",
+      "title": "기억나는 지난 날 소급해서 적기",
+      "term": "장기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "iljin",
+      "title": "기록이 한 달쯤 쌓이면 분석 화면 만들기 (오행·십성별 평균, 예측 적중률)",
+      "term": "장기",
+      "owner": "Claude",
+      "status": "할 일"
+    },
+    {
+      "project": "iljin",
+      "title": "출시 전 카카오 앱의 회사명을 사업자 상호로 바꾸기",
+      "term": "장기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "iljin",
+      "title": "출시할 때 별도 저장소로 분리",
+      "term": "장기",
+      "owner": "Claude",
+      "status": "할 일"
+    },
+    {
+      "project": "iljin",
+      "title": "폰에서 카카오 로그인 되는지 확인",
+      "owner": "MJ",
+      "status": "완료",
+      "done": "2026-09-27"
+    },
+    {
+      "project": "tistory",
+      "title": "2주차 글 7편 작성·예약 (월요일 자동 루틴)",
+      "owner": "Claude",
+      "status": "할 일",
+      "due": "2026-10-05"
+    },
+    {
+      "project": "tistory",
+      "title": "이미 올린 7편 표 스타일 바꿀지 결정",
+      "owner": "MJ",
+      "status": "완료",
+      "done": "2026-09-30"
+    },
+    {
+      "project": "tistory",
+      "title": "블로그 메뉴에 소개 페이지 링크 추가",
+      "owner": "Claude",
+      "status": "할 일"
+    },
+    {
+      "project": "tistory",
+      "title": "임시저장에 남은 소개글 초안 정리",
+      "owner": "Claude",
+      "status": "할 일"
+    },
+    {
+      "project": "tistory",
+      "title": "글 15~20편 쌓이면 애드센스 신청",
+      "term": "장기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "shorts",
+      "title": "채널 개설, 이야기 포맷 정하기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "suno",
+      "title": "수노 유료 플랜 가입 여부 결정",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "글쓰기 도구 수정분 푸시",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "검색량 있는 동네 가게로 두 편 쓰기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "새 말투 지시로 API 글 다시 뽑아 보고 결과 알려주기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "API 글이 목표 분량(2,600자)에 못 미치는 문제 살피기",
+      "owner": "Claude",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "새 글 두 편이 큰 동네 검색어에 걸렸는지 순위 확인",
+      "owner": "Claude",
+      "status": "할 일"
+    },
+    {
+      "project": "tistory",
+      "title": "블로그 이름·소개·소개 페이지 만들기",
+      "owner": "Claude",
+      "status": "완료",
+      "done": "2026-09-30"
+    },
+    {
+      "project": "tistory",
+      "title": "1주차 글 7편 발행·예약",
+      "owner": "Claude",
+      "status": "완료",
+      "done": "2026-09-30"
+    },
+    {
+      "project": "radar",
+      "title": "지금까지 한 일 요약을 현황판에 올리기",
+      "owner": "Claude",
+      "status": "완료",
+      "done": "2026-09-30"
+    }
   ],
   "log": [
-    { "date": "2026-09-30", "project": "talk", "text": "공개 주소로 배포하고, 방·탭마다 보던 자리를 기억하게 하고 프롬프트를 더 넓게 찾도록 고쳤다." },
-    { "date": "2026-09-30", "project": "radar", "text": "조회수가 준 원인이 검색량 없는 동네 선택임을 순위 기록으로 확인하고, 제목·태그·이모지·말투 지시를 그에 맞게 손봤다." },
-    { "date": "2026-09-30", "project": "현황판", "text": "작업 현황판 페이지를 만들었다." },
-    { "date": "2026-09-30", "project": "tistory", "text": "블로그 세팅을 마치고 첫 글을 발행, 10/1~10/6 글 6편을 예약했다." },
-    { "date": "2026-09-30", "project": "tistory", "text": "주제를 생활 정보 + 살림 추천으로 정하고 글 스타일 가이드를 만들었다." },
-    { "date": "2026-09-30", "project": "talk", "text": "한 번 열어본 요약에 읽음 표시를 남기게 했다." },
-    { "date": "2026-09-30", "project": "radar", "text": "블로그 글쓰기 도구: 문장 줄바꿈과 말투를 다듬고 제목마다 이모지를 고르게 했다." },
-    { "date": "2026-09-28", "project": "radar", "text": "글쓰기 도구에 제목·태그 후보를 늘리고 동네 검색량을 바로 보여주게 했다." },
-    { "date": "2026-09-27", "project": "iljin", "text": "카카오 로그인을 완성하고, 점수를 0~100 슬라이더로 바꾸고, 생극 방향이 거꾸로 표시되던 오류를 바로잡았다." },
-    { "date": "2026-09-27", "project": "iljin", "text": "일기와 생년월일시를 잠가서 기기 사이로 동기화, 폰 화면 맞춤, 로그인 오류 안내." },
-    { "date": "2026-09-25", "project": "iljin", "text": "사이트에 배포하고 서버를 연결, 생년월일시를 코드에서 빼고 문장 조사를 받침에 맞췄다." },
-    { "date": "2026-09-18", "project": "radar", "text": "가게 이름으로 인허가 자료를 찾는 도구를 만들었다." },
-    { "date": "2026-09-10", "project": "iljin", "text": "만세력·용신 판정·기록·백업을 갖춘 일진일기 첫 버전을 만들었다." }
+    {
+      "date": "2026-10-01",
+      "project": "threads",
+      "text": "기존 계정으로 시작하기로 하고, 3주 준비 일정(프로필·팔로우·쿠팡 가입·자동 게시)을 정했다."
+    },
+    {
+      "date": "2026-10-01",
+      "project": "tistory",
+      "text": "KTX 글 예약 발행 확인, 예약 글 4편에 공식 사이트 링크를 달았다."
+    },
+    {
+      "date": "2026-09-30",
+      "project": "talk",
+      "text": "공개 주소로 배포하고, 방·탭마다 보던 자리를 기억하게 하고 프롬프트를 더 넓게 찾도록 고쳤다."
+    },
+    {
+      "date": "2026-09-30",
+      "project": "radar",
+      "text": "조회수가 준 원인이 검색량 없는 동네 선택임을 순위 기록으로 확인하고, 제목·태그·이모지·말투 지시를 그에 맞게 손봤다."
+    },
+    {
+      "date": "2026-09-30",
+      "project": "현황판",
+      "text": "작업 현황판 페이지를 만들었다."
+    },
+    {
+      "date": "2026-09-30",
+      "project": "tistory",
+      "text": "블로그 세팅을 마치고 첫 글을 발행, 10/1~10/6 글 6편을 예약했다."
+    },
+    {
+      "date": "2026-09-30",
+      "project": "tistory",
+      "text": "주제를 생활 정보 + 살림 추천으로 정하고 글 스타일 가이드를 만들었다."
+    },
+    {
+      "date": "2026-09-30",
+      "project": "talk",
+      "text": "한 번 열어본 요약에 읽음 표시를 남기게 했다."
+    },
+    {
+      "date": "2026-09-30",
+      "project": "radar",
+      "text": "블로그 글쓰기 도구: 문장 줄바꿈과 말투를 다듬고 제목마다 이모지를 고르게 했다."
+    },
+    {
+      "date": "2026-09-28",
+      "project": "radar",
+      "text": "글쓰기 도구에 제목·태그 후보를 늘리고 동네 검색량을 바로 보여주게 했다."
+    },
+    {
+      "date": "2026-09-27",
+      "project": "iljin",
+      "text": "카카오 로그인을 완성하고, 점수를 0~100 슬라이더로 바꾸고, 생극 방향이 거꾸로 표시되던 오류를 바로잡았다."
+    },
+    {
+      "date": "2026-09-27",
+      "project": "iljin",
+      "text": "일기와 생년월일시를 잠가서 기기 사이로 동기화, 폰 화면 맞춤, 로그인 오류 안내."
+    },
+    {
+      "date": "2026-09-25",
+      "project": "iljin",
+      "text": "사이트에 배포하고 서버를 연결, 생년월일시를 코드에서 빼고 문장 조사를 받침에 맞췄다."
+    },
+    {
+      "date": "2026-09-18",
+      "project": "radar",
+      "text": "가게 이름으로 인허가 자료를 찾는 도구를 만들었다."
+    },
+    {
+      "date": "2026-09-10",
+      "project": "iljin",
+      "text": "만세력·용신 판정·기록·백업을 갖춘 일진일기 첫 버전을 만들었다."
+    }
   ]
 }
