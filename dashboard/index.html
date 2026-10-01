@@ -9,48 +9,61 @@
 /* 내용은 전부 data.json에 있다. 이 파일은 그리는 일만 한다.
    갱신 규칙은 같은 폴더의 README.md 참고. */
 :root {
-  --bg: #f6f7f9;
+  /* 사무실 지도 느낌: 연한 라벤더 바탕, 흰 카드, 머스터드 강조 */
+  --bg: #efedf7;
   --panel: #ffffff;
-  --panel-2: #fbfbfd;
-  --line: #e3e6ec;
-  --line-soft: #eef0f4;
-  --text: #1b1f27;
-  --text-2: #5c6474;
-  --text-3: #8a91a1;
-  --accent: #2a78d6;
-  --accent-soft: #e8f1fc;
-  --grid: #eceef2;
-  /* 그룹 색: 코드 = 1번(파랑), 수익화 = 2번(주황). 순서 고정. */
-  --g-code: #2a78d6;
-  --g-money: #eb6834;
+  --panel-2: #f8f7fc;
+  --line: #e1deec;
+  --line-soft: #eceaf3;
+  --text: #24212e;
+  --text-2: #5d5970;
+  --text-3: #8b879c;
+  --accent: #5b4fc4;
+  --accent-soft: #ebe8fa;
+  --mustard: #f1c24b;
+  --mustard-ink: #3a2c05;
+  --mustard-soft: #fdf3d6;
+  --pink-soft: #fbe4ea;
+  --grid: #ebe9f2;
+  /* 그룹 색: 코드 = 보라, 수익화 = 머스터드 주황. 순서 고정. */
+  --g-code: #6a5acd;
+  --g-money: #e09a1f;
   /* 상태 색은 그룹 색과 따로 둔다. 항상 글자와 함께 쓴다. */
   --good: #0f7b5f;   --good-soft: #e6f5ef;
-  --warn: #9a5b00;   --warn-soft: #fff3dc;
-  --bad: #b3261e;    --bad-soft: #fde8e6;
-  --muted-soft: #eef0f4;
-  --radius: 12px;
-  --shadow: 0 1px 2px rgba(16,20,30,.04), 0 4px 14px rgba(16,20,30,.05);
+  --warn: #8a5a00;   --warn-soft: #fdf3d6;
+  --bad: #b3261e;    --bad-soft: #fbe4ea;
+  --muted-soft: #eeecf4;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(40,30,80,.04), 0 6px 18px rgba(40,30,80,.06);
+  --floor: #f6f4fb;
+  --skin: #f5cfa8;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #131519;
-    --panel: #1b1e24;
-    --panel-2: #20242b;
-    --line: #2d323c;
-    --line-soft: #252932;
-    --text: #e8eaf0;
-    --text-2: #a6adbb;
-    --text-3: #7a8292;
-    --accent: #6da7ec;
-    --accent-soft: #1d2a3d;
-    --grid: #262a33;
-    --g-code: #3987e5;
-    --g-money: #d95926;
+    --bg: #17151f;
+    --panel: #211e2b;
+    --panel-2: #282433;
+    --line: #353044;
+    --line-soft: #2c2838;
+    --text: #ece9f5;
+    --text-2: #b0aac2;
+    --text-3: #847e97;
+    --accent: #a99cf5;
+    --accent-soft: #2d2848;
+    --mustard: #e9bb45;
+    --mustard-ink: #2a2004;
+    --mustard-soft: #3a3018;
+    --pink-soft: #3d2229;
+    --grid: #2c2838;
+    --g-code: #8e80ea;
+    --g-money: #e6a73a;
     --good: #5cc9a3;   --good-soft: #17302a;
-    --warn: #e5ac52;   --warn-soft: #33291a;
-    --bad: #f08a80;    --bad-soft: #3a1f1d;
-    --muted-soft: #262a33;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.2);
+    --warn: #e8bf55;   --warn-soft: #3a3018;
+    --bad: #f08a80;    --bad-soft: #3d2229;
+    --muted-soft: #2c2838;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.22);
+    --floor: #1d1a26;
+    --skin: #e8bf98;
   }
 }
 * { box-sizing: border-box; }
@@ -71,11 +84,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
 
 header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; margin-bottom: 18px; }
-header.top h1 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+header.top .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .14em; color: var(--accent); text-transform: uppercase; }
+header.top h1 { margin: 2px 0 0; font-size: 24px; letter-spacing: -.03em; line-height: 1.3; }
 header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .filters { margin-left: auto; display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
 .filters button { border: 0; background: transparent; padding: 5px 12px; border-radius: 7px; font-weight: 600; font-size: 13px; color: var(--text-2); }
-.filters button.on { background: var(--accent-soft); color: var(--accent); }
+.filters button.on { background: var(--mustard); color: var(--mustard-ink); }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
 .section-title { display: flex; align-items: baseline; gap: 8px; margin: 28px 0 10px; }
@@ -136,7 +150,7 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .setup input { width: 100%; font: inherit; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); margin-top: 8px; }
 .setup-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .setup-actions button { border-radius: 8px; padding: 7px 14px; font-weight: 600; font-size: 13px; border: 1px solid var(--line); background: var(--panel); }
-.setup-actions .primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.setup-actions .primary { background: var(--mustard); border-color: var(--mustard); color: var(--mustard-ink); }
 .toast { position: fixed; left: 16px; right: 16px; bottom: 20px; margin: 0 auto; width: max-content; text-align: center; background: var(--text); color: var(--bg); padding: 9px 14px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 30; max-width: calc(100% - 32px); }
 .toast.show { opacity: 1; }
 .todo-list .t { flex: 1; min-width: 0; }
@@ -168,12 +182,70 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .bar-row .pct { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
 .card .next { font-size: 12.5px; color: var(--text-2); border-top: 1px solid var(--line-soft); padding-top: 8px; margin-top: auto; }
 .card .next b { color: var(--text); font-weight: 600; }
-.card .links { display: flex; flex-wrap: wrap; gap: 6px; }
-.card .go { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 12.5px; font-weight: 600; text-decoration: none; }
-.card .go:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
-.card .go.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.card .go.primary:hover { filter: brightness(1.08); color: #fff; }
+.links { display: flex; flex-wrap: wrap; gap: 6px; }
+.go { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 12.5px; font-weight: 600; text-decoration: none; }
+.go:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.go.primary { background: var(--mustard); border-color: var(--mustard); color: var(--mustard-ink); }
+.go.primary:hover { filter: brightness(1.04); color: var(--mustard-ink); }
 .card .foot { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-3); }
+
+/* 단계 표시: 기획 → 진행 중 → 운영 중 → 컨펌 대기 */
+.steps { display: flex; align-items: stretch; gap: 0; padding: 6px; overflow-x: auto; }
+.step { flex: 1; min-width: 110px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; position: relative; }
+.step + .step::before { content: "›"; position: absolute; left: -6px; top: 50%; transform: translateY(-52%); color: var(--text-3); font-size: 18px; }
+.step .n { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-weight: 800; font-variant-numeric: tabular-nums; background: var(--muted-soft); color: var(--text-2); flex: none; }
+.step .l { font-size: 12.5px; font-weight: 700; line-height: 1.25; }
+.step .l small { display: block; font-weight: 500; color: var(--text-3); font-size: 11.5px; }
+.step.hot { background: var(--mustard-soft); }
+.step.hot .n { background: var(--mustard); color: var(--mustard-ink); }
+
+/* 사무실 지도: 프로젝트마다 방 하나, 방마다 직원 하나 */
+.office { padding: 14px; background: var(--floor);
+  background-image: linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 24px 24px; }
+.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.room { position: relative; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 12px 14px 12px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow); transition: transform .12s, border-color .12s; }
+.room:hover { transform: translateY(-2px); border-color: var(--accent); }
+.room:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.room.code { border-top: 4px solid var(--g-code); }
+.room.money { border-top: 4px solid var(--g-money); }
+.room .rhead { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: .06em; }
+.room .rhead .badge { margin-left: auto; letter-spacing: 0; }
+.room .rname { font-weight: 800; font-size: 15px; letter-spacing: -.02em; display: flex; align-items: center; gap: 6px; }
+.room .stage { height: 122px; position: relative; display: flex; align-items: flex-end; justify-content: center; border-radius: 10px; background: var(--panel-2); border: 1px dashed var(--line); margin-top: 2px; }
+.room .rfoot { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
+.room .rfoot .staff { font-weight: 700; color: var(--text); }
+.room .rfoot .mini { flex: 1; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.room .rfoot .mini > i { display: block; height: 100%; }
+.room .rfoot .pct { font-variant-numeric: tabular-nums; color: var(--text-3); }
+.sprite { width: 60px; height: 72px; image-rendering: pixelated; display: block; margin-bottom: 6px; }
+.room:not(.idle) .sprite { animation: bob 1.2s steps(2) infinite; }
+@keyframes bob { 50% { transform: translateY(-2px); } }
+.bubble { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 8px; background: var(--panel); border: 1.5px solid var(--text); color: var(--text); }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--text); border-bottom: 0; }
+.bubble.ask { background: var(--mustard); color: var(--mustard-ink); border-color: var(--mustard-ink); }
+.bubble.ask::after { border-top-color: var(--mustard-ink); }
+.bubble.work { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.bubble.work::after { border-top-color: var(--accent); }
+.bubble.rest { color: var(--text-3); border-color: var(--line); }
+.bubble.rest::after { border-top-color: var(--line); }
+.bang { position: absolute; top: -9px; right: -9px; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font-weight: 900; font-size: 13px; display: grid; place-items: center; box-shadow: 0 0 0 3px var(--panel); }
+@media (prefers-reduced-motion: reduce) { .room .sprite { animation: none !important; } .room { transition: none; } }
+
+/* 방 상세 창 */
+.sheet-bg { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(30,24,50,.42); z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.sheet { width: 100%; max-width: 560px; max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 20px 50px rgba(20,15,40,.3); padding: 18px 18px 14px; }
+.sheet .shead { display: flex; align-items: center; gap: 12px; }
+.sheet .shead .sprite { width: 50px; height: 60px; margin: 0; flex: none; }
+.sheet .shead h3 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+.sheet .shead .who-line { font-size: 12.5px; color: var(--text-2); }
+.sheet .close { margin-left: auto; align-self: flex-start; border: 1px solid var(--line); background: var(--panel-2); border-radius: 9px; padding: 4px 10px; font-weight: 700; }
+.sheet .ssum { color: var(--text-2); font-size: 13px; margin: 12px 0 10px; }
+.sheet .counts { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
+.sheet .counts span { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--muted-soft); color: var(--text-2); }
+.sheet .counts span.hot { background: var(--mustard); color: var(--mustard-ink); }
+.sheet h4 { margin: 14px 0 2px; font-size: 13px; color: var(--text-2); }
+.sheet .todo-list { margin-bottom: 4px; }
 
 /* 활동 차트 */
 .chart-panel { padding: 14px 16px 10px; position: relative; }
@@ -216,6 +288,14 @@ tr.done td.title { text-decoration: line-through; }
 .error { padding: 16px; color: var(--bad); }
 
 @media (max-width: 760px) {
+  header.top h1 { font-size: 20px; }
+  .rooms { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .room { padding: 10px 11px; }
+  .room .rname { font-size: 13.5px; }
+  .room .stage { height: 116px; }
+  .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .step { min-width: 0; padding: 8px 10px; }
+  .step + .step::before { display: none; }
   .tiles { grid-template-columns: repeat(2, 1fr); }
   .todo-cols { grid-template-columns: 1fr; }
   .filters { margin-left: 0; }
@@ -229,7 +309,8 @@ tr.done td.title { text-decoration: line-through; }
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>작업 현황판</h1>
+      <div class="eyebrow">MJ's creative workspace</div>
+      <h1>대표님, 오늘은 무엇을 처리할까요?</h1>
       <div class="sub" id="updated">불러오는 중…</div>
     </div>
     <button class="sync" id="syncBtn" type="button"></button>
@@ -267,6 +348,7 @@ tr.done td.title { text-decoration: line-through; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="tip" id="tip"></div>
+<div id="sheetHost"></div>
 
 <script>
 (() => {
@@ -341,6 +423,54 @@ tr.done td.title { text-decoration: line-through; }
   const emojiOf = p => p.emoji || EMOJI[p.id] || (p.group === "수익화" ? "💰" : "🛠️");
   const chip = p => `<span class="chip ${GROUP_CLASS[p.group] || ""}"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}</span>`;
 
+  // ── 직원(픽셀 캐릭터) ──
+  // 프로젝트마다 직원 한 명. data.json의 staff { name, role }로 이름을 바꿀 수 있다.
+  const STAFF = {
+    tistory: { name: "팁이", role: "블로그 담당", hair: "#3a2a22", shirt: "#f1c24b", long: true },
+    threads: { name: "쓰레", role: "쇼핑 담당", hair: "#7a4a2a", shirt: "#ef8fa8", long: true },
+    shorts: { name: "오싹", role: "공포 쇼츠 담당", hair: "#1f1b2b", shirt: "#4a4560" },
+    suno: { name: "노을", role: "음악 담당", hair: "#c06a3a", shirt: "#5bb3a6" },
+    radar: { name: "레이", role: "맛집 레이더 담당", hair: "#2b2b2b", shirt: "#e46a4a" },
+    iljin: { name: "달이", role: "일진일기 담당", hair: "#3b3170", shirt: "#8e80ea", long: true },
+    talk: { name: "톡이", role: "단톡 정리 담당", hair: "#5a3a1a", shirt: "#6aa5e0" }
+  };
+  const SHIRTS = ["#f1c24b", "#ef8fa8", "#5bb3a6", "#e46a4a", "#8e80ea", "#6aa5e0"];
+  function staffOf(p) {
+    const base = STAFF[p.id] || (() => {
+      let h = 0; for (const c of String(p.id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      return { name: String(p.name || p.id).slice(0, 2), role: "담당", hair: "#3a2a22", shirt: SHIRTS[h % SHIRTS.length], long: h % 2 === 0 };
+    })();
+    return { ...base, ...(p.staff || {}) };
+  }
+  // 12×14 도트. h 머리, s 피부, k 눈, r 볼, m 입, c 옷, L 노트북, d 책상, D 책상 다리
+  const SPRITE = [
+    "...hhhhhh...",
+    "..hhhhhhhh..",
+    "..hssssssh..",
+    "..skssssks..",
+    "..srssssrs..",
+    "...ssmmss...",
+    "....ssss....",
+    "..cccccccc..",
+    ".cccccccccc.",
+    ".scLLLLLLcs.",
+    ".ccLLLLLLcc.",
+    "dddddddddddd",
+    ".D........D.",
+    ".D........D."
+  ];
+  function spriteSvg(p) {
+    const st = staffOf(p);
+    const col = { h: st.hair, s: "var(--skin)", k: "#2a2333", r: "#f29aa0", m: "#b85c4c", c: st.shirt, L: "#c9c4d8", d: "#b88a5a", D: "#8c6440" };
+    const rows = SPRITE.map(r => r.split(""));
+    if (st.long) for (let y = 2; y <= 7; y++) { rows[y][1] = "h"; rows[y][10] = "h"; }
+    let rects = "";
+    rows.forEach((r, y) => r.forEach((c, x) => { if (col[c]) rects += `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${col[c]}"/>`; }));
+    // 노트북 화면 불빛
+    rects += `<rect x="5" y="9.4" width="2" height=".6" fill="#fff" opacity=".7"/>`;
+    return `<svg class="sprite" viewBox="0 0 12 14" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
+  }
+
   function dueHtml(d) {
     if (!d) return "";
     const n = diffDays(d, kstToday());
@@ -379,10 +509,20 @@ tr.done td.title { text-decoration: line-through; }
     const running = projects.filter(p => p.status === "운영 중" || p.status === "진행 중").length;
     const waiting = projects.filter(p => tone(p.status) === "warn" || tone(p.status) === "bad");
     const weekLogs = logs.filter(l => l.date >= weekAgo && l.date <= today).length;
+    const rankOf = recentRank();
 
     root.innerHTML = `
-      <div class="section-title first"><h2>프로젝트</h2><span class="hint">막대는 목표 대비 진행도</span></div>
-      <div class="cards">${projects.map(card).join("") || `<div class="empty">프로젝트가 없어요.</div>`}</div>
+      <div class="panel steps">
+        ${step("기획", projects.filter(p => p.status === "기획").length, "준비 중인 채널")}
+        ${step("진행 중", projects.filter(p => p.status === "진행 중").length, "만드는 중")}
+        ${step("운영 중", projects.filter(p => p.status === "운영 중").length, "돌아가는 중")}
+        ${step("대표님 차례", mine.length, "내가 할 일", mine.length > 0)}
+      </div>
+
+      <div class="section-title"><h2>🏢 MJ 오피스</h2><span class="hint">최근 작업한 방부터 · 방을 누르면 할 일이 떠요</span></div>
+      <div class="panel office"><div class="rooms">${
+        projects.slice().sort((a, b) => rankOf(a.id) - rankOf(b.id)).map((p, i) => room(p, i)).join("") || `<div class="empty">프로젝트가 없어요.</div>`
+      }</div></div>
 
       <div class="section-title"><h2>⚡ 지금 할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
       <div class="todo-cols">
@@ -392,7 +532,7 @@ tr.done td.title { text-decoration: line-through; }
 
       <div class="section-title"><h2>🗓️ 장기 과제</h2><span class="hint">꾸준히 쌓아 가는 일, 때가 되면 할 일, 아직 기획 중인 채널</span></div>
       <div class="panel long-panel">
-        ${longListed.length ? `<div class="long-grid">${groupsHtml(longListed, true)}</div>` : `<div class="empty">장기 과제이 없어요.</div>`}
+        ${longListed.length ? `<div class="long-grid">${groupsHtml(longListed, true)}</div>` : `<div class="empty">장기 과제가 없어요.</div>`}
       </div>
 
       <div class="section-title"><h2>한눈에</h2></div>
@@ -423,9 +563,9 @@ tr.done td.title { text-decoration: line-through; }
     `;
 
     drawChart(logs, today);
-    root.querySelectorAll("input.check").forEach(cb => {
-      cb.onchange = () => toggleCheck(cb.dataset.key, cb.checked);
-    });
+    bindChecks(root);
+    root.querySelectorAll(".room").forEach(b => { b.onclick = () => openRoom(b.dataset.id); });
+    renderSheet();
     const more = $("#more");
     if (more) more.onclick = () => { logLimit += 20; render(); };
     $("#showDone").onchange = e => {
@@ -469,10 +609,86 @@ tr.done td.title { text-decoration: line-through; }
       const p = projOf(g.id);
       return `<div class="todo-group ${GROUP_CLASS[p.group] || ""}">
         <div class="todo-proj"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}<span class="cnt">${g.items.filter(t => !isDone(t)).length}</span></div>
-        <ul class="todo-list">${g.items.map(t => `<li class="${isDone(t) ? "done" : ""}"><input type="checkbox" class="check" data-key="${esc(taskKey(t))}" ${isDone(t) ? "checked" : ""} ${t.status === "완료" ? "disabled title=\"Claude가 완료로 적은 일\"" : ""} aria-label="${esc(t.title)} 끝냄"><div class="t"><span class="tt">${esc(t.title)}</span>${withOwner ? ` <span class="who ${t.owner === "MJ" ? "me" : ""}">${t.owner === "MJ" ? "나" : "Claude"}</span>` : ""}${
-          (t.status !== "할 일" && t.status !== "완료") || t.due ? `<div class="meta">${t.status !== "할 일" && t.status !== "완료" ? `<span class="badge ${tone(t.status)}">${esc(t.status)}</span>` : ""}${dueHtml(t.due)}</div>` : ""}</div></li>`).join("")}</ul>
+        <ul class="todo-list">${g.items.map(t => taskLi(t, withOwner)).join("")}</ul>
       </div>`;
     }).join("");
+  }
+
+  function taskLi(t, withOwner, withTerm) {
+    return `<li class="${isDone(t) ? "done" : ""}"><input type="checkbox" class="check" data-key="${esc(taskKey(t))}" ${isDone(t) ? "checked" : ""} ${t.status === "완료" ? "disabled title=\"Claude가 완료로 적은 일\"" : ""} aria-label="${esc(t.title)} 끝냄"><div class="t"><span class="tt">${esc(t.title)}</span>${withOwner ? ` <span class="who ${t.owner === "MJ" ? "me" : ""}">${t.owner === "MJ" ? "나" : "Claude"}</span>` : ""}${withTerm && isLong(t) ? ` <span class="who">장기</span>` : ""}${
+      (t.status !== "할 일" && t.status !== "완료") || t.due ? `<div class="meta">${t.status !== "할 일" && t.status !== "완료" ? `<span class="badge ${tone(t.status)}">${esc(t.status)}</span>` : ""}${dueHtml(t.due)}</div>` : ""}</div></li>`;
+  }
+
+  function bindChecks(el) {
+    el.querySelectorAll("input.check").forEach(cb => {
+      cb.onchange = () => toggleCheck(cb.dataset.key, cb.checked);
+    });
+  }
+
+  function step(label, n, sub, hot) {
+    return `<div class="step${hot ? " hot" : ""}"><span class="n">${n}</span><span class="l">${esc(label)}<small>${esc(sub)}</small></span></div>`;
+  }
+
+  // 방 하나 = 프로젝트 하나. 말풍선: 내 할 일이 있으면 "대표님 차례!", Claude 일만 남았으면 "작업 중…".
+  function roomState(p) {
+    const open = (data.tasks || []).filter(t => t.project === p.id && !isDone(t) && !isLong(t));
+    const mineN = open.filter(t => t.owner === "MJ").length;
+    const claudeN = open.length - mineN;
+    if (mineN) return { cls: "ask", text: "대표님 차례!", mineN, claudeN };
+    if (claudeN) return { cls: "work", text: "작업 중…", mineN, claudeN };
+    return { cls: "rest", text: p.status === "기획" ? "기획 중" : "대기 중", mineN, claudeN, idle: true };
+  }
+
+  function room(p, i) {
+    const st = staffOf(p);
+    const rs = roomState(p);
+    const pr = progressOf(p);
+    const color = p.group === "수익화" ? "var(--g-money)" : "var(--g-code)";
+    return `<button type="button" class="room ${GROUP_CLASS[p.group] || ""}${rs.idle ? " idle" : ""}" data-id="${esc(p.id)}" aria-label="${esc(p.name)} 방 열기">
+      ${rs.mineN ? `<span class="bang" title="내가 할 일 ${rs.mineN}개">${rs.mineN}</span>` : ""}
+      <div class="rhead">${String(i + 1).padStart(2, "0")} · ${esc(p.group)}<span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
+      <div class="rname"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}</div>
+      <div class="stage"><span class="bubble ${rs.cls}">${esc(rs.text)}</span>${spriteSvg(p)}</div>
+      <div class="rfoot"><span class="staff">${esc(st.name)}</span><span>${esc(st.role)}</span></div>
+      <div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>
+    </button>`;
+  }
+
+  // ── 방 상세 창 ──
+  let roomId = null;
+  function openRoom(id) { roomId = id; renderSheet(); const c = $("#sheetHost .close"); if (c) c.focus(); }
+  function closeRoom() { const id = roomId; roomId = null; renderSheet(); const b = document.querySelector(`.room[data-id="${CSS.escape(id || "")}"]`); if (b) b.focus(); }
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && roomId) closeRoom(); });
+  function renderSheet() {
+    const host = $("#sheetHost");
+    const p = roomId && (data.projects || []).find(x => x.id === roomId);
+    if (!p) { host.innerHTML = ""; document.body.style.overflow = ""; return; }
+    const st = staffOf(p);
+    const rs = roomState(p);
+    const pr = progressOf(p);
+    const today = kstToday();
+    const list = (data.tasks || []).filter(t => t.project === p.id && (!isDone(t) || doneDate(t) >= today))
+      .sort((a, b) => (isDone(a) - isDone(b)) || (isLong(a) - isLong(b)) || byDue(a, b));
+    const mineL = list.filter(t => t.owner === "MJ"), claudeL = list.filter(t => t.owner !== "MJ");
+    const links = (Array.isArray(p.links) ? p.links : p.link ? [{ label: "열기", url: p.link }] : [])
+      .filter(l => l && /^(https?:\/\/|\.\.?\/)/.test(l.url || ""));
+    const last = (data.log || []).filter(l => l.project === p.id).map(l => l.date).sort().pop();
+    const color = p.group === "수익화" ? "var(--g-money)" : "var(--g-code)";
+    host.innerHTML = `<div class="sheet-bg" id="sheetBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(p.name)}">
+      <div class="shead">${spriteSvg(p)}<div><h3>${esc(emojiOf(p))} ${esc(p.name)}</h3><div class="who-line">${esc(st.name)} · ${esc(st.role)} · <span class="badge ${tone(p.status)}">${esc(p.status)}</span></div></div>
+        <button type="button" class="close">닫기</button></div>
+      <div class="ssum">${esc(p.summary)}</div>
+      <div class="counts"><span class="${rs.mineN ? "hot" : ""}">대표님 차례 ${rs.mineN}건</span><span>Claude 작업 ${rs.claudeN}건</span>${last ? `<span>마지막 기록 ${md(last)}</span>` : ""}</div>
+      <div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
+      ${p.goal ? `<div class="foot" style="font-size:12px;color:var(--text-3)">${esc(p.goal.label)}</div>` : ""}
+      ${links.length ? `<div class="links" style="margin-top:12px">${links.map((l, i) => `<a class="go${i === 0 ? " primary" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label || "열기")} ↗</a>`).join("")}</div>` : ""}
+      <h4>🙋 내가 할 일</h4>${mineL.length ? `<ul class="todo-list">${mineL.map(t => taskLi(t, false, true)).join("")}</ul>` : `<div class="empty">없어요.</div>`}
+      <h4>🤖 Claude가 할 일</h4>${claudeL.length ? `<ul class="todo-list">${claudeL.map(t => taskLi(t, false, true)).join("")}</ul>` : `<div class="empty">없어요.</div>`}
+    </div></div>`;
+    document.body.style.overflow = "hidden";
+    bindChecks(host);
+    $(".close", host).onclick = closeRoom;
+    $("#sheetBg").onclick = e => { if (e.target.id === "sheetBg") closeRoom(); };
   }
 
   function todoCol(title, list) {
@@ -480,28 +696,6 @@ tr.done td.title { text-decoration: line-through; }
     const body = groupsHtml(list, false);
     return `<div class="panel todo-col"><h3>${esc(title)} <span class="cnt">${left}</span></h3>
       ${body || `<div class="empty">남은 일이 없어요.</div>`}</div>`;
-  }
-
-  function card(p) {
-    const pr = progressOf(p);
-    const next = (data.tasks || []).filter(t => t.project === p.id && !isDone(t)).sort(byDue)[0];
-    const last = (data.log || []).filter(l => l.project === p.id).map(l => l.date).sort().pop();
-    const color = p.group === "수익화" ? "var(--g-money)" : "var(--g-code)";
-    // links가 있으면 그것을, 예전 형식인 link 하나만 있으면 '열기' 버튼 하나로 쓴다.
-    const links = (Array.isArray(p.links) ? p.links : p.link ? [{ label: "열기", url: p.link }] : [])
-      .filter(l => l && /^(https?:\/\/|\.\.?\/)/.test(l.url || ""));
-    const name = links.length ? `<a href="${esc(links[0].url)}" target="_blank" rel="noopener">${esc(p.name)}</a>` : esc(p.name);
-    const buttons = links.length ? `<div class="links">${links.map((l, i) =>
-      `<a class="go${i === 0 ? " primary" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label || "열기")} ↗</a>`).join("")}</div>` : "";
-    return `<div class="panel card">
-      <div class="head"><span class="card-em">${esc(emojiOf(p))}</span><div class="name">${name}</div><span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
-      <div class="summary">${esc(p.summary)}</div>
-      <div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
-      ${p.goal ? `<div class="foot"><span>${esc(p.goal.label)}</span></div>` : ""}
-      ${buttons}
-      <div class="next">${next ? `다음: <b>${esc(next.title)}</b> · ${next.owner === "MJ" ? "내 차례" : "Claude"}` : "남은 할 일 없음"}</div>
-      <div class="foot"><span>${esc(p.group)}</span><span>${last ? `마지막 기록 ${md(last)}` : "기록 없음"}</span></div>
-    </div>`;
   }
 
   function logHtml(logs) {
