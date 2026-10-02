@@ -287,6 +287,16 @@ a.room:hover { text-decoration: none; }
 .counts span { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--muted-soft); color: var(--text-2); }
 .counts span.hot { background: var(--mustard); color: var(--mustard-ink); }
 .studio-panel { padding: 4px 16px 16px; }
+.post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.post-box { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; border: 1.5px solid var(--line); }
+.post-box .ph { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+.post-box .ph .kind { font-weight: 600; font-size: 11.5px; color: var(--text-2); background: var(--panel-2); border-radius: 999px; padding: 1px 8px; }
+.post-box .ph label { margin-left: auto; display: inline-flex; gap: 5px; align-items: center; font-size: 12px; font-weight: 600; color: var(--text-2); cursor: pointer; }
+.post-box .ph .check { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.post-box .pt { white-space: pre-line; font-size: 13.5px; line-height: 1.55; margin: 0; overflow-wrap: anywhere; }
+.post-box .copy { align-self: flex-start; font: inherit; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); cursor: pointer; }
+.post-box.done { opacity: .55; }
+.post-box.done .pt { text-decoration: line-through; }
 .studio-panel .req-box { margin-top: 12px; }
 .studio-panel h4 { margin: 14px 0 2px; font-size: 13px; color: var(--text-2); }
 .done-list { list-style: none; margin: 0; padding: 4px 16px; }
@@ -938,6 +948,8 @@ tr.done td.title { text-decoration: line-through; }
       ${p.id === STUDIO_ID ? `<div class="section-title"><h2>🎬 스튜디오</h2><span class="hint">요청을 남기면 Claude가 힉스필드로 만들어 올려요</span></div>
       <div class="panel studio-panel">${studioHtml()}</div>` : ""}
 
+      ${postsHtml(p.id, today)}
+
       <div class="section-title"><h2>⚡ 단기 할 일</h2><span class="hint">당장 할 일 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
       <div class="todo-cols">
         <div class="panel todo-col"><h3>🙋 내가 할 일 <span class="cnt">${mineL.filter(t => !isDone(t)).length}</span></h3>
@@ -958,7 +970,36 @@ tr.done td.title { text-decoration: line-through; }
       <div class="panel"><ul class="done-list">${doneOld.map(t => `<li><span class="tt">${esc(t.title)}</span><span class="meta">${t.owner === "MJ" ? "나" : "Claude"} · ${doneDate(t) ? md(doneDate(t)) : ""}</span></li>`).join("")}</ul></div>` : ""}
     `;
     bindChecks(root);
+    bindPosts(root);
     if (p.id === STUDIO_ID) bindStudio(root);
+  }
+
+  // 올릴 글 박스 (data.json의 posts). 예약하면 체크 → 오늘은 흐리게, 다음 날 사라진다.
+  const postKey = x => `${x.project}::글 ${x.date}`;
+  function postsHtml(pid, today) {
+    const posts = (data.posts || []).filter(x => x.project === pid && x.text)
+      .filter(x => { const c = checkOf(postKey(x)); return !c || c >= today; })
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    if (!posts.length) return "";
+    return `<div class="section-title"><h2>📝 올릴 글</h2><span class="hint">복사해서 예약하고 체크하세요 · 체크한 글은 다음 날 사라져요</span></div>
+      <div class="post-grid">${posts.map(x => {
+        const on = !!checkOf(postKey(x));
+        return `<div class="panel post-box${on ? " done" : ""}">
+          <div class="ph">${x.date ? `${md(x.date)} (${wd(x.date)})` : ""}${x.kind ? `<span class="kind">${esc(x.kind)}</span>` : ""}
+            <label><input type="checkbox" class="check" data-key="${esc(postKey(x))}" ${on ? "checked" : ""}>예약함</label></div>
+          <p class="pt">${esc(x.text)}</p>
+          <button type="button" class="copy" data-text="${esc(x.text)}">복사</button>
+        </div>`;
+      }).join("")}</div>`;
+  }
+  function bindPosts(el) {
+    el.querySelectorAll(".post-box .copy").forEach(b => {
+      b.onclick = () => {
+        const done = () => toast("복사했어요");
+        if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.text).then(done, () => toast("복사가 안 됐어요. 길게 눌러 직접 복사해 주세요"));
+        else toast("복사가 안 됐어요. 길게 눌러 직접 복사해 주세요");
+      };
+    });
   }
 
   // 날짜별로 묶은 기록. 방 페이지는 이 방 기록만 다 보여준다.
