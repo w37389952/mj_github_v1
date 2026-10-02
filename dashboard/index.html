@@ -218,7 +218,35 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .room .rhead { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: .06em; }
 .room .rhead .badge { margin-left: auto; letter-spacing: 0; }
 .room .rname { font-weight: 800; font-size: 15px; letter-spacing: -.02em; display: flex; align-items: center; gap: 6px; }
-.room .stage { height: 122px; position: relative; display: flex; align-items: flex-end; justify-content: center; border-radius: 10px; background: var(--panel-2); border: 1px dashed var(--line); margin-top: 2px; }
+.room .stage { height: 122px; position: relative; display: flex; align-items: flex-end; justify-content: center; border-radius: 10px; border: 1px solid var(--line); margin-top: 2px; overflow: hidden; }
+/* 방 꾸미기: 벽지(방마다 --wall 색) + 바닥 띠, 그 위에 방 특성에 맞는 도트 소품 */
+.stage, .hero-stage { --wall: #b9b3d6; --wall-mix: 18%;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wall) var(--wall-mix), var(--panel-2)) 0 76%, color-mix(in srgb, var(--wall) 10%, var(--line)) 76% 100%); }
+.stage.dark, .hero-stage.dark { --wall-mix: 62%; }
+.deco { position: absolute; image-rendering: pixelated; display: block; pointer-events: none; }
+.deco.l { left: 8px; bottom: 5px; }
+.deco.r { right: 8px; bottom: 5px; }
+.deco.w { left: 10px; top: 34px; }
+.deco.float { animation: float 2.4s ease-in-out infinite; }
+@keyframes float { 50% { transform: translateY(-4px); } }
+.hero-stage .deco.l { left: 10px; bottom: 8px; }
+.hero-stage .deco.r { right: 10px; bottom: 8px; }
+.hero-stage .deco.w { left: 12px; top: 40px; }
+/* 비상: data.json 프로젝트의 urgent. 빨간 경광등이 돌고 방 테두리가 깜빡인다 */
+.room.urgent { border-color: var(--bad); animation: alarm 1s steps(2) infinite; }
+.room.urgent.money, .room.urgent.code { border-top-color: var(--bad); }
+@keyframes alarm { 0% { box-shadow: 0 0 0 2px var(--bad), var(--shadow); } 50% { box-shadow: 0 0 0 2px var(--bad), 0 0 20px 3px rgba(225,60,50,.45); } }
+.stage.urgent::before, .hero-stage.urgent::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 85% 0, rgba(255,60,50,.42), transparent 62%); animation: flash 1s steps(2) infinite; pointer-events: none; }
+@keyframes flash { 50% { opacity: .15; } }
+.siren { position: absolute; right: 9px; top: 7px; width: 18px; height: 15px; image-rendering: pixelated; }
+.siren .glow { animation: flash .5s steps(2) infinite; }
+.room.urgent .sprite, .hero-stage.urgent .sprite { animation: bob .35s steps(2) infinite !important; }
+.bubble.alarm { background: var(--bad); color: #fff; border-color: #7a140e; }
+.bubble.alarm::after { border-top-color: #7a140e; }
+.alarm-line { font-size: 12px; font-weight: 700; color: var(--bad); display: flex; gap: 6px; align-items: center; }
+.alarm-banner { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 12px; border-radius: 12px; font-weight: 700; font-size: 13.5px;
+  background: repeating-linear-gradient(-45deg, var(--bad-soft) 0 12px, var(--panel) 12px 24px); border: 2px solid var(--bad); color: var(--bad); }
+.alarm-banner a { color: var(--bad); text-decoration: underline; }
 .room .rfoot { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
 .room .rfoot .staff { font-weight: 700; color: var(--text); }
 .room .rfoot .mini { flex: 1; height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; }
@@ -236,7 +264,7 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .bubble.rest { color: var(--text-3); border-color: var(--line); }
 .bubble.rest::after { border-top-color: var(--line); }
 .bang { position: absolute; top: -9px; right: -9px; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font-weight: 900; font-size: 13px; display: grid; place-items: center; box-shadow: 0 0 0 3px var(--panel); }
-@media (prefers-reduced-motion: reduce) { .room .sprite { animation: none !important; } .room { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .room .sprite, .hero-stage .sprite, .room.urgent, .stage::before, .hero-stage::before, .siren .glow, .deco.float { animation: none !important; } .room { transition: none; } }
 
 /* 방 상세 페이지 */
 a.room { color: inherit; text-decoration: none; }
@@ -245,7 +273,9 @@ a.room:hover { text-decoration: none; }
 .room-hero { display: flex; gap: 18px; padding: 18px; align-items: stretch; }
 .room-hero.code { border-top: 4px solid var(--g-code); }
 .room-hero.money { border-top: 4px solid var(--g-money); }
-.hero-stage { position: relative; width: 170px; flex: none; min-height: 170px; display: flex; align-items: flex-end; justify-content: center; border-radius: 12px; background: var(--floor); border: 1px dashed var(--line); }
+.hero-stage { position: relative; width: 210px; flex: none; min-height: 180px; display: flex; align-items: flex-end; justify-content: center; border-radius: 12px; border: 1px solid var(--line); overflow: hidden; }
+.room-hero.urgent { border-color: var(--bad); box-shadow: 0 0 0 2px var(--bad), var(--shadow); }
+.room-hero.urgent.money, .room-hero.urgent.code { border-top-color: var(--bad); }
 .hero-stage .sprite { width: 96px; height: 115px; margin-bottom: 10px; animation: bob 1.2s steps(2) infinite; }
 .hero-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .hero-body h2 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
@@ -337,6 +367,7 @@ tr.done td.title { text-decoration: line-through; }
   .room { padding: 10px 11px; }
   .room .rname { font-size: 13.5px; }
   .room .stage { height: 116px; }
+  .room .deco { zoom: .75; }
   .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .step { min-width: 0; padding: 8px 10px; }
   .step + .step::before { display: none; }
@@ -521,6 +552,76 @@ tr.done td.title { text-decoration: line-through; }
     return `<svg class="sprite" viewBox="0 0 12 14" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
   }
 
+  // ── 방 꾸미기 ──
+  // 방마다 벽지 색(wall)과 도트 소품 세 개: l 왼쪽 바닥, r 오른쪽 바닥, w 벽. dark면 벽지가 어둡다.
+  // 글자 하나 = 색 하나(PAL). "."은 비움. 새 프로젝트는 DECOR에 없으면 화분 + 화이트보드.
+  const PAL = {
+    k: "#2a2333", g: "#8b879c", q: "#d6d3e2", w: "#f4f2fb", s: "#ffffff", l: "#7fd3ff", r: "#e04a3a",
+    t: "#8c6440", D: "#c99a63", y: "#f1c24b", Y: "#fff1b0", p: "#ef8fa8", b: "#9cc7ea", c: "#6aa5e0",
+    G: "#5aa469", o: "#c06a3a", n: "#1e2a4a", m: "#f6e7a1", f: "#ff9a3c", v: "#b9a8ff", e: "#5bb3a6", h: "#cfe6c4"
+  };
+  const PROPS = {
+    camera: ["r.......", "kkkkkk..", "kggggkkk", "kggggkll", "kggggkkk", "kkkkkk..", "...t....", "...t....", "..t.t...", "..t.t...", ".t...t..", ".t...t..", "t.....t."],
+    softbox: ["qqqqqq", "qYYYYq", "qYYYYq", "qYYYYq", "qqqqqq", "..kk..", "...k..", "...k..", "...k..", "...k..", "...k..", "..k.k.", ".k...k"],
+    clapper: ["kwkwkwk", "kkkkkkk", "kgggggk", "kgwwwgk", "kgggggk", "kkkkkkk"],
+    rack: ["gggggggggg", "g..k..k..g", "gppp.ccc.g", "gppp.ccc.g", "gppp.ccc.g", "g.pp..cc.g", "g........g", "g........g", "g........g", "gg......gg"],
+    bags: ["..k..k...", ".k....k..", "ppppppp..", "ppwwwpp..", "ppppppkyk", "pppppppyy", "pppppppyy"],
+    mirror: ["DDDD", "DbbD", "DbsD", "DbbD", "DbbD", "DDDD"],
+    shelf: ["tttttttt", "trrbbyyt", "trrbbyyt", "tttttttt", "tGGppkkt", "tGGppkkt", "tttttttt", "tyybbrrt", "tyybbrrt", "tttttttt", "t......t"],
+    plant: ["..G.G..", ".GGGGG.", "GG.G.GG", "..GGG..", "...G...", ".ooooo.", ".ooooo.", "..ooo.."],
+    cork: ["DDDDDDDD", "DyyDppDD", "DyyDppDD", "DDbbDDyD", "DDbbDDyD", "DDDDDDDD"],
+    candle: ["..f..", ".fYf.", "..f..", ".www.", ".www.", ".www.", ".www.", "ttttt"],
+    ghost: ["..wwww..", ".wwwwww.", "wwkwwkww", "wwwwwwww", "wwwkkwww", "wwwwwwww", "wwwwwwww", "w.ww.ww."],
+    moon: ["kkkkkkk", "knnnnmk", "knnnmmk", "knnnnmk", "knsnnnk", "kkkkkkk"],
+    speaker: ["kkkkkk", "kkggkk", "kgqqgk", "kkggkk", "kkkkkk", "kkggkk", "kgqqgk", "kgqqgk", "kkggkk", "kkkkkk"],
+    keys: ["kkkkkkkkkk", "wkwkwwkwkw", "wkwkwwkwkw", "wwwwwwwwww", "kkkkkkkkkk", ".k......k.", ".k......k.", ".k......k.", "kk......kk"],
+    notes: ["..eeee", "..e..e", "..e..e", "..e..e", "eee.ee", "ee..ee"],
+    pin: [".rrrr.", "rrwwrr", "rrwwrr", ".rrrr.", "..rr..", "..rr..", "...r..", "..ttt.", ".ttttt"],
+    cloche: ["....k....", "..qqqqq..", ".qqwqqqq.", ".qqqqqqq.", "kkkkkkkkk", "ttttttttt", ".t.....t.", ".t.....t.", ".t.....t."],
+    map: ["hhhhhhhh", "hbbhhrhh", "hbbhhhyh", "hhhhrhhh", "hyhhhhbh", "hhhhhhhh"],
+    ball: ["..vvvv..", ".vvsvvv.", ".vvvvvv.", ".vvvvvv.", "..vvvv..", ".tttttt.", "tttttttt", ".t....t.", ".t....t.", ".t....t."],
+    calendar: ["rrrrrrr", "wwwwwww", "wkwkwkw", "wwwwwww", "wkwkwrw", "wwwwwww"],
+    cabinet: ["ggggggg", "gqqqqqg", "gqqkqqg", "gqqqqqg", "ggggggg", "gqqqqqg", "gqqkqqg", "gqqqqqg", "ggggggg", "g.....g"],
+    phone: ["kkkkk", "kbbbk", "kyyyk", "kbbbk", "kyyyk", "kbbbk", "kkkkk"],
+    chat: ["yyyyy...", "yyyyy...", ".y......", "...bbbbb", "...bbbbb", "......b."],
+    board: ["gggggggg", "gwwwwwwg", "gwbbwwwg", "gwwwrrwg", "gwwwwwwg", "gggggggg"]
+  };
+  const DECOR = {
+    video: { wall: "#d9645a", l: "camera", r: "softbox", w: "clapper" },
+    threads: { wall: "#ef8fa8", l: "rack", r: "bags", w: "mirror" },
+    tistory: { wall: "#f1c24b", l: "shelf", r: "plant", w: "cork" },
+    shorts: { wall: "#1e1a33", dark: true, l: "candle", r: "ghost", w: "moon", float: "r" },
+    suno: { wall: "#5bb3a6", l: "speaker", r: "keys", w: "notes" },
+    radar: { wall: "#e46a4a", l: "pin", r: "cloche", w: "map" },
+    iljin: { wall: "#8e80ea", l: "plant", r: "ball", w: "calendar" },
+    talk: { wall: "#6aa5e0", l: "cabinet", r: "phone", w: "chat" }
+  };
+  const decorOf = p => ({ wall: "#b9b3d6", l: "plant", r: "", w: "board", ...(DECOR[p.id] || {}), ...(p.decor || {}) });
+  function propSvg(name, pos, px, float) {
+    const rows = PROPS[name];
+    if (!rows) return "";
+    const w = Math.max(...rows.map(r => r.length)), h = rows.length;
+    let rects = "";
+    rows.forEach((r, y) => r.split("").forEach((c, x) => { if (PAL[c]) rects += `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${PAL[c]}"/>`; }));
+    return `<svg class="deco ${pos}${float ? " float" : ""}" width="${w * px}" height="${h * px}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" aria-hidden="true">${rects}</svg>`;
+  }
+  function decoHtml(p, px) {
+    const d = decorOf(p);
+    return ["l", "r", "w"].map(pos => d[pos] ? propSvg(d[pos], pos, px, d.float === pos) : "").join("");
+  }
+  // 비상 경광등 (urgent일 때만)
+  const SIREN = `<svg class="siren" viewBox="0 0 6 5" shape-rendering="crispEdges" aria-hidden="true"><rect class="glow" x="1" y="0" width="4" height="3" fill="#ff3b30"/><rect x="2" y="1" width="1" height="1" fill="#ffd0cc"/><rect x="0" y="3" width="6" height="2" fill="#5d5970"/></svg>`;
+  // data.json 프로젝트의 urgent: true 또는 이유 한 줄. 비어 있으면 평소대로.
+  const urgentOf = p => p.urgent ? (typeof p.urgent === "string" ? p.urgent : "급한 일이 몰렸어요") : "";
+  // 방 무대(벽지 + 소품 + 경광등 + 말풍선 + 직원). base는 "stage" 또는 "hero-stage".
+  function stageHtml(p, base, rs, px) {
+    const d = decorOf(p);
+    const urgent = !!urgentOf(p);
+    const wall = /^#[0-9a-f]{3,8}$/i.test(d.wall || "") ? d.wall : "#b9b3d6";
+    return `<div class="${base}${d.dark ? " dark" : ""}${urgent ? " urgent" : ""}" style="--wall:${wall}">
+      ${decoHtml(p, px)}${urgent ? SIREN : ""}<span class="bubble ${rs.cls}">${esc(rs.text)}</span>${spriteSvg(p)}</div>`;
+  }
+
   function dueHtml(d) {
     if (!d) return "";
     const n = diffDays(d, kstToday());
@@ -572,6 +673,7 @@ tr.done td.title { text-decoration: line-through; }
       </div>
 
       <div class="section-title"><h2>🏢 MJ 오피스</h2><span class="hint">층마다 최근 작업한 방부터 · 방을 누르면 그 방 페이지로 가요</span></div>
+      ${projects.filter(urgentOf).map(p => `<div class="alarm-banner" role="alert"><span>🚨 비상 · <a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a> — ${esc(urgentOf(p))}</span></div>`).join("")}
       <div class="panel office">${officeHtml(projects, rankOf)}</div>
 
       <div class="section-title"><h2>⚡ 지금 할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
@@ -680,6 +782,10 @@ tr.done td.title { text-decoration: line-through; }
 
   // 방 하나 = 프로젝트 하나. 말풍선: 내 할 일이 있으면 "대표님 차례!", Claude 일만 남았으면 "작업 중…".
   function roomState(p) {
+    const rs = baseRoomState(p);
+    return urgentOf(p) ? { ...rs, cls: "alarm", text: "비상 상황!", idle: false } : rs;
+  }
+  function baseRoomState(p) {
     if (p.id === STUDIO_ID) {
       const openReq = requests.filter(r => r.status !== "완료").length;
       const making = videos.filter(v => v.status === "제작 중").length;
@@ -705,7 +811,7 @@ tr.done td.title { text-decoration: line-through; }
     if (rest.length) floors.push({ g: "", label: "📦 기타", list: rest });
     return floors.filter(f => f.list.length).map(f => `<div class="floor ${GROUP_CLASS[f.g] || ""}">
       <div class="floor-head"><span>${f.label}</span><span class="cnt">${f.list.length}개 방</span></div>
-      <div class="rooms">${f.list.slice().sort((a, b) => rankOf(a.id) - rankOf(b.id)).map(p => room(p, n++)).join("")}</div>
+      <div class="rooms">${f.list.slice().sort((a, b) => (!urgentOf(a) - !urgentOf(b)) || rankOf(a.id) - rankOf(b.id)).map(p => room(p, n++)).join("")}</div>
     </div>`).join("");
   }
 
@@ -714,11 +820,13 @@ tr.done td.title { text-decoration: line-through; }
     const rs = roomState(p);
     const pr = progressOf(p);
     const color = p.group === "수익화" ? "var(--g-money)" : "var(--g-code)";
-    return `<a class="room ${GROUP_CLASS[p.group] || ""}${rs.idle ? " idle" : ""}" href="?room=${encodeURIComponent(p.id)}" data-id="${esc(p.id)}" aria-label="${esc(p.name)} 방 열기">
+    const why = urgentOf(p);
+    return `<a class="room ${GROUP_CLASS[p.group] || ""}${rs.idle ? " idle" : ""}${why ? " urgent" : ""}" href="?room=${encodeURIComponent(p.id)}" data-id="${esc(p.id)}" aria-label="${esc(p.name)} 방 열기">
       ${rs.mineN ? `<span class="bang" title="내가 할 일 ${rs.mineN}개">${rs.mineN}</span>` : ""}
       <div class="rhead">${String(i + 1).padStart(2, "0")} · ${esc(p.group)}<span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
       <div class="rname"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}</div>
-      <div class="stage"><span class="bubble ${rs.cls}">${esc(rs.text)}</span>${spriteSvg(p)}</div>
+      ${stageHtml(p, "stage", rs, 4)}
+      ${why ? `<div class="alarm-line">🚨 ${esc(why)}</div>` : ""}
       <div class="rfoot"><span class="staff">${esc(st.name)}</span><span>${esc(st.role)}</span></div>
       ${p.id === STUDIO_ID
         ? `<div class="rfoot"><span>완료 ${videos.filter(v => v.status === "완료").length} · 제작 중 ${videos.filter(v => v.status === "제작 중").length} · 요청 ${requests.filter(r => r.status !== "완료").length}</span></div>`
@@ -802,7 +910,8 @@ tr.done td.title { text-decoration: line-through; }
     const list = all.filter(t => !isDone(t) || doneDate(t) >= today)
       .sort((a, b) => (isDone(a) - isDone(b)) || (isLong(a) - isLong(b)) || byDue(a, b));
     const doneOld = all.filter(t => isDone(t) && doneDate(t) < today).sort((a, b) => doneDate(b).localeCompare(doneDate(a)));
-    const mineL = list.filter(t => t.owner === "MJ"), claudeL = list.filter(t => t.owner !== "MJ");
+    const shortL = list.filter(t => !isLong(t)), longL = list.filter(isLong).sort((a, b) => (isDone(a) - isDone(b)) || byDue(a, b));
+    const mineL = shortL.filter(t => t.owner === "MJ"), claudeL = shortL.filter(t => t.owner !== "MJ");
     const links = (Array.isArray(p.links) ? p.links : p.link ? [{ label: "열기", url: p.link }] : [])
       .filter(l => l && /^(https?:\/\/|\.\.?\/)/.test(l.url || ""));
     const logs = (data.log || []).filter(l => l.project === p.id).slice().sort((a, b) => b.date.localeCompare(a.date));
@@ -811,8 +920,9 @@ tr.done td.title { text-decoration: line-through; }
     $("#filters").hidden = true;
     root.innerHTML = `
       <a class="back" href="./">← 오피스로 돌아가기</a>
-      <div class="panel room-hero ${GROUP_CLASS[p.group] || ""}">
-        <div class="hero-stage"><span class="bubble ${rs.cls}">${esc(rs.text)}</span>${spriteSvg(p)}</div>
+      ${urgentOf(p) ? `<div class="alarm-banner" role="alert"><span>🚨 비상 · ${esc(urgentOf(p))}</span></div>` : ""}
+      <div class="panel room-hero ${GROUP_CLASS[p.group] || ""}${urgentOf(p) ? " urgent" : ""}">
+        ${stageHtml(p, "hero-stage", rs, 5)}
         <div class="hero-body">
           <div class="rhead">${esc(p.group)} · <span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
           <h2>${esc(emojiOf(p))} ${esc(p.name)}</h2>
@@ -828,12 +938,17 @@ tr.done td.title { text-decoration: line-through; }
       ${p.id === STUDIO_ID ? `<div class="section-title"><h2>🎬 스튜디오</h2><span class="hint">요청을 남기면 Claude가 힉스필드로 만들어 올려요</span></div>
       <div class="panel studio-panel">${studioHtml()}</div>` : ""}
 
-      <div class="section-title"><h2>⚡ 할 일</h2><span class="hint">체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
+      <div class="section-title"><h2>⚡ 단기 할 일</h2><span class="hint">당장 할 일 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
       <div class="todo-cols">
         <div class="panel todo-col"><h3>🙋 내가 할 일 <span class="cnt">${mineL.filter(t => !isDone(t)).length}</span></h3>
-          ${mineL.length ? `<ul class="todo-list">${mineL.map(t => taskLi(t, false, true)).join("")}</ul>` : `<div class="empty">없어요.</div>`}</div>
+          ${mineL.length ? `<ul class="todo-list">${mineL.map(t => taskLi(t, false)).join("")}</ul>` : `<div class="empty">없어요.</div>`}</div>
         <div class="panel todo-col"><h3>🤖 Claude가 할 일 <span class="cnt">${claudeL.filter(t => !isDone(t)).length}</span></h3>
-          ${claudeL.length ? `<ul class="todo-list">${claudeL.map(t => taskLi(t, false, true)).join("")}</ul>` : `<div class="empty">없어요.</div>`}</div>
+          ${claudeL.length ? `<ul class="todo-list">${claudeL.map(t => taskLi(t, false)).join("")}</ul>` : `<div class="empty">없어요.</div>`}</div>
+      </div>
+
+      <div class="section-title"><h2>🗓️ 장기 계획</h2><span class="hint">꾸준히 쌓아 가는 일, 때가 되면 할 일</span></div>
+      <div class="panel todo-col">
+        ${longL.length ? `<ul class="todo-list">${longL.map(t => taskLi(t, true)).join("")}</ul>` : `<div class="empty">아직 장기 계획이 없어요.</div>`}
       </div>
 
       <div class="section-title"><h2>📒 한 일 기록</h2><span class="hint">이 방에서 한 일만</span></div>
