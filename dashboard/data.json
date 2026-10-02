@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-03T02:10:00+09:00",
+  "updated": "2026-10-03T02:40:00+09:00",
   "projects": [
     {
       "id": "video",
@@ -108,6 +108,13 @@
   ],
   "tasks": [
     {
+      "project": "threads",
+      "title": "인포크 가입 + 빈 페이지 만들기 (프로필 링크에 연결)",
+      "owner": "MJ",
+      "status": "할 일",
+      "due": "2026-10-10"
+    },
+    {
       "project": "tistory",
       "title": "PC 앱 브라우저에서 티스토리 다시 로그인 (10/5 전)",
       "owner": "MJ",
@@ -152,8 +159,9 @@
       "project": "threads",
       "title": "무신사 체험단 착샷 사진 보내기 (첫 글)",
       "owner": "MJ",
-      "status": "할 일",
-      "due": "2026-10-07"
+      "status": "완료",
+      "due": "2026-10-07",
+      "done": "2026-10-03"
     },
     {
       "project": "threads",
@@ -342,6 +350,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-03",
+      "project": "threads",
+      "text": "첫 착샷 게시. 다음은 인포크 빈 페이지, 10/8쯤 쿠팡 파트너스 가입."
+    },
     {
       "date": "2026-10-03",
       "project": "threads",
