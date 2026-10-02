@@ -12,19 +12,19 @@
    다섯이 서로 한눈에 갈리는 것이 가장 중요하다. */
 :root {
   --ground:#EFF1F4; --surface:#FFFFFF; --line:#DDE1E7; --line-soft:#E8EBEF;
-  --ink:#161A21; --ink-soft:#5D6673; --ink-faint:#939BA6;
+  --ink:#161A21; --ink-soft:#5D6673; --ink-faint:#747C88;
   --mok:#2C7A3F; --hwa:#B4483F; --to:#96762F; --geum:#6B7885; --su:#3E6699;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --ground:#0F1218; --surface:#161A22; --line:#252B36; --line-soft:#1D222B;
-    --ink:#E7E5E0; --ink-soft:#8A929F; --ink-faint:#5B636F;
+    --ink:#E7E5E0; --ink-soft:#8A929F; --ink-faint:#78808C;
     --mok:#5DBA6B; --hwa:#C8615A; --to:#B08D52; --geum:#A8B2BC; --su:#5B7FB0;
   }
 }
 :root[data-theme="dark"] {
   --ground:#0F1218; --surface:#161A22; --line:#252B36; --line-soft:#1D222B;
-  --ink:#E7E5E0; --ink-soft:#8A929F; --ink-faint:#5B636F;
+  --ink:#E7E5E0; --ink-soft:#8A929F; --ink-faint:#78808C;
   --mok:#5DBA6B; --hwa:#C8615A; --to:#B08D52; --geum:#A8B2BC; --su:#5B7FB0;
 }
 
@@ -87,13 +87,13 @@ main { width:100%; max-width:400px; }
 }
 .reading .note {
   display:block; font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  font-size:12px; line-height:1.7; color:var(--ink-faint); margin-top:14px;
+  font-size:13px; line-height:1.7; color:var(--ink-soft); margin-top:14px;
 }
 
 hr.rule { border:0; border-top:1px solid var(--line-soft); margin:28px 0; }
 h2.label {
-  font-size:11px; font-weight:600; letter-spacing:.18em;
-  color:var(--ink-faint); margin:0 0 14px;
+  font-size:12px; font-weight:600; letter-spacing:.16em;
+  color:var(--ink-soft); margin:0 0 14px;
 }
 
 .layers { display:grid; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
@@ -112,7 +112,7 @@ h2.label {
 }
 .layer.today .kind, .layer.today .sip { color:var(--ink); }
 .layer .ohaeng b { font-family:"Noto Serif KR",serif; font-weight:600; font-size:14px; }
-.verdict { font-size:11.5px; line-height:1.75; color:var(--ink-faint); margin:14px 0 0; }
+.verdict { font-size:13px; line-height:1.75; color:var(--ink-soft); margin:14px 0 0; }
 
 /* 그날의 네 기둥과 오행 쏠림. 일진 두 글자만으로는 그날의 성질이 다 안 보이므로
    펼치면 여덟 글자와 그 오행 분포를 함께 준다. */
@@ -139,7 +139,7 @@ h2.label {
   font-family:"IBM Plex Mono",monospace;
 }
 .spread .seg.zero { background:var(--line-soft) !important; color:var(--ink-faint); }
-.spread-note { font-size:11px; line-height:1.7; color:var(--ink-faint); margin:10px 0 0; }
+.spread-note { font-size:12.5px; line-height:1.7; color:var(--ink-soft); margin:10px 0 0; }
 
 /* 기록. 점수 한 번, 영역 태그, 그리고 하고 싶은 만큼의 글. */
 /* 점수는 0부터 100까지 직접 민다. 세 칸으로 받으면 기록이 세 덩어리로만 쌓여
@@ -164,9 +164,9 @@ h2.label {
    '윗사람'으로 묶어 두면 두 기운이 한 칸에 섞인다. */
 .tags { display:flex; flex-wrap:wrap; gap:6px; }
 .tag {
-  font:inherit; font-size:12.5px; color:var(--ink-soft); cursor:pointer;
+  font:inherit; font-size:13.5px; color:var(--ink-soft); cursor:pointer;
   background:transparent; border:1px solid var(--line); border-radius:2px;
-  padding:8px 11px; transition:border-color .15s, color .15s;
+  padding:9px 12px; transition:border-color .15s, color .15s;
 }
 .tag:hover { border-color:var(--ink-faint); }
 .tag[aria-pressed="true"] { color:var(--ink); border-color:currentColor; }
@@ -192,14 +192,16 @@ main.first .drawers > details:not(#syncBox):not(#backupBox) { display:none; }
   margin:0 0 10px; text-wrap:balance;
 }
 .w-lead { font-size:14px; line-height:1.75; color:var(--ink-soft); margin:0 0 26px; }
-.w-note { font-size:12px; line-height:1.7; color:var(--ink-faint); margin:-4px 0 14px; }
-.w-note a { color:var(--ink-soft); }
+.w-note { font-size:13.5px; line-height:1.7; color:var(--ink-soft); margin:-4px 0 14px; }
+.w-note a { color:var(--ink); font-weight:600; }
 .welcome .saved + .w-note { margin-top:6px; }
+/* 다른 기기에서 쓰던 사람을 위한 칸. 선 하나로만 나누면 그냥 지나치므로 카드로 띄운다. */
 .w-login {
-  margin-top:28px; padding-top:22px; border-top:1px solid var(--line-soft);
-  font-size:13px; line-height:1.7; color:var(--ink-soft);
+  margin-top:26px; padding:18px 16px; background:var(--surface);
+  border:1px solid var(--line); border-radius:4px;
+  font-size:14.5px; line-height:1.7; color:var(--ink);
 }
-.w-login b { color:var(--ink); }
+.w-login b { color:var(--ink); font-size:15.5px; }
 .w-login p { margin:4px 0 0; }
 
 /* 일기 잠금. 동기화 칸 안에서 선 하나를 긋고 그 아래에 둔다. */
@@ -210,12 +212,12 @@ main.first .drawers > details:not(#syncBox):not(#backupBox) { display:none; }
 .save.ghost { color:var(--ink); background:transparent; border-color:var(--line); }
 /* 로그인했는데 비밀번호를 또 묻는 까닭. 처음 보는 사람은 반드시 되묻는 자리라 바로 곁에 둔다. */
 .why {
-  font-size:12px; line-height:1.75; color:var(--ink-soft);
+  font-size:13.5px; line-height:1.75; color:var(--ink-soft);
   background:var(--ground); border-radius:2px; padding:12px 14px; margin:0 0 14px;
 }
 .why b { display:block; color:var(--ink); font-weight:600; margin-bottom:4px; }
 .linkish {
-  display:block; margin:14px auto 0; padding:4px 8px; font:inherit; font-size:12px;
+  display:block; margin:14px auto 0; padding:6px 10px; font:inherit; font-size:14px;
   color:var(--ink-soft); background:none; border:0; text-decoration:underline; cursor:pointer;
 }
 /* 복구 코드는 옮겨 적기 쉽게 크게, 누르면 통째로 잡히게. */
@@ -226,7 +228,8 @@ main.first .drawers > details:not(#syncBox):not(#backupBox) { display:none; }
 }
 
 textarea, input[type="date"], input[type="time"], input[type="password"], input[type="text"], select {
-  width:100%; font:inherit; font-size:14px; color:var(--ink);
+  /* 16px보다 작으면 아이폰이 입력칸을 누를 때 화면을 확대해 버린다. */
+  width:100%; font:inherit; font-size:16px; color:var(--ink);
   background:var(--surface); border:1px solid var(--line); border-radius:2px;
   padding:12px 13px;
 }
@@ -241,7 +244,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   color:var(--ground); background:var(--ink); border:1px solid var(--ink);
   border-radius:2px; padding:14px 0;
 }
-.saved { font-size:12px; color:var(--ink-faint); text-align:center; margin:10px 0 0; min-height:1em; }
+.saved { font-size:13px; color:var(--ink-soft); text-align:center; margin:10px 0 0; min-height:1em; }
 
 /* 접히는 자리. 오늘 화면이 주인이고 나머지는 필요할 때만 편다.
    칸마다 테두리로 감싸 한 장의 카드로 만든다. 선 한 줄로만 나누면 펴기 표시가
@@ -257,7 +260,7 @@ details > summary {
 details > summary::-webkit-details-marker { display:none; }
 details > summary:hover { background:var(--ground); }
 .s-title { font-size:14.5px; font-weight:600; color:var(--ink); }
-.s-meta { grid-column:1; font-size:12px; color:var(--ink-faint); }
+.s-meta { grid-column:1; font-size:12.5px; color:var(--ink-soft); }
 .s-meta.on { color:var(--mok); }
 details > summary::after {
   content:""; grid-column:2; grid-row:1 / span 2;
@@ -268,15 +271,15 @@ details > summary::after {
 details[open] > summary::after { transform:rotate(-135deg); margin:4px 4px 0 0; }
 details[open] > summary { border-bottom:1px solid var(--line-soft); border-radius:4px 4px 0 0; }
 details .body { padding:18px 16px 20px; }
-.hint { font-size:11.5px; line-height:1.75; color:var(--ink-faint); margin:0 0 16px; }
+.hint { font-size:13px; line-height:1.75; color:var(--ink-soft); margin:0 0 16px; }
 
 .field { margin-bottom:12px; }
 .field > span {
-  display:block; font-size:11px; letter-spacing:.12em;
-  color:var(--ink-faint); margin-bottom:7px;
+  display:block; font-size:13px; letter-spacing:.04em;
+  color:var(--ink-soft); margin-bottom:7px;
 }
 .pair { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.check { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft); cursor:pointer; margin-top:4px; }
+.check { display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink-soft); cursor:pointer; margin-top:4px; }
 .check input { width:auto; accent-color:var(--su); }
 
 /* 지난 기록. 소급해 적은 것과 그날 적은 것을 눈으로 갈라 둔다.
@@ -291,8 +294,8 @@ details .body { padding:18px 16px 20px; }
   border:1px solid var(--line); border-radius:2px; padding:1px 5px;
 }
 .entry .txt { font-size:12.5px; line-height:1.7; color:var(--ink-soft); white-space:pre-wrap; }
-.entry .areas { font-size:11px; color:var(--ink-faint); }
-.empty { font-size:12px; color:var(--ink-faint); padding:16px 2px; }
+.entry .areas { font-size:12px; color:var(--ink-soft); }
+.empty { font-size:13px; color:var(--ink-soft); padding:16px 2px; }
 
 .bars { display:flex; align-items:flex-end; gap:4px; height:56px; }
 .bars .bar { flex:1; border-radius:1px 1px 0 0; min-height:3px; background:var(--line-soft); }
@@ -310,7 +313,7 @@ details .body { padding:18px 16px 20px; }
 }
 .progress .track { height:2px; background:var(--line-soft); }
 .progress .fill { height:2px; background:var(--ink-faint); }
-.progress .why { font-size:11px; line-height:1.75; color:var(--ink-faint); margin:14px 0 0; }
+.progress .why { font-size:12.5px; line-height:1.75; color:var(--ink-soft); margin:14px 0 0; }
 
 @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
 </style>
@@ -322,13 +325,13 @@ details .body { padding:18px 16px 20px; }
 
     <div class="field">
       <span>생년월일 (양력)</span>
-      <input type="date" id="wDate">
+      <input type="text" id="wDate" data-kind="date" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="예: 1993-12-31">
     </div>
     <p class="w-note">음력 생일만 안다면 <a href="https://astro.kasi.re.kr/life/pageView/8" target="_blank" rel="noopener">한국천문연구원 음양력 변환</a>에서 '음력을 양력으로'로 바꿔서 넣어줘.</p>
 
     <div class="field">
       <span>태어난 시각</span>
-      <input type="time" id="wTime">
+      <input type="text" id="wTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 08:16 · 오후 3시는 15:00">
       <label class="check"><input type="checkbox" id="wNoTime"> 시각을 모른다</label>
     </div>
 
@@ -448,7 +451,7 @@ details .body { padding:18px 16px 20px; }
 
       <div class="field">
         <span>언제</span>
-        <input type="date" id="pastDate">
+        <input type="text" id="pastDate" data-kind="date" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="예: 2019-03-14">
       </div>
 
       <div class="panel" id="pastPanel" hidden></div>
@@ -495,11 +498,11 @@ details .body { padding:18px 16px 20px; }
       </p>
       <div class="field">
         <span>생년월일 (양력)</span>
-        <input type="date" id="meDate">
+        <input type="text" id="meDate" data-kind="date" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="예: 1993-12-31">
       </div>
       <div class="field">
         <span>태어난 시각</span>
-        <input type="time" id="meTime">
+        <input type="text" id="meTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 08:16 · 오후 3시는 15:00">
         <label class="check"><input type="checkbox" id="meNoTime"> 시각을 모른다</label>
       </div>
       <div class="field">
@@ -1054,15 +1057,65 @@ function 시작끝() {
 // 시각 칸을 비워 둔 채 저장하면 예전에는 낮 12시로 몰래 채웠다. 그러면 엉뚱한 시주가
 // 잡혀 강약과 용신까지 틀어진다. 시각을 넣든지 '모른다'를 고르게 한다.
 function 생시읽기(날짜id, 시각id, 모름id) {
-  const 날짜 = document.getElementById(날짜id).value;
-  if (!날짜) return { 문제: "생년월일을 넣어줘." };
+  const 날짜글 = document.getElementById(날짜id).value;
+  if (!날짜글.trim()) return { 문제: "생년월일을 넣어줘." };
+  const 날 = 날짜읽기(날짜글);
+  if (!날) return { 문제: "생년월일을 1993-12-31처럼 넣어줘. 숫자만 19931231로 쳐도 돼." };
+  if (날.키 > 오늘키) return { 문제: "생년월일이 오늘보다 뒤야. 다시 봐줘." };
+
   const 시모름 = document.getElementById(모름id).checked;
-  const 시각 = document.getElementById(시각id).value;
-  if (!시모름 && !시각) return { 문제: "태어난 시각을 넣거나 '시각을 모른다'를 체크해줘." };
-  const [y, m, d] = 날짜.split("-").map(Number);
-  const [hour, minute] = (시모름 ? "12:00" : 시각).split(":").map(Number);
-  return { y, m, d, hour, minute, 시모름 };
+  const 시각글 = document.getElementById(시각id).value;
+  if (!시모름 && !시각글.trim()) return { 문제: "태어난 시각을 넣거나 '시각을 모른다'를 체크해줘." };
+  const 시 = 시모름 ? { h: 12, mi: 0 } : 시각읽기(시각글);
+  if (!시) return { 문제: "시각을 08:16처럼 넣어줘. 오후 3시는 15:00이야." };
+  return { y: 날.y, m: 날.m, d: 날.d, hour: 시.h, minute: 시.mi, 시모름 };
 }
+
+// 날짜·시각은 타자로 받는다. 브라우저 기본 달력은 생년월일을 고르려면 수십 년을
+// 넘겨야 하고 칸마다 따로 눌러야 해서, 처음 써 본 사람이 불편하다고 했다.
+// 숫자만 쳐도 되고(19931231), 점이나 빗금으로 끊어 쳐도(1993.12.31) 받는다.
+function 날짜읽기(글) {
+  const t = (글 ?? "").trim();
+  const m = t.match(/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})\D*$/) || t.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (!m) return null;
+  const [y, mo, d] = m.slice(1).map(Number);
+  const 날 = new Date(y, mo - 1, d);
+  // 2월 30일처럼 달력에 없는 날은 Date가 다음 달로 넘겨 버리므로 되짚어 거른다.
+  if (y < 1900 || y > 2100 || 날.getMonth() !== mo - 1 || 날.getDate() !== d) return null;
+  return { y, m: mo, d, 키: `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}` };
+}
+function 시각읽기(글) {
+  const t = (글 ?? "").trim();
+  // 816처럼 앞의 0 없이 세 자리로 치는 사람이 많아 그것도 8시 16분으로 읽는다.
+  const m = t.match(/^(\d{1,2})\D+(\d{1,2})$/) || t.match(/^(\d{1,2})(\d{2})$/);
+  if (!m) return null;
+  const [h, mi] = m.slice(1).map(Number);
+  return h <= 23 && mi <= 59 ? { h, mi } : null;
+}
+
+// 숫자만 치는 동안에는 알아서 끊어 준다. 19931231을 치면 1993-12-31이 된다.
+// 사용자가 점·빗금으로 직접 끊었거나(1993.12.31) 제자리가 아닌 곳에서 끊었으면(8:16)
+// 손대지 않는다. 쳐 둔 모양을 바꾸면 오히려 헷갈린다.
+function 입력다듬기(el) {
+  const 날짜칸 = el.dataset.kind === "date";
+  const 구분 = 날짜칸 ? "-" : ":";
+  const 제자리 = 날짜칸 ? [4, 7] : [2];
+  const v = el.value;
+  if (v.endsWith(구분)) return;
+  // 시각은 숫자 네 개가 다 찼을 때만 끊는다. 세 개에서 끊으면 816이 81:6이 되어 버린다.
+  if (!날짜칸) {
+    if (/^\d{4}$/.test(v)) el.value = v.slice(0, 2) + ":" + v.slice(2);
+    return;
+  }
+  if (!(날짜칸 ? /^[\d-]*$/ : /^[\d:]*$/).test(v)) return;
+  if ([...v].some((c, i) => c === 구분 && !제자리.includes(i))) return;
+  const d = v.replace(/\D/g, "").slice(0, 날짜칸 ? 8 : 4);
+  const 새값 = 날짜칸
+    ? d.slice(0, 4) + (d.length > 4 ? "-" + d.slice(4, 6) : "") + (d.length > 6 ? "-" + d.slice(6) : "")
+    : d.slice(0, 2) + (d.length > 2 ? ":" + d.slice(2) : "");
+  if (새값 !== v) el.value = 새값;
+}
+document.querySelectorAll("input[data-kind]").forEach((el) => el.addEventListener("input", () => 입력다듬기(el)));
 
 // 생년월일시가 정해지면 화면 전체가 그걸 따라 바뀐다. 첫 화면과 '내 정보'가 같이 쓴다.
 function 나적용() {
@@ -1115,26 +1168,26 @@ todayMore.addEventListener("click", () => {
 const 지난상태 = 기록판("past");
 const pastDate = document.getElementById("pastDate");
 const pastPanel = document.getElementById("pastPanel");
-pastDate.max = 오늘키;
-
-// 날짜를 고르는 즉시 그날이 무슨 날이었는지 보여준다. 적기 전에 먼저 알아야
+// 날짜를 다 치는 즉시 그날이 무슨 날이었는지 보여준다. 적기 전에 먼저 알아야
 // '아 그래서 그랬나' 하는 생각이 드는데, 그 생각까지가 이 앱의 재미다.
-pastDate.addEventListener("change", () => {
-  if (!pastDate.value || !나있음()) { pastPanel.hidden = true; return; }
-  const [y, m, d] = pastDate.value.split("-").map(Number);
-  pastPanel.innerHTML = 간지판(y, m, d);
+pastDate.addEventListener("input", () => {
+  const 날 = 날짜읽기(pastDate.value);
+  if (!날 || !나있음()) { pastPanel.hidden = true; return; }
+  pastPanel.innerHTML = 간지판(날.y, 날.m, 날.d);
   pastPanel.hidden = false;
 });
 
 document.getElementById("pastSave").addEventListener("click", () => {
-  const 날짜 = document.getElementById("pastDate").value;
+  const 날짜글 = document.getElementById("pastDate").value;
+  const 날짜 = 날짜읽기(날짜글)?.키;
   const msg = document.getElementById("pastMsg");
   if (!나있음()) {
     msg.textContent = "먼저 아래 '내 정보'에 생년월일시를 넣어줘.";
     document.getElementById("meBox").open = true;
     return;
   }
-  if (!날짜) { msg.textContent = "언제였는지 골라줘."; return; }
+  if (!날짜글.trim()) { msg.textContent = "언제였는지 넣어줘."; return; }
+  if (!날짜) { msg.textContent = "날짜를 2019-03-14처럼 넣어줘."; return; }
   if (날짜 >= 오늘키) { msg.textContent = "지난 날만 여기에 넣을 수 있어. 오늘은 위에서 적어줘."; return; }
   if (지난상태.점수 === null) { msg.textContent = "그날 점수를 밀어서 매겨줘."; return; }
 
