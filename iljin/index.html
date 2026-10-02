@@ -175,6 +175,16 @@ h2.label {
    비어 있어서, 남겨 두면 입력할 곳을 찾아 한참 내려가야 했다. 원국이 생기기 전에는
    숨기고, 다른 기기에서 쓰던 사람을 위한 동기화와 되살리기 칸만 남긴다. */
 main.first > *:not(#welcome):not(.drawers) { display:none !important; }
+/* 생년월일시를 넣은 바로 다음, 동기화를 권하는 한 장. 이때는 그 카드만 보인다. */
+main.step2 > *:not(#welcomeSync) { display:none !important; }
+
+/* 카카오 로그인 버튼은 카카오 디자인 가이드의 노란색과 말풍선을 따른다. 사람들이
+   이 색과 모양으로 카카오 로그인을 알아보므로 테마와 상관없이 그대로 둔다. */
+.save.kakao {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  background:#FEE500; color:rgba(0,0,0,.85); border-color:#FEE500; font-weight:600;
+}
+.save.kakao svg { width:18px; height:18px; fill:#000; }
 main.first .drawers > details:not(#syncBox):not(#backupBox) { display:none; }
 .welcome { padding:40px 0 4px; }
 .w-title {
@@ -337,8 +347,20 @@ details .body { padding:18px 16px 20px; }
     <div class="w-login" id="wLoginBox" hidden>
       <b>다른 기기에서 이미 쓰고 있어?</b>
       <p id="wLoginText">카카오로 로그인하고 일기 비밀번호를 넣으면 생년월일시와 기록이 따라와. 다시 안 넣어도 돼.</p>
-      <button class="save ghost" id="wLogin">카카오로 로그인</button>
+      <button class="save kakao" id="wLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.6c-.1.3.3.6.5.4l4.3-2.8c.5.1 1 .1 1.5.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카카오로 로그인</button>
     </div>
+  </section>
+
+  <section class="welcome" id="welcomeSync" hidden>
+    <h1 class="w-title">사주가 세워졌어</h1>
+    <p class="w-lead">하나만 더. 다른 기기에서도 이어서 쓰고 싶다면 로그인해 둬.</p>
+    <button class="save kakao" id="wsLogin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.6c-.1.3.3.6.5.4l4.3-2.8c.5.1 1 .1 1.5.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카카오로 로그인</button>
+    <div class="why" style="margin-top:14px">
+      <b>로그인하면 뭐가 달라져?</b>
+      폰을 바꾸거나 PC에서 열어도 기록이 그대로 이어져. 점수와 태그는 서버에 함께 남고, 일기 글과 생년월일시는 네 기기에서 잠근 뒤에만 올라가서 운영자도 못 읽어. 로그인한 다음 일기 비밀번호를 하나만 정하면 돼.
+    </div>
+    <button class="linkish" id="wsLater">나중에 할게</button>
+    <p class="w-note" style="text-align:center; margin-top:6px">안 해도 이 기기에서는 전부 쓸 수 있어. 나중에 맨 아래 '동기화' 칸에서 언제든 로그인할 수 있고.</p>
   </section>
 
   <div class="datebar">
@@ -508,7 +530,7 @@ details .body { padding:18px 16px 20px; }
     <summary><span class="s-title">동기화</span><span class="s-meta" id="syncMeta">이 기기에만 저장 중</span></summary>
     <div class="body">
       <p class="hint" id="syncHint"></p>
-      <button class="save" id="syncLogin" hidden>카카오로 로그인</button>
+      <button class="save kakao" id="syncLogin" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.6c-.1.3.3.6.5.4l4.3-2.8c.5.1 1 .1 1.5.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>카카오로 로그인</button>
       <div class="pair" id="syncActions" hidden>
         <button class="save" id="syncNow" style="margin:0">지금 동기화</button>
         <button class="save" id="syncOut" style="margin:0; color:var(--ink); background:transparent; border-color:var(--line)">로그아웃</button>
@@ -1180,9 +1202,30 @@ document.getElementById("wStart").addEventListener("click", () => {
   if (생시.문제) { document.getElementById("wMsg").textContent = 생시.문제; return; }
   나 = { ...기본나, ...생시, 성별: document.getElementById("wGender").value };
   나적용();
+  // 생년월일시를 넣은 바로 그때가 동기화를 권하기 가장 좋은 때다. 나중에 맨 아래 칸을
+  // 스스로 찾아 펴는 사람은 드물다. 이미 로그인했거나 동기화가 꺼져 있으면 건너뛴다.
+  if (동기화켜짐 && !세션) 동기화권하기();
   window.scrollTo({ top: 0 });
 });
 document.getElementById("wLogin").addEventListener("click", () => document.getElementById("syncLogin").click());
+
+function 동기화권하기() {
+  document.querySelector("main").classList.add("step2");
+  document.getElementById("welcomeSync").hidden = false;
+}
+function 권하기끝() {
+  document.querySelector("main").classList.remove("step2");
+  document.getElementById("welcomeSync").hidden = true;
+  window.scrollTo({ top: 0 });
+}
+// 카카오에 다녀오면 페이지가 처음부터 다시 열린다. 이 단계에서 로그인했다는 표시를
+// 남겨 두었다가, 돌아오면 동기화 칸을 펴 바로 일기 비밀번호를 정하게 잇는다.
+const KEY_로그인뒤 = "iljin:after-login";
+document.getElementById("wsLogin").addEventListener("click", () => {
+  쓰기(KEY_로그인뒤, "lock");
+  document.getElementById("syncLogin").click();
+});
+document.getElementById("wsLater").addEventListener("click", 권하기끝);
 
 // ── 동기화 ────────────────────────────────────────────────
 // 점수·태그·그날의 간지는 그대로 서버에 올린다. 일기 본문은 이 기기에서 잠근 뒤에만
@@ -1678,6 +1721,19 @@ document.getElementById("vcRenew").addEventListener("click", () => 잠깐막고(
 if (로그인에러) {
   document.getElementById("syncBox").open = true;
   document.getElementById("syncMsg").textContent = "로그인이 안 됐어 — " + 로그인에러;
+  try { localStorage.removeItem(KEY_로그인뒤); } catch {}
+}
+
+// 첫 화면에서 로그인하고 돌아온 사람은 곧바로 일기 비밀번호를 정하게 이어 준다.
+function 로그인뒤이어가기() {
+  if (읽기(KEY_로그인뒤, null) !== "lock") return;
+  try { localStorage.removeItem(KEY_로그인뒤); } catch {}
+  const box = document.getElementById("syncBox");
+  box.open = true;
+  box.scrollIntoView({ block: "start", behavior: "smooth" });
+  if (!document.getElementById("vaultSetup").hidden) {
+    금고말("로그인됐어. 이제 일기 비밀번호를 하나 정해줘. 다른 기기에서 열 때 쓰는 비밀번호야.");
+  }
 }
 
 if (sb) {
@@ -1688,6 +1744,7 @@ if (sb) {
     if (세션) {
       await 금고확인();
       동기화();
+      로그인뒤이어가기();
     }
   });
   sb.auth.onAuthStateChange((_e, s) => { 세션 = s; 동기화UI(); });
