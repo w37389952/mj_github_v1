@@ -203,6 +203,12 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .office { padding: 14px; background: var(--floor);
   background-image: linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
   background-size: 24px 24px; }
+.floor + .floor { margin-top: 16px; padding-top: 14px; border-top: 2px dashed var(--line); }
+.floor-head { display: flex; align-items: center; gap: 8px; margin: 0 2px 10px; font-weight: 800; font-size: 13.5px; }
+.floor-head span:first-child { padding: 3px 10px; border-radius: 999px; background: var(--panel); border: 1.5px solid var(--line); }
+.floor.money .floor-head span:first-child { border-color: var(--g-money); background: var(--mustard-soft); }
+.floor.code .floor-head span:first-child { border-color: var(--g-code); background: var(--accent-soft); }
+.floor-head .cnt { color: var(--text-3); font-weight: 600; font-size: 12px; }
 .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .room { position: relative; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 12px 14px 12px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow); transition: transform .12s, border-color .12s; }
 .room:hover { transform: translateY(-2px); border-color: var(--accent); }
@@ -232,20 +238,58 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .bang { position: absolute; top: -9px; right: -9px; width: 22px; height: 22px; border-radius: 50%; background: var(--bad); color: #fff; font-weight: 900; font-size: 13px; display: grid; place-items: center; box-shadow: 0 0 0 3px var(--panel); }
 @media (prefers-reduced-motion: reduce) { .room .sprite { animation: none !important; } .room { transition: none; } }
 
-/* 방 상세 창 */
-.sheet-bg { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(30,24,50,.42); z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px; }
-.sheet { width: 100%; max-width: 560px; max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 20px 50px rgba(20,15,40,.3); padding: 18px 18px 14px; }
-.sheet .shead { display: flex; align-items: center; gap: 12px; }
-.sheet .shead .sprite { width: 50px; height: 60px; margin: 0; flex: none; }
-.sheet .shead h3 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
-.sheet .shead .who-line { font-size: 12.5px; color: var(--text-2); }
-.sheet .close { margin-left: auto; align-self: flex-start; border: 1px solid var(--line); background: var(--panel-2); border-radius: 9px; padding: 4px 10px; font-weight: 700; }
-.sheet .ssum { color: var(--text-2); font-size: 13px; margin: 12px 0 10px; }
-.sheet .counts { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
-.sheet .counts span { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--muted-soft); color: var(--text-2); }
-.sheet .counts span.hot { background: var(--mustard); color: var(--mustard-ink); }
-.sheet h4 { margin: 14px 0 2px; font-size: 13px; color: var(--text-2); }
-.sheet .todo-list { margin-bottom: 4px; }
+/* 방 상세 페이지 */
+a.room { color: inherit; text-decoration: none; }
+a.room:hover { text-decoration: none; }
+.back { display: inline-block; margin: 0 0 12px; font-weight: 700; font-size: 13px; }
+.room-hero { display: flex; gap: 18px; padding: 18px; align-items: stretch; }
+.room-hero.code { border-top: 4px solid var(--g-code); }
+.room-hero.money { border-top: 4px solid var(--g-money); }
+.hero-stage { position: relative; width: 170px; flex: none; min-height: 170px; display: flex; align-items: flex-end; justify-content: center; border-radius: 12px; background: var(--floor); border: 1px dashed var(--line); }
+.hero-stage .sprite { width: 96px; height: 115px; margin-bottom: 10px; animation: bob 1.2s steps(2) infinite; }
+.hero-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.hero-body h2 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+.hero-body .rhead { font-size: 12px; font-weight: 700; color: var(--text-3); display: flex; gap: 6px; align-items: center; }
+.hero-body .who-line { font-size: 13px; color: var(--text-2); }
+.hero-body .ssum { margin: 0; color: var(--text-2); font-size: 13.5px; }
+.hint-line { font-size: 12px; color: var(--text-3); margin-top: -4px; }
+.counts { display: flex; gap: 8px; flex-wrap: wrap; }
+.counts span { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--muted-soft); color: var(--text-2); }
+.counts span.hot { background: var(--mustard); color: var(--mustard-ink); }
+.studio-panel { padding: 4px 16px 16px; }
+.studio-panel .req-box { margin-top: 12px; }
+.studio-panel h4 { margin: 14px 0 2px; font-size: 13px; color: var(--text-2); }
+.done-list { list-style: none; margin: 0; padding: 4px 16px; }
+.done-list li { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
+.done-list li:first-child { border-top: 0; }
+.done-list .tt { flex: 1; color: var(--text-3); text-decoration: line-through; }
+.done-list .meta { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+@media (max-width: 760px) {
+  .room-hero { flex-direction: column; gap: 12px; padding: 14px; }
+  .hero-stage { width: 100%; min-height: 150px; }
+}
+
+/* 영상 스튜디오 */
+.req-box { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 4px 12px 12px; margin-top: 12px; }
+.req-box select, .req-box textarea { width: 100%; font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--text); margin-top: 6px; }
+.req-box textarea { resize: vertical; min-height: 70px; }
+.req-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.req-actions .small { flex: 1; font-size: 11.5px; color: var(--text-3); }
+.req-actions .go { border: 0; }
+.req-list { list-style: none; margin: 4px 0; padding: 0; }
+.req-list li { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
+.req-list li:first-child { border-top: 0; }
+.req-list .t { flex: 1; min-width: 0; }
+.req-list .meta { color: var(--text-3); font-size: 12px; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 6px; }
+.vcard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel-2); display: flex; flex-direction: column; }
+.vcard img, .vcard .noimg { width: 100%; aspect-ratio: 9 / 12; object-fit: cover; display: block; background: var(--muted-soft); }
+.vcard .noimg { display: grid; place-items: center; font-size: 28px; }
+.vbody { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; }
+.vbody .vt { font-weight: 700; }
+.vbody .meta { display: flex; gap: 6px; align-items: center; color: var(--text-3); font-size: 11.5px; }
+.vbody .vnote { color: var(--text-2); font-size: 12px; }
+.vbody .go { align-self: flex-start; padding: 3px 9px; font-size: 12px; }
 
 /* 활동 차트 */
 .chart-panel { padding: 14px 16px 10px; position: relative; }
@@ -348,7 +392,6 @@ tr.done td.title { text-decoration: line-through; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="tip" id="tip"></div>
-<div id="sheetHost"></div>
 
 <script>
 (() => {
@@ -365,10 +408,16 @@ tr.done td.title { text-decoration: line-through; }
   // data.json 프로젝트에 emoji가 없으면 이 기본값을 쓴다.
   const EMOJI = {
     tistory: "📝", threads: "🛍️", shorts: "👻", suno: "🎵",
-    radar: "🍽️", iljin: "🔮", talk: "💬", "cafe-alert": "☕"
+    radar: "🍽️", iljin: "🔮", talk: "💬", "cafe-alert": "☕", video: "🎬"
   };
 
   let data = null;
+  // 영상 스튜디오: 결과물(videos.json, Claude가 적음)과 MJ의 요청(requests.json, 페이지가 적음)
+  const STUDIO_ID = "video";
+  const REQ_PATH = "dashboard/requests.json";
+  let videos = [];
+  let requests = [];
+  let reqDraft = { text: "", target: "" };
   let group = "all";
   let showDone = false;
   // MJ가 현황판에서 체크한 할 일. 키는 "프로젝트id::할 일 제목", 값은 체크한 날(한국 시간).
@@ -432,7 +481,8 @@ tr.done td.title { text-decoration: line-through; }
     suno: { name: "노을", role: "음악 담당", hair: "#c06a3a", shirt: "#5bb3a6" },
     radar: { name: "레이", role: "맛집 레이더 담당", hair: "#2b2b2b", shirt: "#e46a4a" },
     iljin: { name: "달이", role: "일진일기 담당", hair: "#3b3170", shirt: "#8e80ea", long: true },
-    talk: { name: "톡이", role: "단톡 정리 담당", hair: "#5a3a1a", shirt: "#6aa5e0" }
+    talk: { name: "톡이", role: "단톡 정리 담당", hair: "#5a3a1a", shirt: "#6aa5e0" },
+    video: { name: "필름", role: "영상 담당", hair: "#2e2a3a", shirt: "#d9645a", long: true }
   };
   const SHIRTS = ["#f1c24b", "#ef8fa8", "#5bb3a6", "#e46a4a", "#8e80ea", "#6aa5e0"];
   function staffOf(p) {
@@ -490,6 +540,8 @@ tr.done td.title { text-decoration: line-through; }
 
   function render() {
     const root = $("#root");
+    const roomP = roomId && (data.projects || []).find(x => x.id === roomId);
+    if (roomP) { renderRoomPage(root, roomP); return; }
     const projects = (data.projects || []).filter(p => group === "all" || p.group === group);
     const tasks = (data.tasks || []).filter(t => inGroup(t.project));
     const logs = (data.log || []).filter(l => inGroup(l.project)).slice().sort((a, b) => b.date.localeCompare(a.date));
@@ -519,10 +571,8 @@ tr.done td.title { text-decoration: line-through; }
         ${step("대표님 차례", mine.length, "내가 할 일", mine.length > 0)}
       </div>
 
-      <div class="section-title"><h2>🏢 MJ 오피스</h2><span class="hint">최근 작업한 방부터 · 방을 누르면 할 일이 떠요</span></div>
-      <div class="panel office"><div class="rooms">${
-        projects.slice().sort((a, b) => rankOf(a.id) - rankOf(b.id)).map((p, i) => room(p, i)).join("") || `<div class="empty">프로젝트가 없어요.</div>`
-      }</div></div>
+      <div class="section-title"><h2>🏢 MJ 오피스</h2><span class="hint">층마다 최근 작업한 방부터 · 방을 누르면 그 방 페이지로 가요</span></div>
+      <div class="panel office">${officeHtml(projects, rankOf)}</div>
 
       <div class="section-title"><h2>⚡ 지금 할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
       <div class="todo-cols">
@@ -564,8 +614,7 @@ tr.done td.title { text-decoration: line-through; }
 
     drawChart(logs, today);
     bindChecks(root);
-    root.querySelectorAll(".room").forEach(b => { b.onclick = () => openRoom(b.dataset.id); });
-    renderSheet();
+
     const more = $("#more");
     if (more) more.onclick = () => { logLimit += 20; render(); };
     $("#showDone").onchange = e => {
@@ -631,6 +680,13 @@ tr.done td.title { text-decoration: line-through; }
 
   // 방 하나 = 프로젝트 하나. 말풍선: 내 할 일이 있으면 "대표님 차례!", Claude 일만 남았으면 "작업 중…".
   function roomState(p) {
+    if (p.id === STUDIO_ID) {
+      const openReq = requests.filter(r => r.status !== "완료").length;
+      const making = videos.filter(v => v.status === "제작 중").length;
+      if (openReq) return { cls: "work", text: `요청 ${openReq}건 처리 중`, mineN: 0, claudeN: openReq };
+      if (making) return { cls: "work", text: "제작 중…", mineN: 0, claudeN: making };
+      return { cls: "rest", text: "요청 기다리는 중", mineN: 0, claudeN: 0, idle: true };
+    }
     const open = (data.tasks || []).filter(t => t.project === p.id && !isDone(t) && !isLong(t));
     const mineN = open.filter(t => t.owner === "MJ").length;
     const claudeN = open.length - mineN;
@@ -639,56 +695,167 @@ tr.done td.title { text-decoration: line-through; }
     return { cls: "rest", text: p.status === "기획" ? "기획 중" : "대기 중", mineN, claudeN, idle: true };
   }
 
+  // 오피스는 그룹별 층으로 나눈다: 수익화 층 먼저, 그다음 코드 층. 층 안은 최근 작업 순.
+  const FLOORS = [{ g: "수익화", label: "💰 수익화 층" }, { g: "코드", label: "🛠️ 코드 층" }];
+  function officeHtml(projects, rankOf) {
+    if (!projects.length) return `<div class="empty">프로젝트가 없어요.</div>`;
+    let n = 0;
+    const floors = FLOORS.map(f => ({ ...f, list: projects.filter(p => p.group === f.g) }));
+    const rest = projects.filter(p => !FLOORS.some(f => f.g === p.group));
+    if (rest.length) floors.push({ g: "", label: "📦 기타", list: rest });
+    return floors.filter(f => f.list.length).map(f => `<div class="floor ${GROUP_CLASS[f.g] || ""}">
+      <div class="floor-head"><span>${f.label}</span><span class="cnt">${f.list.length}개 방</span></div>
+      <div class="rooms">${f.list.slice().sort((a, b) => rankOf(a.id) - rankOf(b.id)).map(p => room(p, n++)).join("")}</div>
+    </div>`).join("");
+  }
+
   function room(p, i) {
     const st = staffOf(p);
     const rs = roomState(p);
     const pr = progressOf(p);
     const color = p.group === "수익화" ? "var(--g-money)" : "var(--g-code)";
-    return `<button type="button" class="room ${GROUP_CLASS[p.group] || ""}${rs.idle ? " idle" : ""}" data-id="${esc(p.id)}" aria-label="${esc(p.name)} 방 열기">
+    return `<a class="room ${GROUP_CLASS[p.group] || ""}${rs.idle ? " idle" : ""}" href="?room=${encodeURIComponent(p.id)}" data-id="${esc(p.id)}" aria-label="${esc(p.name)} 방 열기">
       ${rs.mineN ? `<span class="bang" title="내가 할 일 ${rs.mineN}개">${rs.mineN}</span>` : ""}
       <div class="rhead">${String(i + 1).padStart(2, "0")} · ${esc(p.group)}<span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
       <div class="rname"><span class="em">${esc(emojiOf(p))}</span>${esc(p.name)}</div>
       <div class="stage"><span class="bubble ${rs.cls}">${esc(rs.text)}</span>${spriteSvg(p)}</div>
       <div class="rfoot"><span class="staff">${esc(st.name)}</span><span>${esc(st.role)}</span></div>
-      <div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>
-    </button>`;
+      ${p.id === STUDIO_ID
+        ? `<div class="rfoot"><span>완료 ${videos.filter(v => v.status === "완료").length} · 제작 중 ${videos.filter(v => v.status === "제작 중").length} · 요청 ${requests.filter(r => r.status !== "완료").length}</span></div>`
+        : `<div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>`}
+    </a>`;
   }
 
-  // ── 방 상세 창 ──
-  let roomId = null;
-  function openRoom(id) { roomId = id; renderSheet(); const c = $("#sheetHost .close"); if (c) c.focus(); }
-  function closeRoom() { const id = roomId; roomId = null; renderSheet(); const b = document.querySelector(`.room[data-id="${CSS.escape(id || "")}"]`); if (b) b.focus(); }
-  document.addEventListener("keydown", e => { if (e.key === "Escape" && roomId) closeRoom(); });
-  function renderSheet() {
-    const host = $("#sheetHost");
-    const p = roomId && (data.projects || []).find(x => x.id === roomId);
-    if (!p) { host.innerHTML = ""; document.body.style.overflow = ""; return; }
+  // ── 영상 스튜디오 ──
+  const VSTATUS_TONE = { "대기": "muted", "제작 중": "warn", "완료": "good" };
+  const RSTATUS_TONE = { "요청": "warn", "처리 중": "warn", "완료": "good" };
+  const safeUrl = u => /^https:\/\//.test(u || "") ? u : "";
+  const whenOf = iso => String(iso || "").slice(0, 10);
+  const videoTitle = id => (videos.find(v => v.id === id) || {}).title || "";
+
+  function studioHtml() {
+    const order = { "제작 중": 0, "대기": 1, "완료": 2 };
+    const vs = videos.slice().sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || String(b.date || "").localeCompare(String(a.date || "")));
+    const rs = requests.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).slice(0, 8);
+    return `
+      <div class="req-box">
+        <h4 style="margin-top:4px">✍️ 요청 남기기</h4>
+        <select id="reqTarget" aria-label="어떤 작업에 대한 요청인지">
+          <option value="">새로 만들어 줘</option>
+          ${vs.map(v => `<option value="${esc(v.id)}" ${reqDraft.target === v.id ? "selected" : ""}>수정: ${esc(v.title)}</option>`).join("")}
+        </select>
+        <textarea id="reqText" rows="3" placeholder="예) 공포 쇼츠 썸네일 하나 만들어 줘. 어두운 복도, 빨간 조명 느낌으로">${esc(reqDraft.text)}</textarea>
+        <div class="req-actions"><span class="small">공개 페이지라 요청 글도 누구나 볼 수 있어요. 개인 정보는 적지 마세요.</span><button type="button" class="go primary" id="reqSend">보내기</button></div>
+      </div>
+      <h4>📮 요청 기록</h4>
+      ${rs.length ? `<ul class="req-list">${rs.map(r => `<li><span class="badge ${RSTATUS_TONE[r.status] || "muted"}">${esc(r.status || "요청")}</span>
+        <div class="t"><div>${r.target ? `<b>${esc(videoTitle(r.target) || "이전 작업")}</b> 수정 · ` : ""}${esc(r.text)}</div>
+        <div class="meta">${esc(whenOf(r.date))}${r.reply ? ` · Claude: ${esc(r.reply)}` : ""}</div></div></li>`).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
+      <h4>🎞️ 작업물</h4>
+      ${vs.length ? `<div class="gallery">${vs.map(v => {
+        const th = safeUrl(v.thumb), url = safeUrl(v.url);
+        return `<div class="vcard">${th ? `<img src="${esc(th)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : `<div class="noimg">🎬</div>`}
+          <div class="vbody"><div class="vt">${esc(v.title)}</div>
+          <div class="meta"><span class="badge ${VSTATUS_TONE[v.status] || "muted"}">${esc(v.status || "대기")}</span>${v.date ? `<span>${esc(whenOf(v.date))}</span>` : ""}</div>
+          ${v.note ? `<div class="vnote">${esc(v.note)}</div>` : ""}
+          ${url ? `<a class="go" href="${esc(url)}" target="_blank" rel="noopener">보기 ↗</a>` : ""}</div></div>`;
+      }).join("")}</div>` : `<div class="empty">아직 올라온 작업물이 없어요.</div>`}`;
+  }
+
+  function bindStudio(host) {
+    const text = $("#reqText", host), target = $("#reqTarget", host);
+    text.oninput = () => { reqDraft.text = text.value; };
+    target.onchange = () => { reqDraft.target = target.value; };
+    $("#reqSend", host).onclick = sendRequest;
+  }
+
+  let sendingReq = false;
+  async function sendRequest() {
+    const text = reqDraft.text.trim();
+    if (!text || sendingReq) { if (!text) toast("요청 내용을 적어 주세요"); return; }
+    if (!token) { toast("요청은 저장소에 올라가야 Claude가 봐요. 위에서 열쇠를 먼저 넣어 주세요", 4000); openModal(); return; }
+    sendingReq = true;
+    const item = { id: "r" + Date.now().toString(36), date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16) + "+09:00", target: reqDraft.target, text, status: "요청" };
+    try {
+      const obj = await writeJson(REQ_PATH, { requests: [] }, o => {
+        if (!Array.isArray(o.requests)) o.requests = [];
+        o.requests.push(item);
+      }, `현황판: 영상 요청 - ${text.slice(0, 40)}`);
+      requests = obj.requests;
+      reqDraft = { text: "", target: "" };
+      render();
+      toast("요청을 남겼어요. Claude가 처리하면 여기 결과가 떠요", 3500);
+    } catch (err) {
+      toast("요청을 올리지 못했어요: " + err.message, 5000);
+    } finally { sendingReq = false; }
+  }
+
+  // ── 방 상세 페이지 (?room=프로젝트id) ──
+  // 방마다 주소가 따로 있어서 즐겨찾기나 공유도 된다. 같은 index.html이 주소를 보고 그린다.
+  const roomId = new URLSearchParams(location.search).get("room") || "";
+  function renderRoomPage(root, p) {
     const st = staffOf(p);
     const rs = roomState(p);
     const pr = progressOf(p);
     const today = kstToday();
-    const list = (data.tasks || []).filter(t => t.project === p.id && (!isDone(t) || doneDate(t) >= today))
+    const all = (data.tasks || []).filter(t => t.project === p.id);
+    const list = all.filter(t => !isDone(t) || doneDate(t) >= today)
       .sort((a, b) => (isDone(a) - isDone(b)) || (isLong(a) - isLong(b)) || byDue(a, b));
+    const doneOld = all.filter(t => isDone(t) && doneDate(t) < today).sort((a, b) => doneDate(b).localeCompare(doneDate(a)));
     const mineL = list.filter(t => t.owner === "MJ"), claudeL = list.filter(t => t.owner !== "MJ");
     const links = (Array.isArray(p.links) ? p.links : p.link ? [{ label: "열기", url: p.link }] : [])
       .filter(l => l && /^(https?:\/\/|\.\.?\/)/.test(l.url || ""));
-    const last = (data.log || []).filter(l => l.project === p.id).map(l => l.date).sort().pop();
+    const logs = (data.log || []).filter(l => l.project === p.id).slice().sort((a, b) => b.date.localeCompare(a.date));
     const color = p.group === "수익화" ? "var(--g-money)" : "var(--g-code)";
-    host.innerHTML = `<div class="sheet-bg" id="sheetBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(p.name)}">
-      <div class="shead">${spriteSvg(p)}<div><h3>${esc(emojiOf(p))} ${esc(p.name)}</h3><div class="who-line">${esc(st.name)} · ${esc(st.role)} · <span class="badge ${tone(p.status)}">${esc(p.status)}</span></div></div>
-        <button type="button" class="close">닫기</button></div>
-      <div class="ssum">${esc(p.summary)}</div>
-      <div class="counts"><span class="${rs.mineN ? "hot" : ""}">대표님 차례 ${rs.mineN}건</span><span>Claude 작업 ${rs.claudeN}건</span>${last ? `<span>마지막 기록 ${md(last)}</span>` : ""}</div>
-      <div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
-      ${p.goal ? `<div class="foot" style="font-size:12px;color:var(--text-3)">${esc(p.goal.label)}</div>` : ""}
-      ${links.length ? `<div class="links" style="margin-top:12px">${links.map((l, i) => `<a class="go${i === 0 ? " primary" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label || "열기")} ↗</a>`).join("")}</div>` : ""}
-      <h4>🙋 내가 할 일</h4>${mineL.length ? `<ul class="todo-list">${mineL.map(t => taskLi(t, false, true)).join("")}</ul>` : `<div class="empty">없어요.</div>`}
-      <h4>🤖 Claude가 할 일</h4>${claudeL.length ? `<ul class="todo-list">${claudeL.map(t => taskLi(t, false, true)).join("")}</ul>` : `<div class="empty">없어요.</div>`}
-    </div></div>`;
-    document.body.style.overflow = "hidden";
-    bindChecks(host);
-    $(".close", host).onclick = closeRoom;
-    $("#sheetBg").onclick = e => { if (e.target.id === "sheetBg") closeRoom(); };
+    document.title = `${p.name} · 작업 현황판`;
+    $("#filters").hidden = true;
+    root.innerHTML = `
+      <a class="back" href="./">← 오피스로 돌아가기</a>
+      <div class="panel room-hero ${GROUP_CLASS[p.group] || ""}">
+        <div class="hero-stage"><span class="bubble ${rs.cls}">${esc(rs.text)}</span>${spriteSvg(p)}</div>
+        <div class="hero-body">
+          <div class="rhead">${esc(p.group)} · <span class="badge ${tone(p.status)}">${esc(p.status)}</span></div>
+          <h2>${esc(emojiOf(p))} ${esc(p.name)}</h2>
+          <div class="who-line"><b>${esc(st.name)}</b> · ${esc(st.role)}</div>
+          <p class="ssum">${esc(p.summary)}</p>
+          ${p.id === STUDIO_ID ? "" : `<div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
+          ${p.goal ? `<div class="hint-line">${esc(p.goal.label)}</div>` : ""}`}
+          <div class="counts"><span class="${rs.mineN ? "hot" : ""}">대표님 차례 ${rs.mineN}건</span><span>Claude 작업 ${rs.claudeN}건</span><span>기록 ${logs.length}건</span></div>
+          ${links.length ? `<div class="links">${links.map((l, i) => `<a class="go${i === 0 ? " primary" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label || "열기")} ↗</a>`).join("")}</div>` : ""}
+        </div>
+      </div>
+
+      ${p.id === STUDIO_ID ? `<div class="section-title"><h2>🎬 스튜디오</h2><span class="hint">요청을 남기면 Claude가 힉스필드로 만들어 올려요</span></div>
+      <div class="panel studio-panel">${studioHtml()}</div>` : ""}
+
+      <div class="section-title"><h2>⚡ 할 일</h2><span class="hint">체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
+      <div class="todo-cols">
+        <div class="panel todo-col"><h3>🙋 내가 할 일 <span class="cnt">${mineL.filter(t => !isDone(t)).length}</span></h3>
+          ${mineL.length ? `<ul class="todo-list">${mineL.map(t => taskLi(t, false, true)).join("")}</ul>` : `<div class="empty">없어요.</div>`}</div>
+        <div class="panel todo-col"><h3>🤖 Claude가 할 일 <span class="cnt">${claudeL.filter(t => !isDone(t)).length}</span></h3>
+          ${claudeL.length ? `<ul class="todo-list">${claudeL.map(t => taskLi(t, false, true)).join("")}</ul>` : `<div class="empty">없어요.</div>`}</div>
+      </div>
+
+      <div class="section-title"><h2>📒 한 일 기록</h2><span class="hint">이 방에서 한 일만</span></div>
+      <div class="panel"><div class="log">${logs.length ? logDays(logs) : `<div class="empty">아직 기록이 없어요.</div>`}</div></div>
+
+      ${doneOld.length ? `<div class="section-title"><h2>✅ 끝낸 일</h2></div>
+      <div class="panel"><ul class="done-list">${doneOld.map(t => `<li><span class="tt">${esc(t.title)}</span><span class="meta">${t.owner === "MJ" ? "나" : "Claude"} · ${doneDate(t) ? md(doneDate(t)) : ""}</span></li>`).join("")}</ul></div>` : ""}
+    `;
+    bindChecks(root);
+    if (p.id === STUDIO_ID) bindStudio(root);
+  }
+
+  // 날짜별로 묶은 기록. 방 페이지는 이 방 기록만 다 보여준다.
+  function logDays(logs) {
+    const days = [];
+    for (const l of logs) {
+      if (!days.length || days[days.length - 1].date !== l.date) days.push({ date: l.date, items: [] });
+      days[days.length - 1].items.push(l);
+    }
+    return days.map(d => `<div class="log-day">
+      <div class="date">${md(d.date)} (${wd(d.date)})<small>${d.date.slice(0, 4)}</small></div>
+      <ul>${d.items.map(l => `<li><span>${esc(l.text)}</span></li>`).join("")}</ul></div>`).join("");
   }
 
   function todoCol(title, list) {
@@ -816,6 +983,31 @@ tr.done td.title { text-decoration: line-through; }
     cache: "no-store", ...opts,
     headers: { "Accept": "application/vnd.github+json", "Authorization": `Bearer ${token}`, ...(opts.headers || {}) }
   });
+
+  async function readJson(path, empty) {
+    const r = await api(`${path}?ref=main&t=${Date.now()}`);
+    if (r.status === 404) return { sha: null, obj: JSON.parse(JSON.stringify(empty)) };
+    if (!r.ok) throw new Error(r.status === 401 ? "열쇠가 맞지 않거나 만료됐어요" : `GitHub ${r.status}`);
+    const j = await r.json();
+    return { sha: j.sha, obj: JSON.parse(b64dec(j.content)) };
+  }
+
+  // 매번 최신본을 받아 mutate로 내 변경만 얹고, 동시에 고쳐져 거절되면 다시 받는다.
+  async function writeJson(path, empty, mutate, message) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { sha, obj } = await readJson(path, empty);
+      mutate(obj);
+      const body = { message, content: b64enc(JSON.stringify(obj, null, 2) + "\n"), branch: "main" };
+      if (sha) body.sha = sha;
+      const r = await api(path, { method: "PUT", body: JSON.stringify(body) });
+      if (r.ok) return obj;
+      if (r.status === 409 || r.status === 422) continue;
+      if (r.status === 401) throw new Error("열쇠가 맞지 않거나 만료됐어요");
+      if (r.status === 403 || r.status === 404) throw new Error("열쇠에 저장소 쓰기 권한이 없어요");
+      throw new Error(`GitHub ${r.status}`);
+    }
+    throw new Error("동시에 고치는 곳이 많아 저장하지 못했어요. 잠시 뒤 다시 눌러 주세요");
+  }
 
   async function readRemoteChecks() {
     const r = await api(`${CHECKS_PATH}?ref=main&t=${Date.now()}`);
@@ -958,11 +1150,16 @@ tr.done td.title { text-decoration: line-through; }
   Promise.all([
     fetch("data.json?t=" + Date.now(), { cache: "no-store" })
       .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
-    loadChecks()
+    loadChecks(),
+    fetch("videos.json?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    (token ? readJson(REQ_PATH, { requests: [] }).then(x => x.obj) : Promise.reject())
+      .catch(() => fetch("requests.json?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : {}).catch(() => ({})))
   ])
-    .then(([json, ch]) => {
+    .then(([json, ch, vj, rj]) => {
       data = json;
       checks = ch;
+      videos = Array.isArray(vj && vj.videos) ? vj.videos : [];
+      requests = Array.isArray(rj && rj.requests) ? rj.requests : [];
       const u = data.updated;
       $("#updated").textContent = u ? `마지막 갱신 ${relTime(u)} · ${u.slice(0, 16).replace("T", " ")}` : "";
       setupFilters();

@@ -32,6 +32,8 @@ jobs:
         run: |
           python3 -m json.tool dashboard/data.json > /dev/null
           python3 -m json.tool dashboard/checks.json > /dev/null
+          python3 -m json.tool dashboard/videos.json > /dev/null
+          python3 -m json.tool dashboard/requests.json > /dev/null
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
