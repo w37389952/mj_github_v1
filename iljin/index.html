@@ -280,7 +280,20 @@ details .body { padding:18px 16px 20px; }
 }
 .pair { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .check { display:flex; align-items:center; gap:8px; font-size:14.5px; color:var(--ink-soft); cursor:pointer; margin-top:4px; }
-.check input { width:auto; accent-color:var(--su); }
+.check input { width:18px; height:18px; accent-color:var(--ink); }
+
+/* 고를 것이 셋뿐인 물음은 누르는 칸으로 다 펼쳐 둔다. 체크박스 한 줄은 지나치기 쉽고,
+   체크한 뒤 또 고르는 두 단계도 한 번에 끝난다. 고른 칸은 검게 채워 한눈에 보이게 한다. */
+.seg3 { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.seg3 button {
+  font:inherit; font-size:15px; line-height:1.3; color:var(--ink); cursor:pointer;
+  background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:12px 4px;
+}
+.seg3 button small { display:block; font-size:12px; color:var(--ink-soft); margin-top:3px; }
+.seg3 button:hover { border-color:var(--ink-soft); }
+.seg3 button[aria-checked="true"] { background:var(--ink); color:var(--ground); border-color:var(--ink); font-weight:600; }
+.seg3 button[aria-checked="true"] small { color:var(--ground); opacity:.75; }
+.seg3 button:focus-visible { outline:2px solid var(--su); outline-offset:2px; }
 
 /* 지난 기록. 소급해 적은 것과 그날 적은 것을 눈으로 갈라 둔다.
    분석할 때 둘을 나눠 볼 수 있어야 하기 때문이다. */
@@ -344,15 +357,13 @@ details .body { padding:18px 16px 20px; }
     </div>
 
     <div class="field">
-      <span>쌍둥이</span>
-      <label class="check"><input type="checkbox" id="wTwin"> 쌍둥이로 태어났어</label>
-      <div id="wTwinMore" hidden>
-        <select id="wTwinOrder" style="margin-top:10px">
-          <option value="첫째">먼저 태어났어 (형·언니·오빠·누나)</option>
-          <option value="둘째">나중에 태어났어 (동생)</option>
-        </select>
-        <p class="w-note" style="margin:8px 0 0">동생은 시주를 한 칸 뒤로 봐. 임진시라면 계사시로. 시각을 모르면 시주가 없어서 따로 적용되지 않아.</p>
+      <span>쌍둥이야?</span>
+      <div class="seg3" id="wTwinSeg" role="radiogroup" aria-label="쌍둥이">
+        <button type="button" role="radio" aria-checked="true" data-v="아님">아니</button>
+        <button type="button" role="radio" aria-checked="false" data-v="첫째">응, 먼저<small>형·언니</small></button>
+        <button type="button" role="radio" aria-checked="false" data-v="둘째">응, 나중<small>동생</small></button>
       </div>
+      <p class="w-note" id="wTwinNote" style="margin:8px 0 0" hidden>동생은 시주를 한 칸 뒤로 봐. 임진시라면 계사시로. 시각을 모르면 시주가 없어서 따로 적용되지 않아.</p>
     </div>
 
     <button class="save" id="wStart">시작하기</button>
@@ -525,15 +536,15 @@ details .body { padding:18px 16px 20px; }
         </select>
       </div>
       <div class="field">
-        <span>쌍둥이</span>
-        <label class="check"><input type="checkbox" id="meTwin"> 쌍둥이로 태어났어</label>
-        <select id="meTwinOrder" style="margin-top:10px" disabled>
-          <option value="첫째">먼저 태어났어 (형·언니·오빠·누나)</option>
-          <option value="둘째">나중에 태어났어 (동생)</option>
-        </select>
+        <span>쌍둥이야?</span>
+        <div class="seg3" id="meTwinSeg" role="radiogroup" aria-label="쌍둥이">
+          <button type="button" role="radio" aria-checked="true" data-v="아님">아니</button>
+          <button type="button" role="radio" aria-checked="false" data-v="첫째">응, 먼저<small>형·언니</small></button>
+          <button type="button" role="radio" aria-checked="false" data-v="둘째">응, 나중<small>동생</small></button>
+        </div>
         <p class="hint" style="margin:10px 0 0">
           동생은 시주를 한 칸 뒤로 본다. 임진시라면 계사시로 본다.
-          유파가 갈리는 자리라, 안 맞는다 싶으면 체크를 풀어 형·언니와 같은 시주로 되돌리면 된다.
+          유파가 갈리는 자리라, 안 맞는다 싶으면 '응, 먼저'로 바꿔 형·언니와 같은 시주로 되돌리면 된다.
         </p>
       </div>
       <button class="save" id="meSave">저장하기</button>
@@ -1217,6 +1228,22 @@ document.getElementById("pastSave").addEventListener("click", () => {
 });
 
 // ── 내 정보 ───────────────────────────────────────────────
+// 쌍둥이 세 칸. "아님 / 첫째 / 둘째" 가운데 하나를 고르고, 저장할 때는 나의
+// 쌍둥이·순서 두 값으로 풀어 쓴다.
+function 세칸(id, 바뀜) {
+  const 판 = document.getElementById(id);
+  const 단추들 = [...판.querySelectorAll("button")];
+  const 고르기 = (v) => {
+    단추들.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.v === v)));
+    바뀜?.(v);
+  };
+  단추들.forEach((b) => b.addEventListener("click", () => 고르기(b.dataset.v)));
+  return { 값: () => 판.querySelector('[aria-checked="true"]').dataset.v, 고르기 };
+}
+const 쌍둥이로 = (v) => ({ 쌍둥이: v !== "아님", 순서: v === "둘째" ? "둘째" : "첫째" });
+const w쌍둥이 = 세칸("wTwinSeg", (v) => { document.getElementById("wTwinNote").hidden = v !== "둘째"; });
+const me쌍둥이 = 세칸("meTwinSeg");
+
 const 나채우기 = () => {
   document.getElementById("meDate").value = 나있음()
     ? `${나.y}-${String(나.m).padStart(2,"0")}-${String(나.d).padStart(2,"0")}`
@@ -1226,17 +1253,12 @@ const 나채우기 = () => {
   document.getElementById("meNoTime").checked = 나.시모름;
   document.getElementById("meTime").disabled = 나.시모름;
   document.getElementById("meGender").value = 나.성별;
-  document.getElementById("meTwin").checked = 나.쌍둥이;
-  document.getElementById("meTwinOrder").value = 나.순서;
-  document.getElementById("meTwinOrder").disabled = !나.쌍둥이;
+  me쌍둥이.고르기(나.쌍둥이 ? 나.순서 : "아님");
 };
 나채우기();
 
 document.getElementById("meNoTime").addEventListener("change", (e) => {
   document.getElementById("meTime").disabled = e.target.checked;
-});
-document.getElementById("meTwin").addEventListener("change", (e) => {
-  document.getElementById("meTwinOrder").disabled = !e.target.checked;
 });
 
 document.getElementById("meSave").addEventListener("click", () => {
@@ -1247,8 +1269,7 @@ document.getElementById("meSave").addEventListener("click", () => {
   나 = {
     ...생시,
     성별: document.getElementById("meGender").value,
-    쌍둥이: document.getElementById("meTwin").checked,
-    순서: document.getElementById("meTwinOrder").value,
+    ...쌍둥이로(me쌍둥이.값()),
   };
   나적용();
 
@@ -1263,17 +1284,13 @@ document.getElementById("meSave").addEventListener("click", () => {
 document.getElementById("wNoTime").addEventListener("change", (e) => {
   document.getElementById("wTime").disabled = e.target.checked;
 });
-document.getElementById("wTwin").addEventListener("change", (e) => {
-  document.getElementById("wTwinMore").hidden = !e.target.checked;
-});
 document.getElementById("wStart").addEventListener("click", () => {
   const 생시 = 생시읽기("wDate", "wTime", "wNoTime");
   if (생시.문제) { document.getElementById("wMsg").textContent = 생시.문제; return; }
   나 = {
     ...기본나, ...생시,
     성별: document.getElementById("wGender").value,
-    쌍둥이: document.getElementById("wTwin").checked,
-    순서: document.getElementById("wTwinOrder").value,
+    ...쌍둥이로(w쌍둥이.값()),
   };
   나적용();
   // 생년월일시를 넣은 바로 그때가 동기화를 권하기 가장 좋은 때다. 나중에 맨 아래 칸을
