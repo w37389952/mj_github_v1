@@ -171,6 +171,27 @@ h2.label {
 .tag:hover { border-color:var(--ink-faint); }
 .tag[aria-pressed="true"] { color:var(--ink); border-color:currentColor; }
 
+/* 처음 온 사람에게는 생년월일시 입력을 맨 위에 둔다. 원국이 없으면 아래 칸들은 전부
+   비어 있어서, 남겨 두면 입력할 곳을 찾아 한참 내려가야 했다. 원국이 생기기 전에는
+   숨기고, 다른 기기에서 쓰던 사람을 위한 동기화와 되살리기 칸만 남긴다. */
+main.first > *:not(#welcome):not(.drawers) { display:none !important; }
+main.first .drawers > details:not(#syncBox):not(#backupBox) { display:none; }
+.welcome { padding:40px 0 4px; }
+.w-title {
+  font-family:"Noto Serif KR",serif; font-weight:600; font-size:26px; line-height:1.35;
+  margin:0 0 10px; text-wrap:balance;
+}
+.w-lead { font-size:14px; line-height:1.75; color:var(--ink-soft); margin:0 0 26px; }
+.w-note { font-size:12px; line-height:1.7; color:var(--ink-faint); margin:-4px 0 14px; }
+.w-note a { color:var(--ink-soft); }
+.welcome .saved + .w-note { margin-top:6px; }
+.w-login {
+  margin-top:28px; padding-top:22px; border-top:1px solid var(--line-soft);
+  font-size:13px; line-height:1.7; color:var(--ink-soft);
+}
+.w-login b { color:var(--ink); }
+.w-login p { margin:4px 0 0; }
+
 /* 일기 잠금. 동기화 칸 안에서 선 하나를 긋고 그 아래에 둔다. */
 .vault { margin-top:22px; padding-top:20px; border-top:1px solid var(--line-soft); }
 .stack { display:grid; gap:8px; }
@@ -285,6 +306,41 @@ details .body { padding:18px 16px 20px; }
 </style>
 
 <main>
+  <section class="welcome" id="welcome" hidden>
+    <h1 class="w-title">생년월일시부터 넣어줘</h1>
+    <p class="w-lead">그걸로 네 사주를 세우고, 오늘 일진이 너한테 어떤 날인지 셈해 줄게.</p>
+
+    <div class="field">
+      <span>생년월일 (양력)</span>
+      <input type="date" id="wDate">
+    </div>
+    <p class="w-note">음력 생일만 안다면 <a href="https://astro.kasi.re.kr/life/pageView/8" target="_blank" rel="noopener">한국천문연구원 음양력 변환</a>에서 '음력을 양력으로'로 바꿔서 넣어줘.</p>
+
+    <div class="field">
+      <span>태어난 시각</span>
+      <input type="time" id="wTime">
+      <label class="check"><input type="checkbox" id="wNoTime"> 시각을 모른다</label>
+    </div>
+
+    <div class="field">
+      <span>성별 (대운의 방향을 정한다)</span>
+      <select id="wGender">
+        <option value="여">여</option>
+        <option value="남">남</option>
+      </select>
+    </div>
+
+    <button class="save" id="wStart">시작하기</button>
+    <p class="saved" id="wMsg"></p>
+    <p class="w-note">넣은 값은 이 기기에 저장돼. 로그인해서 일기 잠금을 쓰면 잠긴 채로만 다른 기기로 옮겨져. 쌍둥이라면 시작한 뒤 아래 '내 정보'에서 정할 수 있어.</p>
+
+    <div class="w-login" id="wLoginBox" hidden>
+      <b>다른 기기에서 이미 쓰고 있어?</b>
+      <p id="wLoginText">카카오로 로그인하고 일기 비밀번호를 넣으면 생년월일시와 기록이 따라와. 다시 안 넣어도 돼.</p>
+      <button class="save ghost" id="wLogin">카카오로 로그인</button>
+    </div>
+  </section>
+
   <div class="datebar">
     <span id="date"></span>
     <span class="term" id="term"></span>
@@ -963,20 +1019,43 @@ function 차트그리기() {
 }
 
 // 생년월일시가 없으면 원국을 셀 수 없다. 첫 방문자에게 그것부터 청한다.
+// 처음 온 사람에게는 입력 카드를 맨 위에 띄우고, 원국이 있어야 채워지는 칸들은 숨긴다.
 function 첫방문() {
-  document.getElementById("date").textContent = "시작하기";
-  document.getElementById("term").textContent = "";
-  document.getElementById("hanja").textContent = "?";
-  document.getElementById("hangul").textContent = "";
-  document.getElementById("score").textContent = "—";
-  document.getElementById("reading").innerHTML =
-    "생년월일시를 넣으면 오늘 일진과 네 용신을 셈해 준다." +
-    "<span class=\"note\">아래 '내 정보'에 넣어 줘. 그 값은 이 브라우저에만 남고 어디로도 보내지 않는다.</span>";
-  document.getElementById("meBox").open = true;
+  document.querySelector("main").classList.add("first");
+  document.getElementById("welcome").hidden = false;
+}
+function 시작끝() {
+  document.querySelector("main").classList.remove("first");
+  document.getElementById("welcome").hidden = true;
+}
+
+// 시각 칸을 비워 둔 채 저장하면 예전에는 낮 12시로 몰래 채웠다. 그러면 엉뚱한 시주가
+// 잡혀 강약과 용신까지 틀어진다. 시각을 넣든지 '모른다'를 고르게 한다.
+function 생시읽기(날짜id, 시각id, 모름id) {
+  const 날짜 = document.getElementById(날짜id).value;
+  if (!날짜) return { 문제: "생년월일을 넣어줘." };
+  const 시모름 = document.getElementById(모름id).checked;
+  const 시각 = document.getElementById(시각id).value;
+  if (!시모름 && !시각) return { 문제: "태어난 시각을 넣거나 '시각을 모른다'를 체크해줘." };
+  const [y, m, d] = 날짜.split("-").map(Number);
+  const [hour, minute] = (시모름 ? "12:00" : 시각).split(":").map(Number);
+  return { y, m, d, hour, minute, 시모름 };
+}
+
+// 생년월일시가 정해지면 화면 전체가 그걸 따라 바뀐다. 첫 화면과 '내 정보'가 같이 쓴다.
+function 나적용() {
+  쓰기(KEY_나, 나);
+  나채우기();
+  원국계산();
+  오늘그리기();
+  시작끝();
+  나올리기();   // 잠금이 켜져 있으면 잠가서 다른 기기로도 보낸다
+  차트그리기();
+  목록그리기();
 }
 
 // ── 화면 붙이기 ───────────────────────────────────────────
-if (나있음()) { 원국계산(); 오늘그리기(); } else { 첫방문(); }
+if (나있음()) { 원국계산(); 오늘그리기(); 시작끝(); } else { 첫방문(); }
 태그판(document.getElementById("todayTags"));
 태그판(document.getElementById("pastTags"));
 
@@ -1074,31 +1153,36 @@ document.getElementById("meTwin").addEventListener("change", (e) => {
 });
 
 document.getElementById("meSave").addEventListener("click", () => {
-  const 날짜 = document.getElementById("meDate").value;
   const msg = document.getElementById("meMsg");
-  if (!날짜) { msg.textContent = "생년월일을 넣어줘."; return; }
-  const [y, m, d] = 날짜.split("-").map(Number);
-  const 시모름 = document.getElementById("meNoTime").checked;
-  const [hh, mi] = (document.getElementById("meTime").value || "12:00").split(":").map(Number);
+  const 생시 = 생시읽기("meDate", "meTime", "meNoTime");
+  if (생시.문제) { msg.textContent = 생시.문제; return; }
 
   나 = {
-    y, m, d, hour: hh, minute: mi, 시모름,
+    ...생시,
     성별: document.getElementById("meGender").value,
     쌍둥이: document.getElementById("meTwin").checked,
     순서: document.getElementById("meTwinOrder").value,
   };
-  쓰기(KEY_나, 나);
-  원국계산();
-  오늘그리기();
+  나적용();
 
   msg.textContent =
     `${원국.연주} ${원국.월주} ${원국.일주}${원국.시주 ? " " + 원국.시주 : " (시주 없음)"}` +
     ` · 일간 ${원국.일간}${원국.일간오행}` +
     (원국.쌍둥이둘째 ? " · 나중 난 쪽으로 시주를 한 칸 밀었다" : "");
-  나올리기();   // 잠금이 켜져 있으면 잠가서 다른 기기로도 보낸다
-  차트그리기();
-  목록그리기();
 });
+
+// 첫 화면의 입력 카드. 쌍둥이 설정은 드물어서 여기엔 두지 않고 '내 정보'에서 고르게 한다.
+document.getElementById("wNoTime").addEventListener("change", (e) => {
+  document.getElementById("wTime").disabled = e.target.checked;
+});
+document.getElementById("wStart").addEventListener("click", () => {
+  const 생시 = 생시읽기("wDate", "wTime", "wNoTime");
+  if (생시.문제) { document.getElementById("wMsg").textContent = 생시.문제; return; }
+  나 = { ...기본나, ...생시, 성별: document.getElementById("wGender").value };
+  나적용();
+  window.scrollTo({ top: 0 });
+});
+document.getElementById("wLogin").addEventListener("click", () => document.getElementById("syncLogin").click());
 
 // ── 동기화 ────────────────────────────────────────────────
 // 점수·태그·그날의 간지는 그대로 서버에 올린다. 일기 본문은 이 기기에서 잠근 뒤에만
@@ -1251,7 +1335,7 @@ async function 나받기() {
   try { 나 = { ...기본나, ...JSON.parse(글) }; } catch { return; }
   쓰기(KEY_나, 나);
   나채우기();
-  if (나있음()) { 원국계산(); 오늘그리기(); }
+  if (나있음()) { 원국계산(); 오늘그리기(); 시작끝(); }
 }
 // 잠금이 열린 직후마다 부른다. 서버에 있으면 받고, 없으면 이 기기 것을 올린다.
 async function 나맞추기() {
@@ -1329,6 +1413,15 @@ const 로컬모양 = (s) => ({
 });
 
 function 동기화UI() {
+  // 첫 화면의 로그인 칸. 다른 기기에서 쓰던 사람이 로그인했으면, 생년월일시를 다시 넣는
+  // 대신 아래 동기화 칸에서 잠금을 풀면 된다고 알려 주고 그 칸을 펴 둔다.
+  document.getElementById("wLoginBox").hidden = !동기화켜짐;
+  document.getElementById("wLogin").hidden = Boolean(세션);
+  document.getElementById("wLoginText").textContent = 세션
+    ? "로그인됐어. 다른 기기에서 일기 잠금을 썼다면 아래 '동기화' 칸에서 일기 비밀번호를 넣어줘. 생년월일시가 따라와. 처음이라면 위에 넣으면 돼."
+    : "카카오로 로그인하고 일기 비밀번호를 넣으면 생년월일시와 기록이 따라와. 다시 안 넣어도 돼.";
+  if (세션 && !나있음()) document.getElementById("syncBox").open = true;
+
   const hint = document.getElementById("syncHint");
   const meta = document.getElementById("syncMeta");
   meta.textContent = !동기화켜짐 ? "꺼짐 · 이 기기에만 저장 중"
@@ -1656,7 +1749,7 @@ function 가져오기(글) {
     나 = { ...기본나, ...짐.나 };
     쓰기(KEY_나, 나);
     나채우기();
-    if (나있음()) { 원국계산(); 오늘그리기(); }
+    if (나있음()) { 원국계산(); 오늘그리기(); 시작끝(); }
   }
 
   차트그리기();
