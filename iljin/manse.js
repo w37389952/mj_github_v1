@@ -159,7 +159,7 @@ function saju(y, m, d, hour = 12, minute = 0, opts = {}) {
   const month = monthPillar(jd, year.gan, y);
   let time = 시모름 ? null : hourPillar(hh, mm, day.gan);
 
-  // 쌍둥이 둘째는 시주를 다음 간지로 민다. 임진시로 태어났다면 계사시로 본다.
+  // 쌍둥이 둘째는 시주를 다음 간지로 민다. 갑자시로 태어났다면 을축시로 본다.
   // 유파가 갈리는 자리이므로 설정을 끄면 첫째와 같은 시주로 돌아간다.
   // 어느 쪽이 맞는지는 쌍둥이 둘의 기록을 견주어 보면 알 수 있다.
   if (time && opts.쌍둥이둘째) {

@@ -331,7 +331,18 @@ details .body { padding:18px 16px 20px; }
 .progress .fill { height:2px; background:var(--ink-faint); }
 .progress .why { font-size:12.5px; line-height:1.75; color:var(--ink-soft); margin:14px 0 0; }
 
-@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+/* 저장이 끝났다는 알림을 화면 아래에 잠깐 띄운다. 버튼 밑 작은 글씨 한 줄로는
+   기록이 된 건지 아닌지 헷갈린다는 말을 들었다. */
+.toast {
+  position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:50;
+  max-width:calc(100% - 32px); padding:13px 20px; border-radius:6px;
+  background:var(--ink); color:var(--ground); font-size:15px; font-weight:600; line-height:1.5;
+  text-align:center; box-shadow:0 6px 24px rgba(0,0,0,.18);
+  animation:toast-in .2s ease-out;
+}
+@keyframes toast-in { from { opacity:0; transform:translate(-50%, 10px); } }
+
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } .toast { animation:none; } }
 </style>
 
 <main>
@@ -341,13 +352,13 @@ details .body { padding:18px 16px 20px; }
 
     <div class="field">
       <span>생년월일 (양력)</span>
-      <input type="text" id="wDate" data-kind="date" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="예: 1993-12-31">
+      <input type="text" id="wDate" data-kind="date" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="예: 1990-05-15">
     </div>
     <p class="w-note">음력 생일만 안다면 <a href="https://astro.kasi.re.kr/life/pageView/8" target="_blank" rel="noopener">한국천문연구원 음양력 변환</a>에서 '음력을 양력으로'로 바꿔서 넣어줘.</p>
 
     <div class="field">
       <span>태어난 시각</span>
-      <input type="text" id="wTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 08:16 · 오후 3시는 15:00">
+      <input type="text" id="wTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 09:30 · 오후 3시는 15:00">
       <label class="check"><input type="checkbox" id="wNoTime"> 시각을 모른다</label>
     </div>
 
@@ -366,7 +377,7 @@ details .body { padding:18px 16px 20px; }
         <button type="button" role="radio" aria-checked="false" data-v="첫째">응, 먼저<small>형·언니</small></button>
         <button type="button" role="radio" aria-checked="false" data-v="둘째">응, 나중<small>동생</small></button>
       </div>
-      <p class="w-note" id="wTwinNote" style="margin:8px 0 0" hidden>동생은 시주를 한 칸 뒤로 봐. 임진시라면 계사시로. 시각을 모르면 시주가 없어서 따로 적용되지 않아.</p>
+      <p class="w-note" id="wTwinNote" style="margin:8px 0 0" hidden>동생은 시주를 한 칸 뒤로 봐. 갑자시라면 을축시로. 시각을 모르면 시주가 없어서 따로 적용되지 않아.</p>
     </div>
 
     <button class="save" id="wStart">시작하기</button>
@@ -480,6 +491,12 @@ details .body { padding:18px 16px 20px; }
         <input type="text" id="pastDate" data-kind="date" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="예: 2019-03-14">
       </div>
 
+      <div class="field">
+        <span>몇 시쯤</span>
+        <input type="text" id="pastTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 09:30 · 오후 3시는 15:00">
+        <label class="check"><input type="checkbox" id="pastNoTime"> 시각을 모른다</label>
+      </div>
+
       <div class="panel" id="pastPanel" hidden></div>
 
       <div class="field">
@@ -524,11 +541,11 @@ details .body { padding:18px 16px 20px; }
       </p>
       <div class="field">
         <span>생년월일 (양력)</span>
-        <input type="text" id="meDate" data-kind="date" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="예: 1993-12-31">
+        <input type="text" id="meDate" data-kind="date" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="예: 1990-05-15">
       </div>
       <div class="field">
         <span>태어난 시각</span>
-        <input type="text" id="meTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 08:16 · 오후 3시는 15:00">
+        <input type="text" id="meTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 09:30 · 오후 3시는 15:00">
         <label class="check"><input type="checkbox" id="meNoTime"> 시각을 모른다</label>
       </div>
       <div class="field">
@@ -546,7 +563,7 @@ details .body { padding:18px 16px 20px; }
           <button type="button" role="radio" aria-checked="false" data-v="둘째">응, 나중<small>동생</small></button>
         </div>
         <p class="hint" style="margin:10px 0 0">
-          동생은 시주를 한 칸 뒤로 본다. 임진시라면 계사시로 본다.
+          동생은 시주를 한 칸 뒤로 본다. 갑자시라면 을축시로 본다.
           유파가 갈리는 자리라, 안 맞는다 싶으면 '응, 먼저'로 바꿔 형·언니와 같은 시주로 되돌리면 된다.
         </p>
       </div>
@@ -660,6 +677,7 @@ details .body { padding:18px 16px 20px; }
     </div>
   </details>
   </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -693,6 +711,20 @@ const 한자 = {
 };
 const 한자로 = (s) => [...(s || "")].map((c) => 한자[c] || c).join("");
 const 키로 = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+// 저장 같은 일이 끝났을 때 화면 아래에 2초쯤 띄웠다 거둔다. 잘못된 입력 같은 안내는
+// 고칠 칸 바로 곁에 남겨야 하므로 이걸 쓰지 않는다.
+let 알림타이머 = null;
+function 알림(글) {
+  const el = document.getElementById("toast");
+  el.textContent = 글;
+  el.hidden = false;
+  el.style.animation = "none";
+  void el.offsetWidth;          // 연달아 띄울 때도 떠오르는 움직임을 다시 보이게 한다
+  el.style.animation = "";
+  clearTimeout(알림타이머);
+  알림타이머 = setTimeout(() => { el.hidden = true; }, 2200);
+}
 
 // 태그는 십성이 가리키는 삶의 영역 그대로다. 사람이 아니라 사건의 성격으로 받는다.
 const 영역 = [
@@ -951,6 +983,7 @@ function 담기(키, 점수값, 태그들, 글, opts = {}) {
     요일: new Date(y, m - 1, d).getDay(),
     소급: opts.소급 === true,
     확실성: opts.확실성 ?? "정확",
+    시각: opts.시각 ?? null,   // 그 일이 있었던 시각. 모르면 비워 둔다.
     적은날: 오늘키,
     // 같은 날짜가 이 기기와 서버 양쪽에 있을 때 어느 쪽이 새것인지 가리는 값이다.
     수정시각: new Date().toISOString(),
@@ -1033,7 +1066,7 @@ function 목록그리기() {
     return `
       <div class="entry">
         <div class="top">
-          <span class="when">${k}</span>
+          <span class="when">${k}${r.시각 ? " " + r.시각 : ""}</span>
           <span class="gz" style="color:${오행색(r.천간오행)}">${한자로(r.일진)}</span>
           <span class="badge">${r.점수}점 · 예측 ${r.예측}</span>
           <span class="badge">${맞음 ? "얼추 맞음" : "빗나감"}</span>
@@ -1086,20 +1119,20 @@ function 생시읽기(날짜id, 시각id, 모름id) {
   const 날짜글 = document.getElementById(날짜id).value;
   if (!날짜글.trim()) return { 문제: "생년월일을 넣어줘." };
   const 날 = 날짜읽기(날짜글);
-  if (!날) return { 문제: "생년월일을 1993-12-31처럼 넣어줘. 숫자만 19931231로 쳐도 돼." };
+  if (!날) return { 문제: "생년월일을 1990-05-15처럼 넣어줘. 숫자만 19900515로 쳐도 돼." };
   if (날.키 > 오늘키) return { 문제: "생년월일이 오늘보다 뒤야. 다시 봐줘." };
 
   const 시모름 = document.getElementById(모름id).checked;
   const 시각글 = document.getElementById(시각id).value;
   if (!시모름 && !시각글.trim()) return { 문제: "태어난 시각을 넣거나 '시각을 모른다'를 체크해줘." };
   const 시 = 시모름 ? { h: 12, mi: 0 } : 시각읽기(시각글);
-  if (!시) return { 문제: "시각을 08:16처럼 넣어줘. 오후 3시는 15:00이야." };
+  if (!시) return { 문제: "시각을 09:30처럼 넣어줘. 오후 3시는 15:00이야." };
   return { y: 날.y, m: 날.m, d: 날.d, hour: 시.h, minute: 시.mi, 시모름 };
 }
 
 // 날짜·시각은 타자로 받는다. 브라우저 기본 달력은 생년월일을 고르려면 수십 년을
 // 넘겨야 하고 칸마다 따로 눌러야 해서, 처음 써 본 사람이 불편하다고 했다.
-// 숫자만 쳐도 되고(19931231), 점이나 빗금으로 끊어 쳐도(1993.12.31) 받는다.
+// 숫자만 쳐도 되고(19900515), 점이나 빗금으로 끊어 쳐도(1990.05.15) 받는다.
 function 날짜읽기(글) {
   const t = (글 ?? "").trim();
   const m = t.match(/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})\D*$/) || t.match(/^(\d{4})(\d{2})(\d{2})$/);
@@ -1112,15 +1145,15 @@ function 날짜읽기(글) {
 }
 function 시각읽기(글) {
   const t = (글 ?? "").trim();
-  // 816처럼 앞의 0 없이 세 자리로 치는 사람이 많아 그것도 8시 16분으로 읽는다.
+  // 930처럼 앞의 0 없이 세 자리로 치는 사람이 많아 그것도 9시 30분으로 읽는다.
   const m = t.match(/^(\d{1,2})\D+(\d{1,2})$/) || t.match(/^(\d{1,2})(\d{2})$/);
   if (!m) return null;
   const [h, mi] = m.slice(1).map(Number);
   return h <= 23 && mi <= 59 ? { h, mi } : null;
 }
 
-// 숫자만 치는 동안에는 알아서 끊어 준다. 19931231을 치면 1993-12-31이 된다.
-// 사용자가 점·빗금으로 직접 끊었거나(1993.12.31) 제자리가 아닌 곳에서 끊었으면(8:16)
+// 숫자만 치는 동안에는 알아서 끊어 준다. 19900515을 치면 1990-05-15이 된다.
+// 사용자가 점·빗금으로 직접 끊었거나(1990.05.15) 제자리가 아닌 곳에서 끊었으면(8:16)
 // 손대지 않는다. 쳐 둔 모양을 바꾸면 오히려 헷갈린다.
 function 입력다듬기(el) {
   const 날짜칸 = el.dataset.kind === "date";
@@ -1128,7 +1161,7 @@ function 입력다듬기(el) {
   const 제자리 = 날짜칸 ? [4, 7] : [2];
   const v = el.value;
   if (v.endsWith(구분)) return;
-  // 시각은 숫자 네 개가 다 찼을 때만 끊는다. 세 개에서 끊으면 816이 81:6이 되어 버린다.
+  // 시각은 숫자 네 개가 다 찼을 때만 끊는다. 세 개에서 끊으면 930이 93:0이 되어 버린다.
   if (!날짜칸) {
     if (/^\d{4}$/.test(v)) el.value = v.slice(0, 2) + ":" + v.slice(2);
     return;
@@ -1174,7 +1207,8 @@ document.getElementById("todaySave").addEventListener("click", () => {
     return;
   }
   담기(오늘키, 오늘상태.점수, 오늘상태.태그, document.getElementById("todayNote").value.trim());
-  document.getElementById("todayMsg").textContent = "기록했어.";
+  document.getElementById("todayMsg").textContent = "";
+  알림(`✓ 오늘 기록 완료 · ${오늘상태.점수}점`);
   차트그리기();
   목록그리기();
 });
@@ -1196,11 +1230,22 @@ const pastDate = document.getElementById("pastDate");
 const pastPanel = document.getElementById("pastPanel");
 // 날짜를 다 치는 즉시 그날이 무슨 날이었는지 보여준다. 적기 전에 먼저 알아야
 // '아 그래서 그랬나' 하는 생각이 드는데, 그 생각까지가 이 앱의 재미다.
-pastDate.addEventListener("input", () => {
+// 시각까지 알면 시주를 더해 네 기둥으로 보여준다.
+const pastTime = document.getElementById("pastTime");
+const pastNoTime = document.getElementById("pastNoTime");
+function 지난날판() {
   const 날 = 날짜읽기(pastDate.value);
   if (!날 || !나있음()) { pastPanel.hidden = true; return; }
-  pastPanel.innerHTML = 간지판(날.y, 날.m, 날.d);
+  const 시 = pastNoTime.checked ? null : 시각읽기(pastTime.value);
+  pastPanel.innerHTML = 간지판(날.y, 날.m, 날.d, 시 ? [시.h, 시.mi] : undefined);
   pastPanel.hidden = false;
+}
+pastDate.addEventListener("input", 지난날판);
+pastTime.addEventListener("input", 지난날판);
+// '시각을 모른다'를 고르면 시각 칸을 아예 걷는다. 안 쓸 칸이 남아 있으면 비워도 되는지 헷갈린다.
+pastNoTime.addEventListener("change", () => {
+  pastTime.hidden = pastNoTime.checked;
+  지난날판();
 });
 
 document.getElementById("pastSave").addEventListener("click", () => {
@@ -1215,16 +1260,26 @@ document.getElementById("pastSave").addEventListener("click", () => {
   if (!날짜글.trim()) { msg.textContent = "언제였는지 넣어줘."; return; }
   if (!날짜) { msg.textContent = "날짜를 2019-03-14처럼 넣어줘."; return; }
   if (날짜 >= 오늘키) { msg.textContent = "지난 날만 여기에 넣을 수 있어. 오늘은 위에서 적어줘."; return; }
+  let 시각 = null;
+  if (!pastNoTime.checked) {
+    if (!pastTime.value.trim()) { msg.textContent = "몇 시였는지 넣거나 '시각을 모른다'를 체크해줘."; return; }
+    const 시 = 시각읽기(pastTime.value);
+    if (!시) { msg.textContent = "시각을 09:30처럼 넣어줘. 오후 3시는 15:00이야."; return; }
+    시각 = `${String(시.h).padStart(2, "0")}:${String(시.mi).padStart(2, "0")}`;
+  }
   if (지난상태.점수 === null) { msg.textContent = "그날 점수를 밀어서 매겨줘."; return; }
 
   담기(날짜, 지난상태.점수, 지난상태.태그, document.getElementById("pastNote").value.trim(), {
     소급: true,
     확실성: document.getElementById("pastSure").value,
+    시각,
   });
 
   const 그날 = Manse.iljin(...날짜.split("-").map(Number));
-  msg.textContent = `${날짜}은 ${그날.이름}일이었어. 남겼어.`;
+  msg.textContent = "";
+  알림(`✓ ${날짜}${시각 ? " " + 시각 : ""} 기록 완료 · ${그날.이름}일 · ${지난상태.점수}점`);
   document.getElementById("pastNote").value = "";
+  pastTime.value = "";
   지난상태.비우기();
   차트그리기();
   목록그리기();
@@ -1280,6 +1335,7 @@ document.getElementById("meSave").addEventListener("click", () => {
     `${원국.연주} ${원국.월주} ${원국.일주}${원국.시주 ? " " + 원국.시주 : " (시주 없음)"}` +
     ` · 일간 ${원국.일간}${원국.일간오행}` +
     (원국.쌍둥이둘째 ? " · 동생이라 시주를 한 칸 뒤로 봤다" : "");
+  알림("✓ 내 정보 저장 완료");
 });
 
 // 첫 화면의 입력 카드. 쌍둥이도 여기서 받는다. 나중에 '내 정보'에서 고치게 두면 동생은
@@ -1527,6 +1583,7 @@ async function 서버모양(날짜, r, 서버글) {
     certainty: r.확실성 ?? null,
     updated_at: r.수정시각 ?? new Date().toISOString(),
   };
+  if (시각칸있음) 줄.event_time = r.시각 ?? null;
   if (데이터열쇠) {
     if (r.글) 줄.note_cipher = await 글잠그기(r.글);
     else if (서버글 !== undefined) 줄.note_cipher = 서버글;
@@ -1547,7 +1604,20 @@ const 로컬모양 = (s) => ({
   소급: s.retro,
   확실성: s.certainty,
   수정시각: s.updated_at,
+  ...("event_time" in s ? { 시각: s.event_time } : {}),
 });
+
+// 서버 표에 '그 일이 있었던 시각' 칸이 있는지. supabase.sql을 다시 돌리기 전에는 없다.
+// 없는 칸을 실어 보내면 동기화 전체가 실패하므로, 있을 때만 싣는다. 없으면 시각은
+// 이 기기에만 남는다.
+let 시각칸있음 = false;
+let 시각칸확인됨 = false;
+async function 시각칸확인() {
+  if (시각칸확인됨 || !sb) return;
+  const { error } = await sb.from("records").select("event_time").limit(1);
+  시각칸있음 = !error;
+  시각칸확인됨 = true;
+}
 
 function 동기화UI() {
   // 첫 화면의 로그인 칸. 다른 기기에서 쓰던 사람이 로그인했으면, 생년월일시를 다시 넣는
@@ -1588,6 +1658,7 @@ async function 동기화() {
   if (!sb || !세션) return;
   msg.textContent = "동기화하는 중…";
   try {
+    await 시각칸확인();
     const { data, error } = await sb.from("records").select("*");
     if (error) throw error;
 
@@ -1646,6 +1717,7 @@ async function 동기화() {
 async function 서버로밀기(날짜) {
   if (!sb || !세션 || !기록[날짜]) return;
   try {
+    await 시각칸확인();
     await sb.from("records").upsert({ ...(await 서버모양(날짜, 기록[날짜])), user_id: 세션.user.id });
   } catch {}
 }

@@ -32,6 +32,9 @@ create table if not exists public.records (
 -- 일기 본문. 기기에서 AES-GCM으로 잠근 문자열이며, 서버는 이것을 풀 수 없다.
 alter table public.records add column if not exists note_cipher text;
 
+-- 그 일이 있었던 시각(예: 14:30). 지난 날을 적을 때 받는다. 모르면 비워 둔다.
+alter table public.records add column if not exists event_time text;
+
 -- 일기 잠금의 열쇠 보관함.
 --
 -- 글을 잠그는 데이터 열쇠는 사용자마다 하나이고, 그 열쇠를 두 번 잠가 여기 둔다.
