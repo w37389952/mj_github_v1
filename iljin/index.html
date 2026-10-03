@@ -731,11 +731,14 @@ const 기록 = 읽기(KEY_기록, {});
 // ── 공통 ──────────────────────────────────────────────────
 const 색이름 = { 목:"--mok", 화:"--hwa", 토:"--to", 금:"--geum", 수:"--su" };
 const 오행색 = (o) => getComputedStyle(document.documentElement).getPropertyValue(색이름[o]).trim();
-const 한자 = {
-  갑:"甲", 을:"乙", 병:"丙", 정:"丁", 무:"戊", 기:"己", 경:"庚", 신:"辛", 임:"壬", 계:"癸",
+// 천간과 지지를 따로 둔다. 천간 신(辛)과 지지 신(申)은 한글로 똑같이 '신'이라 한 표에
+// 두면 뒤의 것이 앞의 것을 덮어, 신해일이 申亥처럼 잘못 찍혔다. 간지는 늘 천간·지지
+// 순서로 두 글자씩이므로 자리로 어느 표를 볼지 정한다.
+const 간한자 = { 갑:"甲", 을:"乙", 병:"丙", 정:"丁", 무:"戊", 기:"己", 경:"庚", 신:"辛", 임:"壬", 계:"癸" };
+const 지한자 = {
   자:"子", 축:"丑", 인:"寅", 묘:"卯", 진:"辰", 사:"巳", 오:"午", 미:"未", 신:"申", 유:"酉", 술:"戌", 해:"亥"
 };
-const 한자로 = (s) => [...(s || "")].map((c) => 한자[c] || c).join("");
+const 한자로 = (s) => [...(s || "")].map((c, i) => (i % 2 === 0 ? 간한자 : 지한자)[c] || c).join("");
 const 키로 = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
 // 저장 같은 일이 끝났을 때 화면 아래에 2초쯤 띄웠다 거둔다. 잘못된 입력 같은 안내는
@@ -952,7 +955,7 @@ function 간지판(y, m, d, 시각) {
       const [go, jo] = 읽기오행(gz);
       return `<div class="pillar">
         <span class="kind">${k}</span>
-        <span class="gz"><span style="color:${오행색(go)}">${한자[gz[0]]}</span><br><span style="color:${오행색(jo)}">${한자[gz[1]]}</span></span>
+        <span class="gz"><span style="color:${오행색(go)}">${간한자[gz[0]]}</span><br><span style="color:${오행색(jo)}">${지한자[gz[1]]}</span></span>
         <span class="rd">${gz}</span>
       </div>`;
     })
