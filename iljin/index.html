@@ -317,6 +317,22 @@ details .body { padding:18px 16px 20px; }
 }
 .entry .txt { font-size:12.5px; line-height:1.7; color:var(--ink-soft); white-space:pre-wrap; }
 .entry .areas { font-size:12px; color:var(--ink-soft); }
+/* 점수 근거. 더하는 줄과 빼는 줄을 색으로 가른다. */
+.why-title { font-size:11px; letter-spacing:.12em; color:var(--ink-soft); font-weight:600; margin:18px 0 8px; }
+.why-sub { font-weight:400; letter-spacing:.02em; margin-left:6px; }
+.why { list-style:none; margin:0; padding:0; display:grid; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
+.why li { background:var(--ground); display:flex; justify-content:space-between; gap:8px; padding:7px 10px; font-size:12.5px; color:var(--ink-soft); }
+.why li b { font-family:"IBM Plex Mono",monospace; font-weight:600; white-space:nowrap; }
+.why li.up b { color:var(--mok); }
+.why li.down b { color:var(--hwa); }
+.why-note { font-size:11.5px; color:var(--ink-soft); line-height:1.6; margin:8px 0 0; }
+.hours { display:grid; grid-template-columns:repeat(12,1fr); gap:2px; height:86px; }
+.hour { display:grid; grid-template-rows:auto 1fr auto; align-items:end; text-align:center; }
+.hour .hk { font-family:"Noto Serif KR",serif; font-size:12px; color:var(--ink-soft); }
+.hour .hb { display:block; width:100%; align-self:end; border-radius:1px; opacity:.75; }
+.hour .hn { font-family:"IBM Plex Mono",monospace; font-size:9.5px; color:var(--ink-soft); margin-top:2px; }
+.hour.now .hb { opacity:1; outline:1.5px solid var(--ink); }
+.hour.now .hk, .hour.now .hn { color:var(--ink); font-weight:700; }
 .entry .hg { font-family:inherit; font-weight:400; font-size:11px; color:var(--ink-soft); margin-left:3px; }
 .unfold {
   margin-left:auto; font:inherit; font-size:11px; color:var(--ink-soft); cursor:pointer;
@@ -466,6 +482,13 @@ details .body { padding:18px 16px 20px; }
   </div>
 
   <p class="reading" id="reading"></p>
+
+  <div class="hours-wrap">
+    <h3 class="why-title">시간대별 <span class="why-sub">시운까지 넣은 점수 · 테두리가 지금</span></h3>
+    <div class="hours" id="hours"></div>
+  </div>
+
+  <div id="why"></div>
 
   <button class="more" id="todayMore" aria-expanded="false">그날 여덟 글자 펼치기</button>
   <div class="panel" id="todayPanel" hidden></div>
@@ -873,11 +896,26 @@ function 원국계산() {
     [원국.연주, 원국.월주, 원국.일주, 원국.시주 ?? "시주 모름"].join(" ");
 }
 
-// 임시 점수. 용신을 돕는 오행이면 올리고 기신이면 내린다.
-// 천간을 지지보다 무겁게 두는 것은 일진에서 천간이 그날의 성질을 더 크게 정하기 때문이다.
-function 점수(천간오행, 지지오행) {
-  const 값 = (o, w) => (용신.includes(o) ? w : 기신.includes(o) ? -w : -w * 0.3);
-  return Math.round(Math.max(15, Math.min(92, 50 + 값(천간오행, 15) + 값(지지오행, 10))));
+// 그날의 예측. 대운·세운·월운·일진(시각을 알면 시운까지)을 원국에 대입하고
+// 합·충까지 따진다. 계산은 manse.js의 dayScore가 한다.
+// 점수 모델이 바뀌면 이 번호를 올린다. 기록마다 어느 모델로 매긴 예측인지 남긴다.
+const 모델 = 2;
+const 시각쌍 = (s) => {
+  const t = /^(\d{1,2}):(\d{2})$/.exec(s || "");
+  return t ? [+t[1], +t[2]] : null;
+};
+const 예측하기 = (y, m, d, 시각) => Manse.dayScore(원국, 판정, 나.성별, y, m, d, 시각 || null);
+
+// 점수 근거를 큰 것부터 줄 세운다. 사주를 배우는 사람이 왜 이 점수인지 따라갈 수 있게.
+function 근거표(결과, 몇 = 8) {
+  const 줄 = [...결과.근거].filter((x) => Math.abs(x.값) >= 0.5)
+    .sort((a, b) => Math.abs(b.값) - Math.abs(a.값)).slice(0, 몇);
+  if (!줄.length) return "";
+  return `<ul class="why">` + 줄.map((x) => `
+    <li class="${x.값 > 0 ? "up" : "down"}">
+      <span>${x.말}</span>
+      <b>${x.값 > 0 ? "+" : ""}${x.값.toFixed(1)}</b>
+    </li>`).join("") + `</ul>`;
 }
 
 // ── 오늘 화면 ─────────────────────────────────────────────
@@ -889,7 +927,8 @@ let 일진, 운, 점;
 function 오늘그리기() {
   일진 = Manse.iljin(Y, M, D);
   운 = Manse.fortune(원국, 나.성별, Y, M, D);
-  점 = 점수(일진.천간오행, 일진.지지오행);
+  const 결과 = 예측하기(Y, M, D);
+  점 = 결과.점수;
 
   document.getElementById("date").textContent =
     `${Y}.${String(M).padStart(2,"0")}.${String(D).padStart(2,"0")}  ${"일월화수목금토"[이제.getDay()]}`;
@@ -930,7 +969,24 @@ function 오늘그리기() {
       : 지지편
       ? `${무게} 기운이지만 아래 ${이가(지지말)} 받쳐 줘서 속은 버틸 만하다.`
       : `${무게} 기운이라 무리해서 밀지 말고 하루를 짧게 쓰는 편이 낫다.`) +
-    `<span class="note">지금 점수는 표준 억부용신 기준이다. 네 기록이 쌓이면 너에게 맞게 고쳐진다.</span>`;
+    `<span class="note">점수는 대운·세운·월운·일진을 네 원국에 대입하고 합·충까지 따져 매겼다. 무게는 출발점이라, 네 기록이 쌓이면 맞게 고쳐진다.</span>`;
+
+  document.getElementById("why").innerHTML =
+    `<h3 class="why-title">점수 근거</h3>` + 근거표(결과) +
+    `<p class="why-note">겹 줄은 그 운이 네게 반가운 정도, 합·충 줄은 그 운이 원국이나 다른 운과 부딪혀 생긴 몫이다. 50에서 이 값들을 더한다.</p>`;
+
+  // 시간대별. 하루 점수는 시주를 빼고 매기고, 시진마다 시운을 넣어 다시 잰다.
+  const 지금시진 = Math.floor(((이제.getHours() * 60 + 이제.getMinutes() - 32 + 60) % 1440) / 120);
+  // 막대 높이는 그날 안에서 가장 낮은 시진과 높은 시진 사이로 늘린다. 차이가 몇 점뿐이어도 보이게.
+  const 시진들 = Manse.hourScores(원국, 판정, 나.성별, Y, M, D);
+  const 낮 = Math.min(...시진들.map((h) => h.점수)), 높 = Math.max(...시진들.map((h) => h.점수));
+  document.getElementById("hours").innerHTML = 시진들
+    .map((h, j) => `
+      <div class="hour${j === 지금시진 ? " now" : ""}" title="${h.지}시 · ${h.점수}점">
+        <span class="hk">${지한자[h.지]}</span>
+        <span class="hb" style="height:${높 > 낮 ? 15 + 85 * (h.점수 - 낮) / (높 - 낮) : 50}%; background:${오행색(Manse.JI_OHAENG[j])}"></span>
+        <span class="hn">${h.점수}</span>
+      </div>`).join("");
 
   const 겹들 = [
     ["대운", 운.대운.이름, 운.대운.십성, `${운.대운.나이}–${운.대운.나이 + 9}세`],
@@ -1059,7 +1115,8 @@ function 담기(키, 점수값, 태그들, 글, opts = {}) {
     세운: 그날운.세운.이름,
     월운: 그날운.월운.이름,
     대운: 그날운.대운.이름,
-    예측: 점수(그날.천간오행, 그날.지지오행),
+    예측: 예측하기(y, m, d, 시각쌍(opts.시각)).점수,
+    모델,
     요일: new Date(y, m - 1, d).getDay(),
     소급: opts.소급 === true,
     확실성: opts.확실성 ?? "정확",
@@ -1185,7 +1242,9 @@ function 그날사주(k, r) {
       십성은 내 일간 ${간한자[원국.일간]}(${원국.일간}) 기준.
       ${대운전 ? "" : `대운은 ${운.대운.나이}세부터 10년.`}
       ${t ? "" : "시각을 적은 날만 시주가 나와."}
-    </p>`;
+    </p>
+    <h3 class="why-title">예측 근거</h3>
+    ${근거표(예측하기(y, m, d, t ? [+t[1], +t[2]] : null), 6)}`;
 }
 
 function 목록그리기() {
@@ -1201,13 +1260,17 @@ function 목록그리기() {
   }
   el.innerHTML = `<div class="log">` + 키들.map((k) => {
     const r = 기록[k];
-    const 맞음 = Math.abs(r.예측 - r.점수) <= 20;
+    // 예측은 지금 모델로 다시 잰다. 기록에 남은 예측은 그날 화면에 떴던 값이라 그대로 두고,
+    // 목록에서는 모든 날을 같은 잣대로 견준다.
+    const [y, m, d] = k.split("-").map(Number);
+    const 지금예측 = 예측하기(y, m, d, 시각쌍(r.시각)).점수;
+    const 맞음 = Math.abs(지금예측 - r.점수) <= 20;
     return `
       <div class="entry">
         <div class="top">
           <span class="when">${k}${r.시각 ? " " + r.시각 : ""}</span>
           <span class="gz">${색한자(r.일진)}<span class="hg">${r.일진}</span></span>
-          <span class="badge">${r.점수}점 · 예측 ${r.예측}</span>
+          <span class="badge">${r.점수}점 · 예측 ${지금예측}</span>
           <span class="badge">${맞음 ? "얼추 맞음" : "빗나감"}</span>
           ${r.소급 ? `<span class="badge">소급 · ${r.확실성}</span>` : ""}
           <button type="button" class="unfold" data-day="${k}" aria-expanded="${펼친날.has(k)}">그날 사주 ${펼친날.has(k) ? "▴" : "▾"}</button>
