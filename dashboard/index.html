@@ -92,8 +92,8 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .filters button.on { background: var(--mustard); color: var(--mustard-ink); }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-.section-title { display: flex; align-items: baseline; gap: 8px; margin: 28px 0 10px; }
-.section-title h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+.section-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 28px 0 10px; }
+.section-title h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; white-space: nowrap; }
 .section-title .hint { color: var(--text-3); font-size: 12px; }
 
 .section-title.first { margin-top: 4px; }
@@ -458,7 +458,8 @@ tr.done td.title { text-decoration: line-through; }
   const REQ_PATH = "dashboard/requests.json";
   let videos = [];
   let requests = [];
-  let reqDraft = { text: "", target: "" };
+  // 요청 칸에 쓰던 글. 칸마다(오피스 첫 화면 "main", 방 id) 따로 둔다.
+  let reqDraft = {};
   let group = "all";
   let showDone = false;
   // MJ가 현황판에서 체크한 할 일. 키는 "프로젝트id::할 일 제목", 값은 체크한 날(한국 시간).
@@ -692,6 +693,9 @@ tr.done td.title { text-decoration: line-through; }
         ${todoCol("Claude가 할 일", claudeListed)}
       </div>
 
+      <div class="section-title"><h2>📮 Claude에게 요청</h2><span class="hint">어느 창에서든 못 한 요청을 여기 남기면 Claude가 처리해요</span></div>
+      ${mainReqHtml()}
+
       <div class="section-title"><h2>🗓️ 장기 과제</h2><span class="hint">꾸준히 쌓아 가는 일, 때가 되면 할 일, 아직 기획 중인 채널</span></div>
       <div class="panel long-panel">
         ${longListed.length ? `<div class="long-grid">${groupsHtml(longListed, true)}</div>` : `<div class="empty">장기 과제가 없어요.</div>`}
@@ -726,6 +730,7 @@ tr.done td.title { text-decoration: line-through; }
 
     drawChart(logs, today);
     bindChecks(root);
+    bindReqForms(root);
 
     const more = $("#more");
     if (more) more.onclick = () => { logLimit += 20; render(); };
@@ -797,7 +802,7 @@ tr.done td.title { text-decoration: line-through; }
   }
   function baseRoomState(p) {
     if (p.id === STUDIO_ID) {
-      const openReq = requests.filter(r => r.status !== "완료").length;
+      const openReq = reqOf(STUDIO_ID).filter(r => r.status !== "완료").length;
       const making = videos.filter(v => v.status === "제작 중").length;
       if (openReq) return { cls: "work", text: `요청 ${openReq}건 처리 중`, mineN: 0, claudeN: openReq };
       if (making) return { cls: "work", text: "제작 중…", mineN: 0, claudeN: making };
@@ -805,7 +810,7 @@ tr.done td.title { text-decoration: line-through; }
     }
     const open = (data.tasks || []).filter(t => t.project === p.id && !isDone(t) && !isLong(t));
     const mineN = open.filter(t => t.owner === "MJ").length;
-    const claudeN = open.length - mineN;
+    const claudeN = open.length - mineN + reqOf(p.id).filter(r => r.status !== "완료").length;
     if (mineN) return { cls: "ask", text: "대표님 차례!", mineN, claudeN };
     if (claudeN) return { cls: "work", text: "작업 중…", mineN, claudeN };
     return { cls: "rest", text: p.status === "기획" ? "기획 중" : "대기 중", mineN, claudeN, idle: true };
@@ -839,7 +844,7 @@ tr.done td.title { text-decoration: line-through; }
       ${why ? `<div class="alarm-line">🚨 ${esc(why)}</div>` : ""}
       <div class="rfoot"><span class="staff">${esc(st.name)}</span><span>${esc(st.role)}</span></div>
       ${p.id === STUDIO_ID
-        ? `<div class="rfoot"><span>완료 ${videos.filter(v => v.status === "완료").length} · 제작 중 ${videos.filter(v => v.status === "제작 중").length} · 요청 ${requests.filter(r => r.status !== "완료").length}</span></div>`
+        ? `<div class="rfoot"><span>완료 ${videos.filter(v => v.status === "완료").length} · 제작 중 ${videos.filter(v => v.status === "제작 중").length} · 요청 ${reqOf(STUDIO_ID).filter(r => r.status !== "완료").length}</span></div>`
         : `<div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>`}
     </a>`;
   }
@@ -854,21 +859,19 @@ tr.done td.title { text-decoration: line-through; }
   function studioHtml() {
     const order = { "제작 중": 0, "대기": 1, "완료": 2 };
     const vs = videos.slice().sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || String(b.date || "").localeCompare(String(a.date || "")));
-    const rs = requests.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).slice(0, 8);
+    const rs = reqOf(STUDIO_ID).sort(byNewest).slice(0, 8);
+    const d = draftOf(STUDIO_ID);
     return `
-      <div class="req-box">
-        <h4 style="margin-top:4px">✍️ 요청 남기기</h4>
-        <select id="reqTarget" aria-label="어떤 작업에 대한 요청인지">
+      ${reqFormHtml(STUDIO_ID, {
+        title: "✍️ 요청 남기기",
+        select: `<select data-field="target" aria-label="어떤 작업에 대한 요청인지">
           <option value="">새로 만들어 줘</option>
-          ${vs.map(v => `<option value="${esc(v.id)}" ${reqDraft.target === v.id ? "selected" : ""}>수정: ${esc(v.title)}</option>`).join("")}
-        </select>
-        <textarea id="reqText" rows="3" placeholder="예) 공포 쇼츠 썸네일 하나 만들어 줘. 어두운 복도, 빨간 조명 느낌으로">${esc(reqDraft.text)}</textarea>
-        <div class="req-actions"><span class="small">공개 페이지라 요청 글도 누구나 볼 수 있어요. 개인 정보는 적지 마세요.</span><button type="button" class="go primary" id="reqSend">보내기</button></div>
-      </div>
+          ${vs.map(v => `<option value="${esc(v.id)}" ${d.target === v.id ? "selected" : ""}>수정: ${esc(v.title)}</option>`).join("")}
+        </select>`,
+        placeholder: "예) 공포 쇼츠 썸네일 하나 만들어 줘. 어두운 복도, 빨간 조명 느낌으로"
+      })}
       <h4>📮 요청 기록</h4>
-      ${rs.length ? `<ul class="req-list">${rs.map(r => `<li><span class="badge ${RSTATUS_TONE[r.status] || "muted"}">${esc(r.status || "요청")}</span>
-        <div class="t"><div>${r.target ? `<b>${esc(videoTitle(r.target) || "이전 작업")}</b> 수정 · ` : ""}${esc(r.text)}</div>
-        <div class="meta">${esc(whenOf(r.date))}${r.reply ? ` · Claude: ${esc(r.reply)}` : ""}</div></div></li>`).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
+      ${rs.length ? `<ul class="req-list">${rs.map(r => reqItemHtml(r, false)).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
       <h4>🎞️ 작업물</h4>
       ${vs.length ? `<div class="gallery">${vs.map(v => {
         const th = safeUrl(v.thumb), url = safeUrl(v.url);
@@ -880,27 +883,73 @@ tr.done td.title { text-decoration: line-through; }
       }).join("")}</div>` : `<div class="empty">아직 올라온 작업물이 없어요.</div>`}`;
   }
 
-  function bindStudio(host) {
-    const text = $("#reqText", host), target = $("#reqTarget", host);
-    text.oninput = () => { reqDraft.text = text.value; };
-    target.onchange = () => { reqDraft.target = target.value; };
-    $("#reqSend", host).onclick = sendRequest;
+  // ── Claude에게 요청 (오피스 첫 화면 + 모든 방) ──
+  // 요청은 requests.json에 project와 함께 쌓인다. Claude가 읽고 처리하면서 status와 reply를 고친다.
+  // project가 없는 옛 요청은 영상 스튜디오 것, ""는 특정 방이 아닌 전체 요청.
+  const reqOf = pid => requests.filter(r => (r.project ?? STUDIO_ID) === pid);
+  const byNewest = (a, b) => String(b.date || "").localeCompare(String(a.date || ""));
+  const draftOf = k => reqDraft[k] || (reqDraft[k] = { text: "", target: "", project: "" });
+  function projLabel(pid) {
+    const p = (data.projects || []).find(x => x.id === pid);
+    return p ? `<a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a>` : "전체";
+  }
+  function reqItemHtml(r, withProject) {
+    const target = r.target ? `<b>${esc(videoTitle(r.target) || "이전 작업")}</b> 수정 · ` : "";
+    return `<li><span class="badge ${RSTATUS_TONE[r.status] || "muted"}">${esc(r.status || "요청")}</span>
+      <div class="t"><div>${target}${esc(r.text)}</div>
+      <div class="meta">${withProject ? `${projLabel(r.project ?? STUDIO_ID)} · ` : ""}${esc(whenOf(r.date))}${r.reply ? ` · Claude: ${esc(r.reply)}` : ""}</div></div></li>`;
+  }
+  function reqFormHtml(k, { title = "✍️ Claude에게 요청", select = "", placeholder = "" } = {}) {
+    return `<div class="req-box" data-req="${esc(k)}">
+        <h4 style="margin-top:4px">${title}</h4>
+        ${select}
+        <textarea class="req-text" rows="3" aria-label="요청 내용" placeholder="${esc(placeholder)}">${esc(draftOf(k).text)}</textarea>
+        <div class="req-actions"><span class="small">공개 페이지라 요청 글도 누구나 볼 수 있어요. 개인 정보는 적지 마세요.</span><button type="button" class="go primary req-send">보내기</button></div>
+      </div>`;
+  }
+  function bindReqForms(host) {
+    host.querySelectorAll(".req-box[data-req]").forEach(box => {
+      const k = box.dataset.req, d = draftOf(k);
+      const text = $(".req-text", box), sel = $("select[data-field]", box);
+      text.oninput = () => { d.text = text.value; };
+      if (sel) sel.onchange = () => { d[sel.dataset.field] = sel.value; };
+      $(".req-send", box).onclick = () => sendRequest(k);
+    });
+  }
+  // 오피스 첫 화면의 요청 칸: 방을 고르고 남기면, 남은 요청과 최근 처리한 요청이 보인다.
+  function mainReqHtml() {
+    const d = draftOf("main");
+    const recent = addDays(kstToday(), -3);
+    const rs = requests.filter(r => r.status !== "완료" || whenOf(r.date) >= recent).sort(byNewest).slice(0, 6);
+    return `<div class="panel studio-panel">
+      ${reqFormHtml("main", {
+        select: `<select data-field="project" aria-label="어느 방에 대한 요청인지">
+          <option value="">전체 · 특정 방 아님</option>
+          ${(data.projects || []).map(p => `<option value="${esc(p.id)}" ${d.project === p.id ? "selected" : ""}>${esc(emojiOf(p))} ${esc(p.name)}</option>`).join("")}
+        </select>`,
+        placeholder: "예) 현황판 캐릭터 옷 색을 봄 느낌으로 바꿔 줘"
+      })}
+      ${rs.length ? `<h4>📮 최근 요청</h4><ul class="req-list">${rs.map(r => reqItemHtml(r, true)).join("")}</ul>` : ""}
+    </div>`;
   }
 
   let sendingReq = false;
-  async function sendRequest() {
-    const text = reqDraft.text.trim();
+  async function sendRequest(k) {
+    const d = draftOf(k);
+    const text = d.text.trim();
     if (!text || sendingReq) { if (!text) toast("요청 내용을 적어 주세요"); return; }
     if (!token) { toast("요청은 저장소에 올라가야 Claude가 봐요. 위에서 열쇠를 먼저 넣어 주세요", 4000); openModal(); return; }
     sendingReq = true;
-    const item = { id: "r" + Date.now().toString(36), date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16) + "+09:00", target: reqDraft.target, text, status: "요청" };
+    const project = k === "main" ? d.project : k;
+    const item = { id: "r" + Date.now().toString(36), date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16) + "+09:00", project, target: project === STUDIO_ID ? d.target : "", text, status: "요청" };
+    const where = (data.projects || []).find(x => x.id === project);
     try {
       const obj = await writeJson(REQ_PATH, { requests: [] }, o => {
         if (!Array.isArray(o.requests)) o.requests = [];
         o.requests.push(item);
-      }, `현황판: 영상 요청 - ${text.slice(0, 40)}`);
+      }, `현황판: ${where ? where.name : "전체"} 요청 - ${text.slice(0, 40)}`);
       requests = obj.requests;
-      reqDraft = { text: "", target: "" };
+      reqDraft[k] = null;
       render();
       toast("요청을 남겼어요. Claude가 처리하면 여기 결과가 떠요", 3500);
     } catch (err) {
@@ -946,7 +995,11 @@ tr.done td.title { text-decoration: line-through; }
       </div>
 
       ${p.id === STUDIO_ID ? `<div class="section-title"><h2>🎬 스튜디오</h2><span class="hint">요청을 남기면 Claude가 힉스필드로 만들어 올려요</span></div>
-      <div class="panel studio-panel">${studioHtml()}</div>` : ""}
+      <div class="panel studio-panel">${studioHtml()}</div>` : `<div class="section-title"><h2>💬 Claude에게 요청</h2><span class="hint">고칠 점이나 할 일을 남기면 Claude가 처리하고 결과를 적어요</span></div>
+      <div class="panel studio-panel">${reqFormHtml(p.id, { placeholder: `예) ${p.name}에서 바꾸고 싶은 점을 적어 주세요` })}
+        <h4>📮 요청 기록</h4>
+        ${reqOf(p.id).length ? `<ul class="req-list">${reqOf(p.id).sort(byNewest).slice(0, 8).map(r => reqItemHtml(r, false)).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
+      </div>`}
 
       ${postsHtml(p.id, today)}
 
@@ -971,7 +1024,7 @@ tr.done td.title { text-decoration: line-through; }
     `;
     bindChecks(root);
     bindPosts(root);
-    if (p.id === STUDIO_ID) bindStudio(root);
+    bindReqForms(root);
   }
 
   // 올릴 글 박스 (data.json의 posts). 예약하면 체크 → 오늘은 흐리게, 다음 날 사라진다.
