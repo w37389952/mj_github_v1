@@ -317,6 +317,23 @@ details .body { padding:18px 16px 20px; }
 }
 .entry .txt { font-size:12.5px; line-height:1.7; color:var(--ink-soft); white-space:pre-wrap; }
 .entry .areas { font-size:12px; color:var(--ink-soft); }
+.entry .hg { font-family:inherit; font-weight:400; font-size:11px; color:var(--ink-soft); margin-left:3px; }
+.unfold {
+  margin-left:auto; font:inherit; font-size:11px; color:var(--ink-soft); cursor:pointer;
+  background:transparent; border:1px solid var(--line); border-radius:2px; padding:2px 8px;
+}
+.unfold[aria-expanded="true"] { color:var(--ink); border-color:var(--ink-soft); }
+
+/* 그날 사주 펼치기. 대운은 십 년짜리 바탕이라 따로 떼어 왼쪽에 두고,
+   연월일시는 한 덩어리로 묶는다. 사주를 배우는 사람이 한눈에 읽게 한다. */
+.day-saju { display:grid; grid-template-columns:1fr 4fr; gap:6px; margin-top:4px; }
+.day-saju .pillars.one { grid-template-columns:1fr; }
+.day-saju .pillar { padding:10px 2px; }
+.day-saju .pillar .kind { margin-bottom:4px; }
+.day-saju .pillar .gz { font-size:20px; }
+.day-saju .pillar .sip { display:block; font-size:10.5px; color:var(--ink-soft); line-height:1.5; }
+.day-saju .pillar.unknown .gz { color:var(--ink-faint); }
+.day-saju-note { font-size:11px; color:var(--ink-soft); margin:2px 0 0; }
 .empty { font-size:13px; color:var(--ink-soft); padding:16px 2px; }
 
 .bars { display:flex; align-items:flex-end; gap:4px; height:56px; }
@@ -1116,6 +1133,61 @@ function 기록판(prefix, 초기 = {}) {
 }
 
 // ── 지난 기록 목록 ────────────────────────────────────────
+
+// 간지 두 글자를 오행 색으로 칠하고, 한자에 익숙하지 않은 사람을 위해 한글 읽기를 곁들인다.
+const 색한자 = (gz) => {
+  const go = Manse.GAN_OHAENG[Manse.GAN.indexOf(gz[0])];
+  const jo = Manse.JI_OHAENG[Manse.JI.indexOf(gz[1])];
+  return `<span style="color:${오행색(go)}">${간한자[gz[0]]}</span><span style="color:${오행색(jo)}">${지한자[gz[1]]}</span>`;
+};
+
+// 펼쳐 둔 날짜. 기록이 새로 들어와 목록을 다시 그려도 펼친 채로 둔다.
+const 펼친날 = new Set();
+
+// 그날의 대운·연·월·일·시. 십성은 내 일간에서 본 것이다.
+function 그날사주(k, r) {
+  const [y, m, d] = k.split("-").map(Number);
+  const t = /^(\d{1,2}):(\d{2})$/.exec(r.시각 || "");
+  const s = Manse.saju(y, m, d, t ? +t[1] : 12, t ? +t[2] : 0, { 시모름: !t });
+  const dg = Manse.GAN.indexOf(원국.일간);
+  const 십성 = (gz) => Manse.sipseongOf(dg, { gan: Manse.GAN.indexOf(gz[0]), ji: Manse.JI.indexOf(gz[1]) });
+
+  const 칸 = (이름, gz, 빈말 = "시각 모름") => {
+    if (!gz) {
+      return `<div class="pillar unknown">
+        <span class="kind">${이름}</span>
+        <span class="sip">&nbsp;</span>
+        <span class="gz">?<br>?</span>
+        <span class="sip">&nbsp;</span>
+        <span class="rd">${빈말}</span>
+      </div>`;
+    }
+    const 십 = 십성(gz);
+    return `<div class="pillar">
+      <span class="kind">${이름}</span>
+      <span class="sip">${십.천간}</span>
+      <span class="gz">${색한자(gz).replace("</span><span", "</span><br><span")}</span>
+      <span class="sip">${십.지지}</span>
+      <span class="rd">${gz}</span>
+    </div>`;
+  };
+
+  const 운 = Manse.fortune(원국, 나.성별, y, m, d);
+  const 대운전 = 운.대운.남은해 > 10;   // 첫 대운이 들기 전이다
+  const 대운칸 = 대운전 ? 칸("대운", null, "대운 전") : 칸("대운", 운.대운.이름);
+
+  return `
+    <div class="day-saju">
+      <div class="pillars one">${대운칸}</div>
+      <div class="pillars">${칸("연", s.연주)}${칸("월", s.월주)}${칸("일", s.일주)}${칸("시", s.시주)}</div>
+    </div>
+    <p class="day-saju-note">
+      십성은 내 일간 ${간한자[원국.일간]}(${원국.일간}) 기준.
+      ${대운전 ? "" : `대운은 ${운.대운.나이}세부터 10년.`}
+      ${t ? "" : "시각을 적은 날만 시주가 나와."}
+    </p>`;
+}
+
 function 목록그리기() {
   const 키들 = Object.keys(기록).sort().reverse();
   const 소급 = 키들.filter((k) => 기록[k].소급).length;
@@ -1134,16 +1206,27 @@ function 목록그리기() {
       <div class="entry">
         <div class="top">
           <span class="when">${k}${r.시각 ? " " + r.시각 : ""}</span>
-          <span class="gz" style="color:${오행색(r.천간오행)}">${한자로(r.일진)}</span>
+          <span class="gz">${색한자(r.일진)}<span class="hg">${r.일진}</span></span>
           <span class="badge">${r.점수}점 · 예측 ${r.예측}</span>
           <span class="badge">${맞음 ? "얼추 맞음" : "빗나감"}</span>
           ${r.소급 ? `<span class="badge">소급 · ${r.확실성}</span>` : ""}
+          <button type="button" class="unfold" data-day="${k}" aria-expanded="${펼친날.has(k)}">그날 사주 ${펼친날.has(k) ? "▴" : "▾"}</button>
         </div>
+        ${펼친날.has(k) ? 그날사주(k, r) : ""}
         ${r.영역?.length ? `<div class="areas">${r.영역.map((c) => 영역이름[c] ?? c).join(" · ")}</div>` : ""}
         ${r.글 ? `<div class="txt">${r.글.replace(/[<>&]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;" }[c]))}</div>` : ""}
       </div>`;
   }).join("") + `</div>`;
 }
+
+// 목록은 자주 다시 그려지므로 단추마다 듣지 않고 목록 전체에서 듣는다.
+document.getElementById("log").addEventListener("click", (e) => {
+  const b = e.target.closest(".unfold");
+  if (!b) return;
+  const k = b.dataset.day;
+  펼친날.has(k) ? 펼친날.delete(k) : 펼친날.add(k);
+  목록그리기();
+});
 
 function 차트그리기() {
   const bars = document.getElementById("bars");
