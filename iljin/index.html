@@ -163,6 +163,12 @@ h2.label {
    같은 상사라도 나를 누르면 관성이고 나를 가르치면 인성이라,
    '윗사람'으로 묶어 두면 두 기운이 한 칸에 섞인다. */
 .tags { display:flex; flex-wrap:wrap; gap:6px; }
+/* 태그는 십성마다 한 줄로 묶는다. 줄 머리에 십성 이름을 작게 두어, 사주를 아는 사람은
+   어느 기운의 일인지 보고 고르고, 모르는 사람은 오른쪽 칸만 보면 되게 한다. */
+.tag-rows { display:grid; gap:10px; }
+.tag-row { display:grid; grid-template-columns:62px 1fr; gap:10px; align-items:start; }
+.tag-group { font-size:13px; font-weight:600; color:var(--ink-soft); padding-top:8px; line-height:1.25; }
+.tag-group small { display:block; font-size:11px; font-weight:400; color:var(--ink-faint); margin-top:2px; }
 .tag {
   font:inherit; font-size:13.5px; color:var(--ink-soft); cursor:pointer;
   background:transparent; border:1px solid var(--line); border-radius:2px;
@@ -477,7 +483,7 @@ details .body { padding:18px 16px 20px; }
     </div>
 
     <h2 class="label" style="margin:24px 0 12px">무슨 일이었어?</h2>
-    <div class="tags" id="todayTags"></div>
+    <div class="tag-rows" id="todayTags"></div>
 
     <textarea id="todayNote" placeholder="오늘 있었던 일을 적어 둬. 나중에 이 글이 어떤 기운의 날에 쓰였는지 되짚어볼 수 있어."></textarea>
     <button class="save" id="todaySave">기록하기</button>
@@ -545,7 +551,7 @@ details .body { padding:18px 16px 20px; }
 
       <div class="field">
         <span>무슨 일이었어?</span>
-        <div class="tags" id="pastTags"></div>
+        <div class="tag-rows" id="pastTags"></div>
       </div>
 
       <textarea id="pastNote" placeholder="그날 무슨 일이 있었는지 적어 둬."></textarea>
@@ -756,18 +762,46 @@ function 알림(글) {
 }
 
 // 태그는 십성이 가리키는 삶의 영역 그대로다. 사람이 아니라 사건의 성격으로 받는다.
-const 영역 = [
-  ["동료·경쟁", "비겁", "같이 하거나 겨룬 일"],
-  ["표현·창작", "식상", "말하고 만들고 드러낸 일"],
-  ["돈·성과", "재성", "벌고 쓰고 거둔 일"],
-  ["압박·질책", "관성", "나를 누르거나 통제한 일"],
-  ["배움·도움", "인성", "나를 채우거나 받쳐 준 일"],
-  ["몸·컨디션", "일간", "몸 상태 그 자체"],
+//
+// 처음엔 십성마다 하나씩 여섯 칸이었는데, 하루에 있었던 일을 고르기엔 너무 뭉뚱그려져
+// 있었다. 십성 안에서 잘게 나누되 어느 십성인지는 놓지 않는다. 태그 코드는 '십성:이름'
+// 꼴이라, 나중에 분석할 때 앞부분만 보면 어느 십성의 일인지 곧바로 셀 수 있다.
+// 예전 여섯 칸의 코드(비겁, 식상 …)도 그대로 읽어 이미 쌓인 기록이 깨지지 않는다.
+const 태그무리 = [
+  ["비겁", "나란한 사람", [["친구·동료", "비겁:친구"], ["경쟁·승부", "비겁:경쟁"], ["돈이 샘", "비겁:손재"]]],
+  // 반려동물은 내가 기르고 보살피는 대상이라 성별과 상관없이 식상이다. 자녀와 한 칸으로
+  // 묶지 않는 것은, 남자에게 자녀는 관성이라 한 칸에 두 십성이 섞이기 때문이다.
+  ["식상", "드러내는 것", [["먹고 놀기", "식상:여가"], ["창작·표현", "식상:창작"], ["말·말실수", "식상:말"], ["반려동물·돌봄", "식상:돌봄"]]],
+  ["재성", "다루는 것", [["수입·성과", "재성:수입"], ["지출·쇼핑", "재성:지출"], ["투자·큰돈", "재성:투자"]]],
+  ["관성", "누르는 것", [["직장·규칙", "관성:직장"], ["압박·질책", "관성:압박"], ["사고·다툼", "관성:사고"], ["인정·승진", "관성:인정"]]],
+  ["인성", "받쳐 주는 것", [["공부·자격증", "인성:공부"], ["문서·계약", "인성:문서"], ["도움·조언", "인성:도움"]]],
+  ["몸", "", [["컨디션 좋음", "일간:좋음"], ["아픔·피로", "일간:아픔"]]],
+  // 이동은 십성이 아니라 역마로 센다.
+  ["그 밖", "", [["이동·여행", "역마:이동"]]],
 ];
-const 영역이름 = Object.fromEntries(영역.map(([n, c]) => [c, n]));
+// 연애와 자녀는 성별에 따라 십성이 갈린다. 여자에게 이성은 관성, 자녀는 식상이고,
+// 남자에게 이성은 재성, 자녀는 관성이다. 그래서 코드에는 십성을 박지 않고, 보여 줄
+// 줄과 셀 때의 십성을 그때의 성별로 정한다.
+const 성별태그 = { 연애: ["연애·이성", { 여: "관성", 남: "재성" }], 자녀: ["자녀", { 여: "식상", 남: "관성" }] };
+const 영역이름 = {
+  비겁: "동료·경쟁", 식상: "표현·창작", 재성: "돈·성과", 관성: "압박·질책", 인성: "배움·도움", 일간: "몸·컨디션",
+  ...Object.fromEntries(태그무리.flatMap(([, , 태그들]) => 태그들.map(([n, c]) => [c, n]))),
+  ...Object.fromEntries(Object.entries(성별태그).map(([c, [n]]) => [c, n])),
+};
+const 성별로 = () => (나.성별 === "남" ? "남" : "여");
+// 태그가 어느 십성의 일인지. 분석 화면에서 쓴다.
+const 태그십성 = (c) => (성별태그[c] ? 성별태그[c][1][성별로()] : c.split(":")[0]);
 const 태그판 = (el) => {
-  el.innerHTML = 영역
-    .map(([n, c, h]) => `<button class="tag" aria-pressed="false" data-code="${c}" title="${h}">${n}</button>`)
+  const 줄들 = 태그무리.map(([무리, 뜻, 태그들]) => [무리, 뜻, [...태그들]]);
+  for (const [c, [n, 십성]] of Object.entries(성별태그)) {
+    줄들.find(([무리]) => 무리 === 십성[성별로()])[2].push([n, c]);
+  }
+  el.innerHTML = 줄들
+    .map(([무리, 뜻, 태그들]) => `
+      <div class="tag-row">
+        <span class="tag-group">${무리}${뜻 ? `<small>${뜻}</small>` : ""}</span>
+        <span class="tags">${태그들.map(([n, c]) => `<button class="tag" aria-pressed="false" data-code="${c}">${n}</button>`).join("")}</span>
+      </div>`)
     .join("");
 };
 
@@ -1066,14 +1100,18 @@ function 기록판(prefix, 초기 = {}) {
     document.querySelectorAll(`#${prefix}Tags .tag`).forEach((b) => 토글(b, false));
   };
 
-  document.querySelectorAll(`#${prefix}Tags .tag`).forEach((b) => {
-    토글(b, 상태.태그.has(b.dataset.code));
-    b.addEventListener("click", () => {
-      const c = b.dataset.code;
-      상태.태그.has(c) ? 상태.태그.delete(c) : 상태.태그.add(c);
-      토글(b, 상태.태그.has(c));
-    });
+  // 태그 칸은 성별이 바뀌면 다시 그려진다(자녀·연애가 다른 십성 줄로 옮겨 간다).
+  // 단추마다 듣지 않고 칸 전체에서 들어서, 다시 그려도 누르는 동작이 끊기지 않게 한다.
+  const 태그칸 = document.getElementById(`${prefix}Tags`);
+  상태.태그다시 = () => 태그칸.querySelectorAll(".tag").forEach((b) => 토글(b, 상태.태그.has(b.dataset.code)));
+  태그칸.addEventListener("click", (e) => {
+    const b = e.target.closest(".tag");
+    if (!b) return;
+    const c = b.dataset.code;
+    상태.태그.has(c) ? 상태.태그.delete(c) : 상태.태그.add(c);
+    토글(b, 상태.태그.has(c));
   });
+  상태.태그다시();
   return 상태;
 }
 
@@ -1206,11 +1244,21 @@ function 입력다듬기(el) {
 document.querySelectorAll("input[data-kind]").forEach((el) => el.addEventListener("input", () => 입력다듬기(el)));
 
 // 생년월일시가 정해지면 화면 전체가 그걸 따라 바뀐다. 첫 화면과 '내 정보'가 같이 쓴다.
+// 성별에 따라 자녀·연애 태그가 들어갈 줄이 달라지므로, 생년월일시가 정해지거나 바뀌면
+// 태그 칸을 다시 그리고 눌러 둔 태그를 되살린다.
+function 태그다시그리기() {
+  태그판(document.getElementById("todayTags"));
+  태그판(document.getElementById("pastTags"));
+  오늘상태.태그다시();
+  지난상태.태그다시();
+}
+
 function 나적용() {
   쓰기(KEY_나, 나);
   나채우기();
   원국계산();
   오늘그리기();
+  태그다시그리기();
   시작끝();
   나올리기();   // 잠금이 켜져 있으면 잠가서 다른 기기로도 보낸다
   차트그리기();
@@ -1587,7 +1635,7 @@ async function 나받기() {
   try { 나 = { ...기본나, ...JSON.parse(글) }; } catch { return; }
   쓰기(KEY_나, 나);
   나채우기();
-  if (나있음()) { 원국계산(); 오늘그리기(); 시작끝(); }
+  if (나있음()) { 원국계산(); 오늘그리기(); 태그다시그리기(); 시작끝(); }
 }
 // 잠금이 열린 직후마다 부른다. 서버에 있으면 받고, 없으면 이 기기 것을 올린다.
 async function 나맞추기() {
@@ -2031,7 +2079,7 @@ function 가져오기(글) {
     나 = { ...기본나, ...짐.나 };
     쓰기(KEY_나, 나);
     나채우기();
-    if (나있음()) { 원국계산(); 오늘그리기(); 시작끝(); }
+    if (나있음()) { 원국계산(); 오늘그리기(); 태그다시그리기(); 시작끝(); }
   }
 
   차트그리기();
