@@ -331,6 +331,27 @@ details .body { padding:18px 16px 20px; }
 .progress .fill { height:2px; background:var(--ink-faint); }
 .progress .why { font-size:12.5px; line-height:1.75; color:var(--ink-soft); margin:14px 0 0; }
 
+/* 어제·그저께를 눌러 고르는 칸. 고른 칸은 쌍둥이 칸과 같은 모양으로 표시한다. */
+.quick { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px; }
+.quick button {
+  font:inherit; font-size:15px; font-weight:600; line-height:1.3; color:var(--ink); cursor:pointer;
+  background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:10px 6px;
+}
+.quick button small { display:block; font-size:12px; font-weight:400; color:var(--ink-soft); margin-top:3px; }
+.quick button:hover { border-color:var(--ink-soft); }
+.quick button[aria-pressed="true"] {
+  border-color:var(--ink); box-shadow:inset 0 0 0 1px var(--ink);
+  background:color-mix(in srgb, var(--ink) 6%, var(--surface));
+}
+.quick button:focus-visible { outline:2px solid var(--su); outline-offset:2px; }
+
+/* 새벽에 열었을 때 오늘 칸 위에 뜨는 한 줄. */
+.late {
+  font-size:13.5px; line-height:1.7; color:var(--ink-soft); margin:0 0 16px;
+  padding:10px 12px; background:var(--surface); border:1px solid var(--line); border-radius:4px;
+}
+.linkish.inline { display:inline; margin:0; padding:0 2px; font-size:inherit; font-weight:600; color:var(--ink); }
+
 /* 저장이 끝났다는 알림을 화면 아래에 잠깐 띄운다. 버튼 밑 작은 글씨 한 줄로는
    기록이 된 건지 아닌지 헷갈린다는 말을 들었다. */
 .toast {
@@ -444,6 +465,10 @@ details .body { padding:18px 16px 20px; }
   <hr class="rule">
 
   <section>
+    <p class="late" id="lateNote" hidden>
+      자정이 지났네. 어제 하루를 적으려는 거라면
+      <button type="button" class="linkish inline" id="lateGo">어제로 적기 →</button>
+    </p>
     <h2 class="label">오늘 어땠어?</h2>
     <div class="rate untouched" id="todayRate">
       <div class="rate-head"><span class="rate-num" data-num>—</span><span class="rate-word" data-word></span></div>
@@ -488,6 +513,7 @@ details .body { padding:18px 16px 20px; }
 
       <div class="field">
         <span>언제</span>
+        <div class="quick" id="pastQuick"></div>
         <input type="text" id="pastDate" data-kind="date" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="예: 2019-03-14">
       </div>
 
@@ -1233,8 +1259,36 @@ const pastPanel = document.getElementById("pastPanel");
 // 시각까지 알면 시주를 더해 네 기둥으로 보여준다.
 const pastTime = document.getElementById("pastTime");
 const pastNoTime = document.getElementById("pastNoTime");
+// 하루를 다 보내고 자정이 지나서 적는 일이 많아, 어제와 그저께는 눌러서 고르게 한다.
+// 날짜만으로는 무슨 날이었는지 감이 안 오므로 그날 일진을 곁에 적는다.
+const pastQuick = document.getElementById("pastQuick");
+const 며칠전 = (n) => 키로(new Date(Y, M - 1, D - n));
+pastQuick.innerHTML = [["어제", 1], ["그저께", 2]].map(([이름, n]) => {
+  const d = new Date(Y, M - 1, D - n);
+  const 일진이름 = Manse.iljin(d.getFullYear(), d.getMonth() + 1, d.getDate()).이름;
+  return `<button type="button" data-key="${며칠전(n)}" aria-pressed="false">${이름}` +
+    `<small>${d.getMonth() + 1}.${String(d.getDate()).padStart(2, "0")} · ${일진이름}</small></button>`;
+}).join("");
+pastQuick.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  pastDate.value = b.dataset.key;
+  pastDate.dispatchEvent(new Event("input", { bubbles: true }));
+});
+
+// 새벽에 열었다면 대개 어제 하루를 적으려는 것이다. 오늘 칸 위에 한 줄 띄워 곧장 넘겨 준다.
+if (이제.getHours() < 6 && 나있음()) document.getElementById("lateNote").hidden = false;
+document.getElementById("lateGo").addEventListener("click", () => {
+  const box = document.getElementById("pastBox");
+  box.open = true;
+  pastDate.value = 며칠전(1);
+  pastDate.dispatchEvent(new Event("input", { bubbles: true }));
+  box.scrollIntoView({ block: "start", behavior: "smooth" });
+});
+
 function 지난날판() {
   const 날 = 날짜읽기(pastDate.value);
+  pastQuick.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.key === 날?.키)));
   if (!날 || !나있음()) { pastPanel.hidden = true; return; }
   const 시 = pastNoTime.checked ? null : 시각읽기(pastTime.value);
   pastPanel.innerHTML = 간지판(날.y, 날.m, 날.d, 시 ? [시.h, 시.mi] : undefined);
@@ -1270,8 +1324,10 @@ document.getElementById("pastSave").addEventListener("click", () => {
   if (지난상태.점수 === null) { msg.textContent = "그날 점수를 밀어서 매겨줘."; return; }
 
   담기(날짜, 지난상태.점수, 지난상태.태그, document.getElementById("pastNote").value.trim(), {
-    소급: true,
-    확실성: document.getElementById("pastSure").value,
+    // 어제·그저께를 적는 건 하루를 마치고 제때 적은 것이지, 기억을 되살려 적은 게 아니다.
+    // 소급으로 치면 70일 진행바에서 빠져, 자정 넘어 적는 사람은 진행바가 영영 안 찬다.
+    소급: 날짜 < 며칠전(2),
+    확실성: 날짜 < 며칠전(2) ? document.getElementById("pastSure").value : "정확",
     시각,
   });
 
