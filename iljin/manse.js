@@ -73,7 +73,14 @@ function solarTermJD(targetDeg, guessJD) {
 
 // 그 해의 절기 24개 가운데 월을 가르는 12개(절)를 순서대로 돌려준다.
 // 중기(우수·춘분 같은 것)는 월을 가르지 않으므로 여기 들어오지 않는다.
+// 한 해에 열두 번 풀면 되는 계산이라 해마다 한 번만 하고 담아 둔다.
+// 하루 점수를 매길 때 그해 365일을 다 돌기 때문에 이게 없으면 느려진다.
+const 절기캐시 = new Map();
 function majorTerms(year) {
+  if (!절기캐시.has(year)) 절기캐시.set(year, majorTermsOf(year));
+  return 절기캐시.get(year);
+}
+function majorTermsOf(year) {
   const terms = [];
   for (let k = 0; k < 12; k++) {
     const deg = (315 + 30 * k) % 360;         // 입춘 315도에서 시작한다
@@ -428,120 +435,211 @@ function 조습(ji, 절) {
   return 0;
 }
 
-// 그날의 점수. 대운이 바탕을 깔고, 세운·월운이 얹히고, 일진이 그날의 색을 정한다.
-// 시각을 주면 시운까지 넣는다. 그다음 각 겹의 글자가 원국과, 또 겹끼리
-// 합하거나 충하는 것을 따져 더하고 뺀다.
+// 하루 점수.
+//
+// 대운·세운·월운은 그 기간 내내 매일 똑같이 깔린다. 하루 점수에 그대로 더하면
+// 날과 날을 가르지 못하고 평균만 들어 올린다. 그래서 둘을 나눈다.
+//
+//   바탕 — 대운·세운·월운이 이 사람에게 얼마나 반가운지. 하루 점수와 따로 보여 준다.
+//   하루 — 일진(시각을 알면 시운까지)을 원국에 대입한 값. 택일이 날을 보는 방식이다.
+//          위의 운들은 확성기로만 쓴다. 일진이 세운·대운과 같은 원국 글자를 겹쳐 치면
+//          사건이 터지는 날로 보고(응기) 크게 키운다.
+//
+// 하루 점수는 그해 365일 안에서 줄을 세워 평균 날이 50이 되게 맞춘다.
+// 같은 바탕 안에서 이 날이 어느 정도인지를 말하는 점수다.
 //
 // 가중치는 출발점일 뿐이다. 기록이 쌓이면 어떤 무게가 실제와 맞는지 다시 잰다.
-function dayScore(birth, 판정, gender, y, m, d, time) {
+
+const 이름 = (p) => `${간자[p.gan]}${지자[p.ji]}(${GAN[p.gan]}${JI[p.ji]})`;
+
+// 한 사람에 대해 매번 같은 값을 다시 만들지 않도록 묶어 둔다.
+// 원국이 바뀌면 판정도 새로 만들어지므로 판정을 열쇠로 쓴다.
+const 문맥캐시 = new WeakMap();
+function 문맥(birth, 판정, gender) {
+  const 있던 = 문맥캐시.get(판정);
+  if (있던 && 있던.gender === gender && 있던.birth === birth) return 있던;
+
   const 표 = 오행값표(판정);
   const 간값 = (g) => 표[GAN_OHAENG[g]];
   const 지값 = (j) =>
     JIJANGGAN[j].reduce((s, [g, n]) => s + 표[GAN_OHAENG[g]] * n / 30, 0) + 조습(j, 판정.계절);
-  const 기둥값 = (p) => 0.5 * 간값(p.gan) + 0.5 * 지값(p.ji);
-  const 이름 = (p) => `${간자[p.gan]}${지자[p.ji]}(${GAN[p.gan]}${JI[p.ji]})`;
+  const { year, month, day, time } = birth.raw;
+  const c = {
+    birth, gender, 표, 간값, 지값,
+    기둥값: (p) => 0.5 * 간값(p.gan) + 0.5 * 지값(p.ji),
+    대: daeun(birth, gender),
+    // 원국 자리마다 무게. 월지가 가장 무겁고 일지가 그다음이다.
+    원간: [["연간", year.gan, 0.6], ["월간", month.gan, 0.8], ["일간", day.gan, 1], ...(time ? [["시간", time.gan, 0.7]] : [])],
+    원지: [["연지", year.ji, 0.6], ["월지", month.ji, 1], ["일지", day.ji, 0.9], ...(time ? [["시지", time.ji, 0.7]] : [])],
+    연도: new Map(),
+  };
+  문맥캐시.set(판정, c);
+  return c;
+}
 
-  const 그날 = time ? saju(y, m, d, time[0], time[1]) : saju(y, m, d, 12, 0);
-  const 운 = fortune(birth, gender, y, m, d);
+// 두 글자 사이의 합·충. a는 운의 글자, b는 원국이나 다른 운의 글자다.
+// 묶이거나 흔들리는 글자가 반가운 것이면 손해, 기신이면 이득이다.
+function 간관계(c, ga, gb, 일간인가) {
+  const k = 쌍(ga, gb);
+  if (간합[k]) {
+    const h = 간합[k];
+    // 일간은 묶여도 사주의 주인이라 힘을 잃었다고 치지 않는다. 들어온 글자만 묶인다.
+    const Δ = 일간인가
+      ? -0.4 * c.간값(ga) + 0.15 * c.표[h]
+      : -0.4 * (c.간값(ga) + c.간값(gb)) + 0.25 * c.표[h];
+    return { 종류: "합", 이름: `${간자[ga]}${간자[gb]}합 → ${h}`, Δ };
+  }
+  if (!일간인가 && 간충.has(k)) {
+    return { 종류: "충", 이름: `${간자[ga]}${간자[gb]}충`, Δ: -0.4 * (c.간값(ga) + c.간값(gb)) - 0.1 };
+  }
+  return null;
+}
+function 지관계(c, ja, jb) {
+  const k = 쌍(ja, jb);
+  if (지합[k]) {
+    const h = 지합[k];
+    return { 종류: "합", 이름: `${지자[ja]}${지자[jb]}합 → ${h}`, Δ: -0.3 * (c.지값(ja) + c.지값(jb)) + 0.2 * c.표[h] };
+  }
+  if (Math.abs(ja - jb) === 6) {
+    return { 종류: "충", 이름: `${지자[ja]}${지자[jb]}충`, Δ: -0.5 * (c.지값(ja) + c.지값(jb)) - 0.15 };
+  }
+  return null;
+}
 
-  // 겹마다 무게. 첫 대운이 들기 전이면 대운 겹은 뺀다.
+// 그날 걸린 대운·세운·월운. 첫 대운이 들기 전이면 대운은 없다.
+// f는 확성기의 세기다. 세운이 그해 사건을 가장 직접 부르고, 대운이 그다음이다.
+function 위운(c, y, m, d, 그날) {
+  const b = c.birth.입력;
+  const 만나이 = y - b.y - (m < b.m || (m === b.m && d < b.d) ? 1 : 0);
+  let 대운 = null;
+  for (const x of c.대.목록) if (만나이 >= x.나이) 대운 = x;
   const 겹 = [];
-  if (운.대운.남은해 <= 10) {
-    const n = 운.대운.이름;
-    겹.push({ 이름: "대운", p: { gan: GAN.indexOf(n[0]), ji: JI.indexOf(n[1]) }, w: 0.15 });
-  }
-  겹.push({ 이름: "세운", p: 그날.raw.year, w: 0.2 });
-  겹.push({ 이름: "월운", p: 그날.raw.month, w: 0.2 });
-  겹.push({ 이름: "일진", p: 그날.raw.day, w: 0.45 });
-  if (time) 겹.push({ 이름: "시운", p: 그날.raw.time, w: 0.2 });
-  const 합계 = 겹.reduce((s, x) => s + x.w, 0);
-  겹.forEach((x) => (x.w /= 합계));
+  if (대운) 겹.push({ 이름: "대운", p: { gan: GAN.indexOf(대운.이름[0]), ji: JI.indexOf(대운.이름[1]) }, f: 0.5 });
+  겹.push({ 이름: "세운", p: 그날.raw.year, f: 0.7 });
+  겹.push({ 이름: "월운", p: 그날.raw.month, f: 0.4 });
+  return 겹;
+}
 
-  const 크기 = 25;
+// 하루의 근거를 줄줄이 만든다. 값은 아직 점수로 바꾸기 전의 날것이다.
+function 하루근거(c, y, m, d, time) {
+  const 그날 = saju(y, m, d, time ? time[0] : 12, time ? time[1] : 0);
+  const 위 = 위운(c, y, m, d, 그날);
+  const 아래 = [{ 이름: "일진", p: 그날.raw.day, w: 1 }];
+  if (time) 아래.push({ 이름: "시운", p: 그날.raw.time, w: 0.5 });
+
   const 근거 = [];
-  for (const x of 겹) {
-    근거.push({ 종류: "겹", 말: `${x.이름} ${이름(x.p)}`, 값: 크기 * x.w * 기둥값(x.p) });
-  }
+  const 넣기 = (말, 값) => 근거.push({ 말, 값 });
 
-  // 두 글자 사이의 합·충을 따진다. a는 운의 글자, b는 원국이나 다른 겹의 글자다.
-  const 간관계 = (ga, gb, 일간인가) => {
-    const k = 쌍(ga, gb);
-    if (간합[k]) {
-      const h = 간합[k];
-      // 일간은 묶여도 사주의 주인이라 힘을 잃었다고 치지 않는다. 들어온 글자만 묶인다.
-      const Δ = 일간인가
-        ? -0.4 * 간값(ga) + 0.15 * 표[h]
-        : -0.4 * (간값(ga) + 간값(gb)) + 0.25 * 표[h];
-      return { 이름: `${간자[ga]}${간자[gb]}합 → ${h}`, Δ };
-    }
-    if (!일간인가 && 간충.has(k)) {
-      return { 이름: `${간자[ga]}${간자[gb]}충`, Δ: -0.4 * (간값(ga) + 간값(gb)) - 0.1 };
-    }
-    return null;
-  };
-  const 지관계 = (ja, jb) => {
-    const k = 쌍(ja, jb);
-    if (지합[k]) {
-      const h = 지합[k];
-      return { 이름: `${지자[ja]}${지자[jb]}합 → ${h}`, Δ: -0.3 * (지값(ja) + 지값(jb)) + 0.2 * 표[h] };
-    }
-    if (Math.abs(ja - jb) === 6) {
-      return { 이름: `${지자[ja]}${지자[jb]}충`, Δ: -0.5 * (지값(ja) + 지값(jb)) - 0.15 };
-    }
-    return null;
-  };
-  const 더하기 = (r, 말, w) => r && 근거.push({ 종류: "합충", 말: `${r.이름} · ${말}`, 값: 크기 * r.Δ * w });
+  for (const x of 아래) {
+    넣기(`${x.이름} ${이름(x.p)}`, x.w * c.기둥값(x.p));
 
-  // 운의 글자를 원국에 대입한다. 월지가 가장 무겁고 일지가 그다음이다.
-  const { year, month, day, time: 원시 } = birth.raw;
-  const 원간 = [["연간", year.gan, 0.6], ["월간", month.gan, 0.8], ["일간", day.gan, 1], ...(원시 ? [["시간", 원시.gan, 0.7]] : [])];
-  const 원지 = [["연지", year.ji, 0.6], ["월지", month.ji, 1], ["일지", day.ji, 0.9], ...(원시 ? [["시지", 원시.ji, 0.7]] : [])];
-  for (const x of 겹) {
-    for (const [자리, g, pw] of 원간) 더하기(간관계(x.p.gan, g, 자리 === "일간"), `${x.이름}과 원국 ${자리}`, x.w * pw);
-    for (const [자리, j, pw] of 원지) 더하기(지관계(x.p.ji, j), `${x.이름}과 원국 ${자리}`, x.w * pw);
-  }
+    // 원국에 대입한다. 위의 운도 같은 원국 글자를 같은 식으로 건드리고 있으면 겹친 것이다.
+    for (const [자리, g, pw] of c.원간) {
+      const r = 간관계(c, x.p.gan, g, 자리 === "일간");
+      if (!r) continue;
+      const 겹친 = 위.filter((u) => 간관계(c, u.p.gan, g, 자리 === "일간")?.종류 === r.종류);
+      const k = 1 + 겹친.reduce((s, u) => s + u.f, 0);
+      넣기(`${r.이름} · ${x.이름}과 원국 ${자리}${겹친.length ? ` · ${겹친.map((u) => u.이름).join("·")}도 같이` : ""}`, r.Δ * pw * x.w * k);
+    }
+    for (const [자리, j, pw] of c.원지) {
+      const r = 지관계(c, x.p.ji, j);
+      if (!r) continue;
+      const 겹친 = 위.filter((u) => 지관계(c, u.p.ji, j)?.종류 === r.종류);
+      const k = 1 + 겹친.reduce((s, u) => s + u.f, 0);
+      넣기(`${r.이름} · ${x.이름}과 원국 ${자리}${겹친.length ? ` · ${겹친.map((u) => u.이름).join("·")}도 같이` : ""}`, r.Δ * pw * x.w * k);
+    }
 
-  // 겹끼리. 일진이 그해 세운과 충하는 날은 원국과 상관없이도 흔들린다.
-  for (let i = 0; i < 겹.length; i++) {
-    for (let k = i + 1; k < 겹.length; k++) {
-      const a = 겹[i], b = 겹[k], w = (a.w + b.w) / 2;
-      더하기(간관계(b.p.gan, a.p.gan, false), `${b.이름}과 ${a.이름}`, w);
-      더하기(지관계(b.p.ji, a.p.ji), `${b.이름}과 ${a.이름}`, w);
+    // 위의 운과 직접 부딪히는 것. 일진이 그해 세운과 충하는 날은 원국과 상관없이도 흔들린다.
+    for (const u of 위) {
+      const a = 간관계(c, x.p.gan, u.p.gan, false);
+      if (a) 넣기(`${a.이름} · ${x.이름}과 ${u.이름}`, a.Δ * x.w * u.f);
+      const b = 지관계(c, x.p.ji, u.p.ji);
+      if (b) 넣기(`${b.이름} · ${x.이름}과 ${u.이름}`, b.Δ * x.w * u.f);
     }
   }
 
-  // 삼합. 원국과 운의 지지를 모두 모아, 운이 하나라도 끼어 셋이 다 차면 삼합,
-  // 왕지를 낀 둘이면 반합으로 본다. 원국끼리만 이룬 합은 이미 원국의 일이라 세지 않는다.
+  if (time) {
+    const [일, 시] = 아래;
+    const a = 간관계(c, 시.p.gan, 일.p.gan, false);
+    if (a) 넣기(`${a.이름} · 시운과 일진`, a.Δ * 0.5);
+    const b = 지관계(c, 시.p.ji, 일.p.ji);
+    if (b) 넣기(`${b.이름} · 시운과 일진`, b.Δ * 0.5);
+  }
+
+  // 삼합. 원국·위의 운·그날의 지지를 모두 모아, 그날(일진·시운)이 끼어 셋이 다 차면 삼합,
+  // 왕지를 낀 둘이면 반합으로 본다. 그날이 끼지 않은 합은 바탕의 일이라 여기서 세지 않는다.
   const 지지들 = [
-    ...원지.map(([자리, j]) => ({ j, 운: null })),
-    ...겹.map((x) => ({ j: x.p.ji, 운: x })),
+    ...c.원지.map(([, j]) => ({ j, w: 0 })),
+    ...위.map((u) => ({ j: u.p.ji, w: 0 })),
+    ...아래.map((x) => ({ j: x.p.ji, w: x.w })),
   ];
   for (const [무리, h] of 삼합) {
-    const 있는 = 무리.map((j) => 지지들.filter((z) => z.j === j));
-    const 운낀 = 지지들.filter((z) => z.운 && 무리.includes(z.j));
-    if (!운낀.length) continue;
-    const w = Math.max(...운낀.map((z) => z.운.w));
-    const 글자 = 무리.filter((_, i) => 있는[i].length).map((j) => 지자[j]).join("");
-    if (있는.every((a) => a.length)) {
-      근거.push({ 종류: "합충", 말: `${글자} 삼합 → ${h}`, 값: 크기 * 0.5 * 표[h] * w });
-    } else if (있는[1].length && (있는[0].length || 있는[2].length)) {
-      // 반합은 운이 낀 짝이어야 한다. 원국 안에서 이미 이룬 반합을 운이 거들 뿐이면 세지 않는다.
-      const 짝 = 무리.filter((_, i) => 있는[i].length);
-      const 원국만 = 짝.every((j) => !지지들.some((z) => z.운 && z.j === j));
-      if (!원국만) 근거.push({ 종류: "합충", 말: `${글자} 반합 → ${h}`, 값: 크기 * 0.25 * 표[h] * w });
+    const 그날낀 = 지지들.filter((z) => z.w > 0 && 무리.includes(z.j));
+    if (!그날낀.length) continue;
+    const 있는 = 무리.map((j) => 지지들.some((z) => z.j === j));
+    const w = Math.max(...그날낀.map((z) => z.w));
+    const 글자 = 무리.filter((_, i) => 있는[i]).map((j) => 지자[j]).join("");
+    if (있는.every(Boolean)) {
+      넣기(`${글자} 삼합 → ${h}`, 0.5 * c.표[h] * w);
+    } else if (있는[1] && (있는[0] || 있는[2])) {
+      넣기(`${글자} 반합 → ${h}`, 0.25 * c.표[h] * w);
     }
   }
+  return 근거;
+}
 
-  const 점수 = Math.round(Math.max(3, Math.min(97, 50 + 근거.reduce((s, x) => s + x.값, 0))));
-  근거.forEach((x) => (x.값 = Math.round(x.값 * 10) / 10));
-  return { 점수, 근거, 오행값: 표 };
+const 합 = (근거) => 근거.reduce((s, x) => s + x.값, 0);
+
+// 그해 365일의 하루 값을 다 재서 평균과 퍼짐을 얻는다. 해마다 한 번만 한다.
+function 연도통계(c, y) {
+  if (!c.연도.has(y)) {
+    const 값 = [];
+    for (let t = new Date(y, 0, 1); t.getFullYear() === y; t.setDate(t.getDate() + 1)) {
+      값.push(합(하루근거(c, y, t.getMonth() + 1, t.getDate(), null)));
+    }
+    const 평균 = 값.reduce((s, v) => s + v, 0) / 값.length;
+    const 퍼짐 = Math.sqrt(값.reduce((s, v) => s + (v - 평균) ** 2, 0) / 값.length) || 1;
+    c.연도.set(y, { 평균, 퍼짐, 정렬: 값.sort((a, b) => a - b) });
+  }
+  return c.연도.get(y);
+}
+
+// 바탕. 대운·세운·월운이 저마다 얼마나 반가운지를, 원국과의 합·충까지 넣어 잰다.
+function 바탕(c, y, m, d) {
+  const 그날 = saju(y, m, d, 12, 0);
+  return 위운(c, y, m, d, 그날).map((u) => {
+    let v = c.기둥값(u.p);
+    for (const [자리, g, pw] of c.원간) v += (간관계(c, u.p.gan, g, 자리 === "일간")?.Δ ?? 0) * pw;
+    for (const [, j, pw] of c.원지) v += (지관계(c, u.p.ji, j)?.Δ ?? 0) * pw;
+    return { 이름: u.이름, 간지: GAN[u.p.gan] + JI[u.p.ji], 값: Math.round(v * 100) / 100,
+      말: v >= 0.35 ? "좋음" : v <= -0.35 ? "나쁨" : "보통" };
+  });
+}
+
+// 점수 하나와 그 근거. 근거 값은 점수와 같은 단위(점)로 바꿔서 돌려준다.
+// 백분위는 그해 안에서 이 날보다 못한 날의 비율이다. 0.03이면 하위 3%다.
+function dayScore(birth, 판정, gender, y, m, d, time) {
+  const c = 문맥(birth, 판정, gender);
+  const 통 = 연도통계(c, y);
+  const 배 = 15 / 통.퍼짐;
+  const 근거 = 하루근거(c, y, m, d, time);
+  const 날것 = 합(근거);
+  const 점수 = Math.round(Math.max(3, Math.min(97, 50 + 배 * (날것 - 통.평균))));
+
+  // 순위는 시각을 뺀 하루 값으로 잰다. 시진마다 순위가 바뀌면 그날이 어떤 날인지 흐려진다.
+  const 하루값 = time ? 합(하루근거(c, y, m, d, null)) : 날것;
+  const 백분위 = 통.정렬.filter((v) => v < 하루값).length / 통.정렬.length;
+
+  const 점근거 = 근거.map((x) => ({ 종류: "근거", 말: x.말, 값: Math.round(x.값 * 배 * 10) / 10 }));
+  점근거.push({ 종류: "기준", 말: "올해 평균 날을 50에 맞춤", 값: Math.round(-통.평균 * 배 * 10) / 10 });
+  return { 점수, 근거: 점근거, 백분위, 바탕: 바탕(c, y, m, d), 오행값: c.표 };
 }
 
 // 하루를 열두 시진으로 나눈 점수. 시진 한가운데 시각(진태양시 보정 전 시계 기준)으로 잰다.
 function hourScores(birth, 판정, gender, y, m, d) {
   return JI.map((지, j) => {
     const h = (j * 2) % 24, mi = 32;   // 서울은 진태양시가 32분쯤 늦어 시진 가운데가 x시 32분이다
-    return { 지, 시작: (j * 2 + 23) % 24, 점수: dayScore(birth, 판정, gender, y, m, d, [h, mi]).점수 };
+    return { 지, 점수: dayScore(birth, 판정, gender, y, m, d, [h, mi]).점수 };
   });
 }
 

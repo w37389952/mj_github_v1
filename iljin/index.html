@@ -319,6 +319,16 @@ details .body { padding:18px 16px 20px; }
 .entry .areas { font-size:12px; color:var(--ink-soft); }
 /* 점수 근거. 더하는 줄과 빼는 줄을 색으로 가른다. */
 .why-title { font-size:11px; letter-spacing:.12em; color:var(--ink-soft); font-weight:600; margin:18px 0 8px; }
+.rank { font-size:12.5px; color:var(--ink-soft); margin:10px 0 0; }
+.rank.edge { color:var(--mok); font-weight:700; }
+.rank.edge.low { color:var(--hwa); }
+.entry .badge.edge { color:var(--mok); border-color:currentColor; font-weight:600; }
+.entry .badge.edge.low { color:var(--hwa); }
+.why li.base { color:var(--ink-faint); font-size:11.5px; }
+.why li.base b { color:var(--ink-faint); }
+.base-up { color:var(--mok); }
+.base-down { color:var(--hwa); }
+.base-mid { color:var(--ink-soft); }
 .why-sub { font-weight:400; letter-spacing:.02em; margin-left:6px; }
 .why { list-style:none; margin:0; padding:0; display:grid; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
 .why li { background:var(--ground); display:flex; justify-content:space-between; gap:8px; padding:7px 10px; font-size:12.5px; color:var(--ink-soft); }
@@ -479,6 +489,7 @@ details .body { padding:18px 16px 20px; }
     <div class="num" id="score"></div>
     <div class="gauge"><div class="mark" id="mark"></div></div>
     <div class="gauge-labels"><span>0</span><span>50</span><span>100</span></div>
+    <p class="rank" id="rank"></p>
   </div>
 
   <p class="reading" id="reading"></p>
@@ -498,6 +509,7 @@ details .body { padding:18px 16px 20px; }
   <section>
     <h2 class="label">네 겹</h2>
     <div class="layers" id="layers"></div>
+    <p class="verdict">대운·세운·월운이 네게 반가운지는 오른쪽 끝에 적었다. 이 바탕은 하루 점수에 섞지 않는다. 그 기간 내내 매일 똑같이 깔리는 값이라 날과 날을 가르지 못하기 때문이다. 대신 일진이 이 운들과 같은 원국 글자를 겹쳐 건드리는 날은 점수를 크게 움직인다.</p>
   </section>
 
   <hr class="rule">
@@ -899,7 +911,7 @@ function 원국계산() {
 // 그날의 예측. 대운·세운·월운·일진(시각을 알면 시운까지)을 원국에 대입하고
 // 합·충까지 따진다. 계산은 manse.js의 dayScore가 한다.
 // 점수 모델이 바뀌면 이 번호를 올린다. 기록마다 어느 모델로 매긴 예측인지 남긴다.
-const 모델 = 2;
+const 모델 = 3;
 const 시각쌍 = (s) => {
   const t = /^(\d{1,2}):(\d{2})$/.exec(s || "");
   return t ? [+t[1], +t[2]] : null;
@@ -907,16 +919,26 @@ const 시각쌍 = (s) => {
 const 예측하기 = (y, m, d, 시각) => Manse.dayScore(원국, 판정, 나.성별, y, m, d, 시각 || null);
 
 // 점수 근거를 큰 것부터 줄 세운다. 사주를 배우는 사람이 왜 이 점수인지 따라갈 수 있게.
+// '올해 평균에 맞춤' 줄은 크기와 상관없이 맨 끝에 둔다. 근거가 아니라 눈금 맞추기라서.
 function 근거표(결과, 몇 = 8) {
-  const 줄 = [...결과.근거].filter((x) => Math.abs(x.값) >= 0.5)
+  const 기준 = 결과.근거.find((x) => x.종류 === "기준");
+  const 줄 = 결과.근거.filter((x) => x.종류 !== "기준" && Math.abs(x.값) >= 0.5)
     .sort((a, b) => Math.abs(b.값) - Math.abs(a.값)).slice(0, 몇);
-  if (!줄.length) return "";
+  if (기준) 줄.push(기준);
   return `<ul class="why">` + 줄.map((x) => `
-    <li class="${x.값 > 0 ? "up" : "down"}">
+    <li class="${x.종류 === "기준" ? "base" : x.값 > 0 ? "up" : "down"}">
       <span>${x.말}</span>
       <b>${x.값 > 0 ? "+" : ""}${x.값.toFixed(1)}</b>
     </li>`).join("") + `</ul>`;
 }
+
+// 그해 안에서 이 날의 자리. 위아래 5% 안이면 따로 짚는다.
+const 순위말 = (백분위) =>
+  백분위 < 0.05 ? "올해 하위 5% 안에 드는 날"
+  : 백분위 >= 0.95 ? "올해 상위 5% 안에 드는 날"
+  : 백분위 < 0.5 ? `올해 날 가운데 하위 ${Math.max(1, Math.round(백분위 * 100))}%`
+  : `올해 날 가운데 상위 ${Math.max(1, Math.round((1 - 백분위) * 100))}%`;
+const 끝인가 = (백분위) => 백분위 < 0.05 || 백분위 >= 0.95;
 
 // ── 오늘 화면 ─────────────────────────────────────────────
 const 이제 = new Date();
@@ -969,11 +991,16 @@ function 오늘그리기() {
       : 지지편
       ? `${무게} 기운이지만 아래 ${이가(지지말)} 받쳐 줘서 속은 버틸 만하다.`
       : `${무게} 기운이라 무리해서 밀지 말고 하루를 짧게 쓰는 편이 낫다.`) +
-    `<span class="note">점수는 대운·세운·월운·일진을 네 원국에 대입하고 합·충까지 따져 매겼다. 무게는 출발점이라, 네 기록이 쌓이면 맞게 고쳐진다.</span>`;
+    `<span class="note">점수는 일진을 네 원국에 대입하고 합·충을 따져, 올해 365일 안에서 줄 세운 값이다. 평균 날이 50이다. 무게는 출발점이라, 네 기록이 쌓이면 맞게 고쳐진다.</span>`;
+
+  const 순위 = document.getElementById("rank");
+  순위.textContent = 순위말(결과.백분위);
+  순위.classList.toggle("edge", 끝인가(결과.백분위));
+  순위.classList.toggle("low", 결과.백분위 < 0.05);
 
   document.getElementById("why").innerHTML =
     `<h3 class="why-title">점수 근거</h3>` + 근거표(결과) +
-    `<p class="why-note">겹 줄은 그 운이 네게 반가운 정도, 합·충 줄은 그 운이 원국이나 다른 운과 부딪혀 생긴 몫이다. 50에서 이 값들을 더한다.</p>`;
+    `<p class="why-note">일진 줄은 그날 글자가 네게 반가운 정도, 합·충 줄은 그 글자가 원국이나 대운·세운·월운과 부딪혀 생긴 몫이다. "세운도 같이"는 그해 운이 같은 원국 글자를 이미 건드리고 있어 크게 친 것이다. 50에서 이 값들을 더한다.</p>`;
 
   // 시간대별. 하루 점수는 시주를 빼고 매기고, 시진마다 시운을 넣어 다시 잰다.
   const 지금시진 = Math.floor(((이제.getHours() * 60 + 이제.getMinutes() - 32 + 60) % 1440) / 120);
@@ -988,10 +1015,14 @@ function 오늘그리기() {
         <span class="hn">${h.점수}</span>
       </div>`).join("");
 
+  const 바탕말 = (이름) => {
+    const b = 결과.바탕.find((x) => x.이름 === 이름);
+    return b ? ` · <b class="base-${b.말 === "좋음" ? "up" : b.말 === "나쁨" ? "down" : "mid"}">${b.말}</b>` : "";
+  };
   const 겹들 = [
-    ["대운", 운.대운.이름, 운.대운.십성, `${운.대운.나이}–${운.대운.나이 + 9}세`],
-    ["세운", 운.세운.이름, 운.세운.십성, `${Y}`],
-    ["월운", 운.월운.이름, 운.월운.십성, "이번 달"],
+    ["대운", 운.대운.이름, 운.대운.십성, `${운.대운.나이}–${운.대운.나이 + 9}세${바탕말("대운")}`],
+    ["세운", 운.세운.이름, 운.세운.십성, `${Y}${바탕말("세운")}`],
+    ["월운", 운.월운.이름, 운.월운.십성, `이번 달${바탕말("월운")}`],
     ["일운", 운.일운.이름, 운.일운.십성, "오늘"],
   ];
   document.getElementById("layers").innerHTML = 겹들
@@ -1263,7 +1294,8 @@ function 목록그리기() {
     // 예측은 지금 모델로 다시 잰다. 기록에 남은 예측은 그날 화면에 떴던 값이라 그대로 두고,
     // 목록에서는 모든 날을 같은 잣대로 견준다.
     const [y, m, d] = k.split("-").map(Number);
-    const 지금예측 = 예측하기(y, m, d, 시각쌍(r.시각)).점수;
+    const 예측결과 = 예측하기(y, m, d, 시각쌍(r.시각));
+    const 지금예측 = 예측결과.점수;
     const 맞음 = Math.abs(지금예측 - r.점수) <= 20;
     return `
       <div class="entry">
@@ -1273,6 +1305,7 @@ function 목록그리기() {
           <span class="badge">${r.점수}점 · 예측 ${지금예측}</span>
           <span class="badge">${맞음 ? "얼추 맞음" : "빗나감"}</span>
           ${r.소급 ? `<span class="badge">소급 · ${r.확실성}</span>` : ""}
+          ${끝인가(예측결과.백분위) ? `<span class="badge edge${예측결과.백분위 < 0.05 ? " low" : ""}">${예측결과.백분위 < 0.05 ? "올해 하위 5%" : "올해 상위 5%"}</span>` : ""}
           <button type="button" class="unfold" data-day="${k}" aria-expanded="${펼친날.has(k)}">그날 사주 ${펼친날.has(k) ? "▴" : "▾"}</button>
         </div>
         ${펼친날.has(k) ? 그날사주(k, r) : ""}
