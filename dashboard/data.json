@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-03T02:40:00+09:00",
+  "updated": "2026-10-04T02:28:00+09:00",
   "projects": [
     {
       "id": "video",
@@ -247,6 +247,12 @@
     },
     {
       "project": "iljin",
+      "title": "Supabase SQL Editor에서 supabase.sql 한 번 더 실행 (지난 날 시각 동기화용)",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "iljin",
       "title": "폰에서 카카오 로그인 되는지 확인",
       "owner": "MJ",
       "status": "완료",
@@ -350,6 +356,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-04",
+      "project": "iljin",
+      "text": "현황판 요청 처리: 기록 완료 팝업, 입력 예시를 상관없는 값으로 교체, 지난 날 기록에 시각 칸 추가."
+    },
     {
       "date": "2026-10-03",
       "project": "threads",
