@@ -1350,10 +1350,17 @@ tr.done td.title { text-decoration: line-through; }
     return readRemoteChecks().then(x => x.obj.checks).catch(fromPages);
   }
 
-  let resizeTimer;
+  // 폭이 바뀔 때만 다시 그린다. 폰은 키보드가 올라오면 높이만 바뀌며 resize가 나는데,
+  // 그때 다시 그리면 입력 칸이 새로 만들어져 키보드가 바로 내려간다.
+  let resizeTimer, lastWidth = window.innerWidth;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { if (data) render(); }, 150);
+    resizeTimer = setTimeout(() => {
+      const typing = document.activeElement && /^(TEXTAREA|INPUT|SELECT)$/.test(document.activeElement.tagName);
+      if (!data || typing || window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      render();
+    }, 150);
   });
 
   Promise.all([
