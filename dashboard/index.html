@@ -259,6 +259,9 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .bubble::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--text); border-bottom: 0; }
 .bubble.ask { background: var(--mustard); color: var(--mustard-ink); border-color: var(--mustard-ink); }
 .bubble.ask::after { border-top-color: var(--mustard-ink); }
+.bubble.task { top: 4px; white-space: normal; width: max-content; max-width: 88%; text-align: center; line-height: 1.3; }
+.bubble.task > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .stage .bubble.task { font-size: 10px; padding: 2px 6px; max-width: 94%; } }
 .bubble.work { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 .bubble.work::after { border-top-color: var(--accent); }
 .bubble.rest { color: var(--text-3); border-color: var(--line); }
@@ -642,7 +645,7 @@ tr.done td.title { text-decoration: line-through; }
     const urgent = !!urgentOf(p);
     const wall = /^#[0-9a-f]{3,8}$/i.test(d.wall || "") ? d.wall : "#b9b3d6";
     return `<div class="${base}${d.dark ? " dark" : ""}${urgent ? " urgent" : ""}" style="--wall:${wall}">
-      ${decoHtml(p, px)}${urgent ? SIREN : ""}<span class="bubble ${rs.cls}">${esc(rs.text)}</span>${spriteSvg(p)}</div>`;
+      ${decoHtml(p, px)}${urgent ? SIREN : ""}<span class="bubble ${rs.cls}" title="${esc(rs.text)}"><span>${esc(rs.text)}</span></span>${spriteSvg(p)}</div>`;
   }
 
   function dueHtml(d) {
@@ -813,17 +816,12 @@ tr.done td.title { text-decoration: line-through; }
     return urgentOf(p) ? { ...rs, cls: "alarm", text: "비상 상황!", idle: false } : rs;
   }
   function baseRoomState(p) {
-    if (isStudio(p)) {
-      const openReq = reqOf(p.id).filter(r => r.status !== "완료").length;
-      const making = videosOf(p.id).filter(v => v.status === "제작 중").length;
-      if (openReq) return { cls: "work", text: `요청 ${openReq}건 처리 중`, mineN: 0, claudeN: openReq };
-      if (making) return { cls: "work", text: "제작 중…", mineN: 0, claudeN: making };
-      return { cls: "rest", text: "요청 기다리는 중", mineN: 0, claudeN: 0, idle: true };
-    }
     const open = (data.tasks || []).filter(t => t.project === p.id && !isDone(t) && !isLong(t));
     const mineN = open.filter(t => t.owner === "MJ").length;
-    const claudeN = open.length - mineN + reqOf(p.id).filter(r => r.status !== "완료").length;
-    if (mineN) return { cls: "ask", text: "대표님 차례!", mineN, claudeN };
+    const making = videosOf(p.id).filter(v => v.status === "제작 중").length;
+    const claudeN = open.length - mineN + reqOf(p.id).filter(r => r.status !== "완료").length + making;
+    // 내 할 일이 있으면 말풍선에 그 할 일을 바로 적는다(맨 위 하나, 나머지 개수는 빨간 배지).
+    if (mineN) return { cls: "ask task", text: open.find(t => t.owner === "MJ").title, mineN, claudeN };
     if (claudeN) return { cls: "work", text: "작업 중…", mineN, claudeN };
     return { cls: "rest", text: p.status === "기획" ? "기획 중" : "대기 중", mineN, claudeN, idle: true };
   }
@@ -862,9 +860,7 @@ tr.done td.title { text-decoration: line-through; }
       ${stageHtml(p, "stage", rs, 4)}
       ${why ? `<div class="alarm-line">🚨 ${esc(why)}</div>` : ""}
       <div class="rfoot"><span class="staff">${esc(st.name)}</span><span>${esc(st.role)}</span></div>
-      ${isStudio(p)
-        ? `<div class="rfoot"><span>완료 ${videosOf(p.id).filter(v => v.status === "완료").length} · 제작 중 ${videosOf(p.id).filter(v => v.status === "제작 중").length} · 요청 ${reqOf(p.id).filter(r => r.status !== "완료").length}</span></div>`
-        : `<div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>`}
+      <div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>
     </a>`;
   }
 
@@ -875,23 +871,18 @@ tr.done td.title { text-decoration: line-through; }
   const whenOf = iso => String(iso || "").slice(0, 10);
   const videoTitle = id => (videos.find(v => v.id === id) || {}).title || "";
 
-  function studioHtml(pid) {
+  // 영상 방 요청함: 새로 만들지, 올라온 작업물 중 무엇을 고칠지 고른다.
+  function targetSelectHtml(pid) {
+    const vs = videosOf(pid), d = draftOf(pid);
+    return vs.length ? `<select data-field="target" aria-label="어떤 작업에 대한 요청인지">
+      <option value="">새로 만들어 줘</option>
+      ${vs.map(v => `<option value="${esc(v.id)}" ${d.target === v.id ? "selected" : ""}>수정: ${esc(v.title)}</option>`).join("")}
+    </select>` : "";
+  }
+  function galleryHtml(pid) {
     const order = { "제작 중": 0, "대기": 1, "완료": 2 };
     const vs = videosOf(pid).sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || String(b.date || "").localeCompare(String(a.date || "")));
-    const rs = reqOf(pid).sort(byNewest).slice(0, 8);
-    const d = draftOf(pid);
     return `
-      ${reqFormHtml(pid, {
-        title: "✍️ 요청 남기기",
-        select: `<select data-field="target" aria-label="어떤 작업에 대한 요청인지">
-          <option value="">새로 만들어 줘</option>
-          ${vs.map(v => `<option value="${esc(v.id)}" ${d.target === v.id ? "selected" : ""}>수정: ${esc(v.title)}</option>`).join("")}
-        </select>`,
-        placeholder: "예) 공포 쇼츠 썸네일 하나 만들어 줘. 어두운 복도, 빨간 조명 느낌으로"
-      })}
-      <h4>📮 요청 기록</h4>
-      ${rs.length ? `<ul class="req-list">${rs.map(r => reqItemHtml(r, false)).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
-      <h4>🎞️ 작업물</h4>
       ${vs.length ? `<div class="gallery">${vs.map(v => {
         const th = safeUrl(v.thumb), url = safeUrl(v.url);
         return `<div class="vcard">${th ? `<img src="${esc(th)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : `<div class="noimg">🎬</div>`}
@@ -1006,19 +997,18 @@ tr.done td.title { text-decoration: line-through; }
           <h2>${esc(emojiOf(p))} ${esc(p.name)}</h2>
           <div class="who-line"><b>${esc(st.name)}</b> · ${esc(st.role)}</div>
           <p class="ssum">${esc(p.summary)}</p>
-          ${isStudio(p) ? "" : `<div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
-          ${p.goal ? `<div class="hint-line">${esc(p.goal.label)}</div>` : ""}`}
+          <div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
+          ${p.goal ? `<div class="hint-line">${esc(p.goal.label)}</div>` : ""}
           <div class="counts"><span class="${rs.mineN ? "hot" : ""}">대표님 차례 ${rs.mineN}건</span><span>Claude 작업 ${rs.claudeN}건</span><span>기록 ${logs.length}건</span></div>
           ${links.length ? `<div class="links">${links.map((l, i) => `<a class="go${i === 0 ? " primary" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label || "열기")} ↗</a>`).join("")}</div>` : ""}
         </div>
       </div>
 
-      ${isStudio(p) ? `<div class="section-title"><h2>🎬 스튜디오</h2><span class="hint">요청을 남기면 Claude가 힉스필드로 만들어 올려요</span></div>
-      <div class="panel studio-panel">${studioHtml(p.id)}</div>` : `<div class="section-title"><h2>💬 Claude에게 요청</h2><span class="hint">고칠 점이나 할 일을 남기면 Claude가 처리하고 결과를 적어요</span></div>
-      <div class="panel studio-panel">${reqFormHtml(p.id, { placeholder: `예) ${p.name}에서 바꾸고 싶은 점을 적어 주세요` })}
+      <div class="section-title"><h2>💬 Claude에게 요청</h2><span class="hint">${isStudio(p) ? "만들 영상이나 고칠 점을 남기면 Claude가 힉스필드로 만들어 올려요" : "고칠 점이나 할 일을 남기면 Claude가 처리하고 결과를 적어요"}</span></div>
+      <div class="panel studio-panel">${reqFormHtml(p.id, { select: isStudio(p) ? targetSelectHtml(p.id) : "", placeholder: `예) ${p.name}에서 바꾸고 싶은 점을 적어 주세요` })}
         <h4>📮 요청 기록</h4>
         ${reqOf(p.id).length ? `<ul class="req-list">${reqOf(p.id).sort(byNewest).slice(0, 8).map(r => reqItemHtml(r, false)).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
-      </div>`}
+      </div>
 
       ${postsHtml(p.id, today)}
 
@@ -1034,6 +1024,9 @@ tr.done td.title { text-decoration: line-through; }
       <div class="panel todo-col">
         ${longL.length ? `<ul class="todo-list">${longL.map(t => taskLi(t, true)).join("")}</ul>` : `<div class="empty">아직 장기 계획이 없어요.</div>`}
       </div>
+
+      ${isStudio(p) ? `<div class="section-title"><h2>🎞️ 작업물</h2><span class="hint">Claude가 만든 영상</span></div>
+      <div class="panel studio-panel">${galleryHtml(p.id)}</div>` : ""}
 
       <div class="section-title"><h2>📒 한 일 기록</h2><span class="hint">이 방에서 한 일만</span></div>
       <div class="panel"><div class="log">${logs.length ? logDays(logs) : `<div class="empty">아직 기록이 없어요.</div>`}</div></div>
