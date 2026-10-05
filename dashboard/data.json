@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-05T09:10:00+09:00",
+  "updated": "2026-10-05T16:47:00+09:00",
   "projects": [
     {
       "id": "video",
@@ -254,7 +254,7 @@
     },
     {
       "project": "iljin",
-      "title": "Supabase SQL Editor에서 supabase.sql 한 번 더 실행 (지난 날 시각 동기화용)",
+      "title": "Supabase SQL Editor에서 supabase.sql 한 번 더 실행 (지난 날 시각·특정 시각에 있었던 일 동기화용)",
       "owner": "MJ",
       "status": "할 일"
     },
@@ -363,6 +363,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-05",
+      "project": "iljin",
+      "text": "요청 처리: 지난 날 시각 칸을 기본으로 접고, 오늘 기록에 특정 시각에 있었던 일(시각·느낌·글)을 여러 줄 덧붙이는 선택 칸을 넣었다."
+    },
     {
       "date": "2026-10-05",
       "project": "tistory",
