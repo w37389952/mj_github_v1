@@ -7,8 +7,8 @@
       "group": "수익화",
       "floor": "영상",
       "studio": true,
-      "status": "기획",
-      "summary": "애니메이션 밴드 영상. 방에서 요청을 남기면 Claude가 힉스필드로 만들어 결과를 올린다.",
+      "status": "진행 중",
+      "summary": "수노 자작곡에 붙이는 케이온 느낌 애니 뮤비. 고교 밴드부 4인 캐릭터를 힉스필드로 만든다. 후반부 47초 완성, 2절 작업 중.",
       "progress": 0
     },
     {
@@ -18,7 +18,7 @@
       "floor": "영상",
       "studio": true,
       "status": "기획",
-      "summary": "남장여자 로맨스 영상. 방에서 요청을 남기면 Claude가 힉스필드로 만들어 결과를 올린다.",
+      "summary": "남장여자 로맨스 숏드라마 연재 기획. 형식·배경·그림체를 정하는 중.",
       "progress": 0
     },
     {
@@ -28,7 +28,7 @@
       "floor": "영상",
       "studio": true,
       "status": "기획",
-      "summary": "공모전에 낼 영상. 방에서 요청을 남기면 Claude가 힉스필드로 만들어 결과를 올린다.",
+      "summary": "AI 영상·음악 공모전 출품작. 지금은 Muzig AI Music Contest 2026 작업 중(GPT와 작업).",
       "progress": 0
     },
     {
@@ -130,6 +130,24 @@
     }
   ],
   "tasks": [
+    {
+      "project": "band",
+      "title": "힉스필드 크레딧 다시 채워지면 2절 구간 영상 이어서 만들기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "romance",
+      "title": "기본안 고르기 (형식·플랫폼·배경·그림체·톤)",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "contest",
+      "title": "Muzig AI Music Contest 2026 출품작 만들기 (GPT와 작업)",
+      "owner": "MJ",
+      "status": "진행 중"
+    },
     {
       "project": "tistory",
       "title": "PC 켜고 Claude 앱 열어두기 (2주차 예약 발행용)",
@@ -386,6 +404,21 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-05",
+      "project": "band",
+      "text": "작업 노트 정리: 수노 캐릭터송 프롬프트 요령, 시댄스 2.0 우회, 시작 프레임 필수, 10~15초 컷 생성. 후반부 47초 완성, 크레딧 소진으로 2절에서 멈춤."
+    },
+    {
+      "date": "2026-10-05",
+      "project": "romance",
+      "text": "기획 시작. 기본안 제안: 세로 1분 숏드라마 10화, 조선 사극, 실사풍, 설렘+코믹."
+    },
+    {
+      "date": "2026-10-05",
+      "project": "contest",
+      "text": "지난 공모전 7곳 정리(모두 미당선). Muzig AI Music Contest 2026 진행 중."
+    },
     {
       "date": "2026-10-05",
       "project": "iljin",
