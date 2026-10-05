@@ -326,6 +326,15 @@ a.room:hover { text-decoration: none; }
 .req-list li:first-child { border-top: 0; }
 .req-list .t { flex: 1; min-width: 0; }
 .req-list .meta { color: var(--text-3); font-size: 12px; }
+.req-photo-btn { cursor: pointer; background: var(--panel); border: 1px solid var(--line) !important; color: var(--text-2); }
+.req-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.req-photos:empty { display: none; }
+.req-thumb { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+.req-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.req-thumb button { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border: 0; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; line-height: 20px; padding: 0; cursor: pointer; }
+.req-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.req-imgs a { display: block; width: 56px; height: 56px; border-radius: 7px; overflow: hidden; border: 1px solid var(--line); }
+.req-imgs img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 6px; }
 .vcard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel-2); display: flex; flex-direction: column; }
 .vcard img, .vcard .noimg { width: 100%; aspect-ratio: 9 / 12; object-fit: cover; display: block; background: var(--muted-soft); }
@@ -418,7 +427,7 @@ tr.done td.title { text-decoration: line-through; }
     <ol>
       <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub 토큰 만들기</a>를 열어요.</li>
       <li>Token name은 아무거나(예: 현황판 체크), Expiration은 1년 정도로.</li>
-      <li>Repository access에서 <b>Only select repositories</b> → <b>mj_github_v1</b>만 골라요.</li>
+      <li>Repository access에서 <b>Only select repositories</b> → <b>mj_github_v1</b>과 <b>mj_monetization</b>(요청 사진 보관용 비공개 저장소)을 골라요.</li>
       <li>Permissions → Repository permissions → <b>Contents</b>를 <b>Read and write</b>로.</li>
       <li>Generate token을 누르고 나온 <code>github_pat_…</code>을 아래에 붙여 넣어요.</li>
     </ol>
@@ -898,7 +907,58 @@ tr.done td.title { text-decoration: line-through; }
   // project가 없는 옛 요청은 영상 스튜디오 것, ""는 특정 방이 아닌 전체 요청.
   const reqOf = pid => requests.filter(r => (r.project ?? STUDIO_ID) === pid);
   const byNewest = (a, b) => String(b.date || "").localeCompare(String(a.date || ""));
-  const draftOf = k => reqDraft[k] || (reqDraft[k] = { text: "", target: "", project: "" });
+  const draftOf = k => reqDraft[k] || (reqDraft[k] = { text: "", target: "", project: "", photos: [] });
+
+  // ── 사진 첨부 ──
+  // 사진은 비공개 저장소(mj_monetization)에 올리고, 공개 requests.json에는 그 경로만 남긴다.
+  // 그래서 사진은 열쇠가 있는 대표님 브라우저와 Claude만 볼 수 있다.
+  const PHOTO_REPO = "w37389952/mj_monetization";
+  const PHOTO_DIR = "dashboard-uploads";
+  const MAX_PHOTOS = 4;
+  const photoApi = (path, opts = {}) => fetch(`https://api.github.com/repos/${PHOTO_REPO}/contents/${path}`, {
+    cache: "no-store", ...opts,
+    headers: { "Accept": "application/vnd.github+json", "Authorization": `Bearer ${token}`, ...(opts.headers || {}) }
+  });
+  // 폰 사진은 크니까 긴 쪽 1600px JPEG로 줄여서 올린다.
+  function shrinkPhoto(file, max = 1600) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("사진을 열지 못했어요")); };
+      img.src = url;
+    });
+  }
+  async function uploadPhoto(dataUrl, path) {
+    const r = await photoApi(path, { method: "PUT", body: JSON.stringify({ message: `현황판 요청 사진: ${path}`, content: dataUrl.split(",")[1], branch: "main" }) });
+    if (r.ok) return;
+    if (r.status === 401) throw new Error("열쇠가 맞지 않거나 만료됐어요");
+    if (r.status === 403 || r.status === 404) throw new Error("열쇠에 사진 저장소(mj_monetization) 권한이 없어요. 토큰 설정에서 그 저장소를 추가해 주세요");
+    throw new Error(`사진 저장 GitHub ${r.status}`);
+  }
+  const photoCache = new Map();
+  function loadReqPhotos(host) {
+    if (!token) return;
+    host.querySelectorAll(".req-imgs[data-imgs]").forEach(box => {
+      box.dataset.imgs.split("|").filter(Boolean).forEach(async path => {
+        const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener";
+        box.appendChild(a);
+        try {
+          if (!photoCache.has(path)) photoCache.set(path, photoApi(`${path}?ref=main`, { headers: { "Accept": "application/vnd.github.raw" } })
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); }).then(b => URL.createObjectURL(b)));
+          const src = await photoCache.get(path);
+          a.href = src; a.innerHTML = `<img src="${src}" alt="첨부 사진">`;
+        } catch { photoCache.delete(path); a.remove(); }
+      });
+      box.removeAttribute("data-imgs");
+    });
+  }
   function projLabel(pid) {
     const p = (data.projects || []).find(x => x.id === pid);
     return p ? `<a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a>` : "전체";
@@ -906,7 +966,8 @@ tr.done td.title { text-decoration: line-through; }
   function reqItemHtml(r, withProject) {
     const target = r.target ? `<b>${esc(videoTitle(r.target) || "이전 작업")}</b> 수정 · ` : "";
     return `<li><span class="badge ${RSTATUS_TONE[r.status] || "muted"}">${esc(r.status || "요청")}</span>
-      <div class="t"><div>${target}${esc(r.text)}</div>
+      <div class="t"><div>${target}${esc(r.text)}${(r.images || []).length ? ` <span class="small">📎 사진 ${r.images.length}장</span>` : ""}</div>
+      ${(r.images || []).length && token ? `<div class="req-imgs" data-imgs="${esc(r.images.join("|"))}"></div>` : ""}
       <div class="meta">${withProject ? `${projLabel(r.project ?? STUDIO_ID)} · ` : ""}${esc(whenOf(r.date))}${r.reply ? ` · Claude: ${esc(r.reply)}` : ""}</div></div></li>`;
   }
   function reqFormHtml(k, { title = "✍️ Claude에게 요청", select = "", placeholder = "" } = {}) {
@@ -914,7 +975,8 @@ tr.done td.title { text-decoration: line-through; }
         <h4 style="margin-top:4px">${title}</h4>
         ${select}
         <textarea class="req-text" rows="3" aria-label="요청 내용" placeholder="${esc(placeholder)}">${esc(draftOf(k).text)}</textarea>
-        <div class="req-actions"><span class="small">공개 페이지라 요청 글도 누구나 볼 수 있어요. 개인 정보는 적지 마세요.</span><button type="button" class="go primary req-send">보내기</button></div>
+        <div class="req-photos"></div>
+        <div class="req-actions"><span class="small">요청 글은 공개라 누구나 볼 수 있어요. 사진은 비공개 저장소에 올라가요.</span><label class="go req-photo-btn">📷 사진<input type="file" accept="image/*" multiple hidden></label><button type="button" class="go primary req-send">보내기</button></div>
       </div>`;
   }
   function bindReqForms(host) {
@@ -924,7 +986,23 @@ tr.done td.title { text-decoration: line-through; }
       text.oninput = () => { d.text = text.value; };
       if (sel) sel.onchange = () => { d[sel.dataset.field] = sel.value; };
       $(".req-send", box).onclick = () => sendRequest(k);
+      const strip = $(".req-photos", box), pick = $("input[type=file]", box);
+      const drawPhotos = () => {
+        strip.innerHTML = d.photos.map((src, i) => `<span class="req-thumb"><img src="${src}" alt="첨부할 사진"><button type="button" data-i="${i}" aria-label="사진 빼기">✕</button></span>`).join("");
+        strip.querySelectorAll("button[data-i]").forEach(b => b.onclick = () => { d.photos.splice(+b.dataset.i, 1); drawPhotos(); });
+      };
+      pick.onchange = async () => {
+        const files = [...pick.files].slice(0, MAX_PHOTOS - d.photos.length);
+        if (pick.files.length > files.length) toast(`사진은 한 번에 ${MAX_PHOTOS}장까지예요`);
+        pick.value = "";
+        for (const f of files) {
+          try { d.photos.push(await shrinkPhoto(f)); } catch (err) { toast(err.message); }
+        }
+        drawPhotos();
+      };
+      drawPhotos();
     });
+    loadReqPhotos(host);
   }
   // 오피스 첫 화면의 요청 칸: 방을 고르고 남기면, 남은 요청과 최근 처리한 요청이 보인다.
   function mainReqHtml() {
@@ -954,6 +1032,11 @@ tr.done td.title { text-decoration: line-through; }
     const item = { id: "r" + Date.now().toString(36), date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16) + "+09:00", project, target: isStudio(projOf(project)) ? d.target : "", text, status: "요청" };
     const where = (data.projects || []).find(x => x.id === project);
     try {
+      if (d.photos.length) {
+        toast("사진 올리는 중…", 8000);
+        item.images = d.photos.map((_, i) => `${PHOTO_DIR}/${item.date.slice(0, 7)}/${item.id}-${i + 1}.jpg`);
+        for (let i = 0; i < d.photos.length; i++) await uploadPhoto(d.photos[i], item.images[i]);
+      }
       const obj = await writeJson(REQ_PATH, { requests: [] }, o => {
         if (!Array.isArray(o.requests)) o.requests = [];
         o.requests.push(item);
