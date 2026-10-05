@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-05T16:47:00+09:00",
+  "updated": "2026-10-06T01:36:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -364,13 +364,15 @@
       "project": "radar",
       "title": "글쓰기 도구 수정분 푸시",
       "owner": "MJ",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-09-30"
     },
     {
       "project": "radar",
       "title": "검색량 있는 동네 가게로 두 편 쓰기",
       "owner": "MJ",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-10-05"
     },
     {
       "project": "radar",
@@ -388,7 +390,15 @@
       "project": "radar",
       "title": "새 글 두 편이 큰 동네 검색어에 걸렸는지 순위 확인",
       "owner": "Claude",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-10-06"
+    },
+    {
+      "project": "radar",
+      "title": "다음 주 유입분석 엑셀 보내기 (서촌·명동 글이 실제로 사람을 데려왔는지 보려고)",
+      "owner": "MJ",
+      "status": "할 일",
+      "due": "2026-10-13"
     },
     {
       "project": "tistory",
@@ -413,6 +423,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-06",
+      "project": "radar",
+      "text": "큰 동네 글이 걸리기 시작했다 — 서촌 카페 블로그탭 6~9위, 명동 카페 8~10위. 연남동 카페는 아직 30위 밖."
+    },
     {
       "date": "2026-10-05",
       "project": "band",
