@@ -828,14 +828,14 @@ tr.done td.title { text-decoration: line-through; }
     return { cls: "rest", text: p.status === "기획" ? "기획 중" : "대기 중", mineN, claudeN, idle: true };
   }
 
-  // 오피스는 층으로 나눈다: 수익화(글·쇼핑) → 수익화(영상) → 코드. 층 안은 최근 작업 순.
-  // 수익화 프로젝트는 data.json의 "floor"로 층을 고른다("영상"). 없으면 글·쇼핑 층.
+  // 오피스는 층으로 나눈다: 수익화(자동화) → 수익화(영상) → 코드. 층 안은 최근 작업 순.
+  // 수익화 프로젝트는 data.json의 "floor"로 층을 고른다("영상"). 없으면 자동화 층.
   const FLOORS = [
-    { g: "수익화", f: "글·쇼핑", label: "💰 수익화 · 글·쇼핑" },
+    { g: "수익화", f: "자동화", label: "⚙️ 수익화 · 자동화" },
     { g: "수익화", f: "영상", label: "🎬 수익화 · 영상" },
     { g: "코드", label: "🛠️ 코드 층" }
   ];
-  const floorOf = p => p.group === "수익화" ? (p.floor || "글·쇼핑") : "";
+  const floorOf = p => p.group === "수익화" ? (p.floor || "자동화") : "";
   const onFloor = (p, f) => p.group === f.g && (!f.f || floorOf(p) === f.f);
   function officeHtml(projects, rankOf) {
     if (!projects.length) return `<div class="empty">프로젝트가 없어요.</div>`;
