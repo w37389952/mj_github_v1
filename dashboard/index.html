@@ -259,6 +259,9 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .bubble::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--text); border-bottom: 0; }
 .bubble.ask { background: var(--mustard); color: var(--mustard-ink); border-color: var(--mustard-ink); }
 .bubble.ask::after { border-top-color: var(--mustard-ink); }
+.bubble.task { top: 4px; white-space: normal; width: max-content; max-width: 88%; text-align: center; line-height: 1.3; }
+.bubble.task > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .stage .bubble.task { font-size: 10px; padding: 2px 6px; max-width: 94%; } }
 .bubble.work { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 .bubble.work::after { border-top-color: var(--accent); }
 .bubble.rest { color: var(--text-3); border-color: var(--line); }
@@ -642,7 +645,7 @@ tr.done td.title { text-decoration: line-through; }
     const urgent = !!urgentOf(p);
     const wall = /^#[0-9a-f]{3,8}$/i.test(d.wall || "") ? d.wall : "#b9b3d6";
     return `<div class="${base}${d.dark ? " dark" : ""}${urgent ? " urgent" : ""}" style="--wall:${wall}">
-      ${decoHtml(p, px)}${urgent ? SIREN : ""}<span class="bubble ${rs.cls}">${esc(rs.text)}</span>${spriteSvg(p)}</div>`;
+      ${decoHtml(p, px)}${urgent ? SIREN : ""}<span class="bubble ${rs.cls}" title="${esc(rs.text)}"><span>${esc(rs.text)}</span></span>${spriteSvg(p)}</div>`;
   }
 
   function dueHtml(d) {
@@ -817,7 +820,8 @@ tr.done td.title { text-decoration: line-through; }
     const mineN = open.filter(t => t.owner === "MJ").length;
     const making = videosOf(p.id).filter(v => v.status === "제작 중").length;
     const claudeN = open.length - mineN + reqOf(p.id).filter(r => r.status !== "완료").length + making;
-    if (mineN) return { cls: "ask", text: "대표님 차례!", mineN, claudeN };
+    // 내 할 일이 있으면 말풍선에 그 할 일을 바로 적는다(맨 위 하나, 나머지 개수는 빨간 배지).
+    if (mineN) return { cls: "ask task", text: open.find(t => t.owner === "MJ").title, mineN, claudeN };
     if (claudeN) return { cls: "work", text: "작업 중…", mineN, claudeN };
     return { cls: "rest", text: p.status === "기획" ? "기획 중" : "대기 중", mineN, claudeN, idle: true };
   }
