@@ -140,13 +140,15 @@
       "project": "romance",
       "title": "기본안 고르기 (형식·플랫폼·배경·그림체·톤)",
       "owner": "MJ",
-      "status": "할 일"
+      "status": "할 일",
+      "term": "단기"
     },
     {
       "project": "contest",
       "title": "Muzig AI Music Contest 2026 출품작 만들기 (GPT와 작업)",
       "owner": "MJ",
-      "status": "진행 중"
+      "status": "진행 중",
+      "term": "단기"
     },
     {
       "project": "tistory",
@@ -343,7 +345,8 @@
       "project": "shorts",
       "title": "채널 개설, 이야기 포맷 정하기",
       "owner": "MJ",
-      "status": "할 일"
+      "status": "할 일",
+      "term": "단기"
     },
     {
       "project": "suno",
