@@ -304,6 +304,19 @@ details .body { padding:18px 16px 20px; }
 }
 .seg3 button:focus-visible { outline:2px solid var(--su); outline-offset:2px; }
 
+/* 특정 시각에 있었던 일. 하루 기록 아래에 몇 줄이고 덧붙인다. */
+.moment-toggle { margin:14px 0 4px; }
+.moments { margin-top:10px; }
+.moments .hint { margin-bottom:10px; }
+.moment { border:1px solid var(--line); border-radius:4px; padding:10px; margin-bottom:8px; display:grid; gap:8px; background:var(--surface); }
+.moment-head { display:grid; grid-template-columns:76px 1fr 28px; gap:6px; align-items:center; }
+.moment-head input { margin:0; text-align:center; padding:10px 4px; }
+.moment .seg3 button { font-size:13px; padding:8px 2px; }
+.moment .m-del { font:inherit; font-size:18px; line-height:1; color:var(--ink-soft); background:transparent; border:0; cursor:pointer; padding:4px; }
+.moment .m-text { margin:0; }
+.entry .moments-view { display:grid; gap:4px; font-size:12.5px; color:var(--ink-soft); }
+.entry .moments-view .m-t { font-family:"IBM Plex Mono",monospace; color:var(--ink); margin-right:6px; }
+
 /* 지난 기록. 소급해 적은 것과 그날 적은 것을 눈으로 갈라 둔다.
    분석할 때 둘을 나눠 볼 수 있어야 하기 때문이다. */
 .log { display:grid; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
@@ -538,6 +551,14 @@ details .body { padding:18px 16px 20px; }
     <div class="tag-rows" id="todayTags"></div>
 
     <textarea id="todayNote" placeholder="오늘 있었던 일을 적어 둬. 나중에 이 글이 어떤 기운의 날에 쓰였는지 되짚어볼 수 있어."></textarea>
+
+    <label class="check moment-toggle"><input type="checkbox" id="momentOn"> 특정 시각에 있었던 일도 따로 적기</label>
+    <div class="moments" id="moments" hidden>
+      <p class="hint">하루 점수와 따로, 몇 시에 무슨 일이 있었는지 남겨 둬. 그 시각의 시운과 견줘 볼 수 있어.</p>
+      <div id="momentList"></div>
+      <button type="button" class="linkish" id="momentAdd">+ 하나 더</button>
+    </div>
+
     <button class="save" id="todaySave">기록하기</button>
     <p class="saved" id="todayMsg"></p>
   </section>
@@ -577,8 +598,8 @@ details .body { padding:18px 16px 20px; }
 
       <div class="field">
         <span>몇 시쯤</span>
-        <input type="text" id="pastTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 09:30 · 오후 3시는 15:00">
-        <label class="check"><input type="checkbox" id="pastNoTime"> 시각을 모른다</label>
+        <label class="check"><input type="checkbox" id="pastKnowTime"> 시각을 알아</label>
+        <input type="text" id="pastTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 09:30 · 오후 3시는 15:00" hidden>
       </div>
 
       <div class="panel" id="pastPanel" hidden></div>
@@ -1152,6 +1173,8 @@ function 담기(키, 점수값, 태그들, 글, opts = {}) {
     소급: opts.소급 === true,
     확실성: opts.확실성 ?? "정확",
     시각: opts.시각 ?? null,   // 그 일이 있었던 시각. 모르면 비워 둔다.
+    // 특정 시각에 있었던 일들. 지난 날을 다시 적을 때처럼 넘겨받지 않으면 있던 것을 그대로 둔다.
+    순간: opts.순간 ?? 기록[키]?.순간 ?? [],
     적은날: 오늘키,
     // 같은 날짜가 이 기기와 서버 양쪽에 있을 때 어느 쪽이 새것인지 가리는 값이다.
     수정시각: new Date().toISOString(),
@@ -1228,6 +1251,13 @@ const 색한자 = (gz) => {
   const jo = Manse.JI_OHAENG[Manse.JI.indexOf(gz[1])];
   return `<span style="color:${오행색(go)}">${간한자[gz[0]]}</span><span style="color:${오행색(jo)}">${지한자[gz[1]]}</span>`;
 };
+
+const 이스케이프 = (s) =>
+  String(s ?? "").replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
+
+// 특정 시각에 있었던 일의 느낌. 점수를 또 밀게 하면 번거로워서 셋 가운데 하나로만 받는다.
+const 느낌들 = [["좋음", "좋았어"], ["보통", "그저 그래"], ["나쁨", "나빴어"]];
+const 느낌말 = Object.fromEntries(느낌들);
 
 // 펼쳐 둔 날짜. 기록이 새로 들어와 목록을 다시 그려도 펼친 채로 둔다.
 const 펼친날 = new Set();
@@ -1310,6 +1340,9 @@ function 목록그리기() {
         </div>
         ${펼친날.has(k) ? 그날사주(k, r) : ""}
         ${r.영역?.length ? `<div class="areas">${r.영역.map((c) => 영역이름[c] ?? c).join(" · ")}</div>` : ""}
+        ${r.순간?.length ? `<div class="moments-view">${r.순간.map((x) => `
+          <div><span class="m-t">${x.시각}</span>${x.느낌 ? 느낌말[x.느낌] + " · " : ""}${이스케이프(x.글)}
+            · 그 시각 예측 ${예측하기(y, m, d, 시각쌍(x.시각)).점수}</div>`).join("")}</div>` : ""}
         ${r.글 ? `<div class="txt">${r.글.replace(/[<>&]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;" }[c]))}</div>` : ""}
       </div>`;
   }).join("") + `</div>`;
@@ -1452,6 +1485,80 @@ if (나있음()) { 원국계산(); 오늘그리기(); 시작끝(); } else { 첫�
 const 오늘상태 = 기록판("today", 기록[오늘키] ?? {});
 if (기록[오늘키]) document.getElementById("todayNote").value = 기록[오늘키].글 ?? "";
 
+// ── 특정 시각에 있었던 일 ─────────────────────────────────
+// 하루 점수와 따로, 몇 시에 무슨 일이 있었는지를 덧붙인다. 그 시각의 시운과 견주려는
+// 것이라 시각은 꼭 받는다. 쓰지 않는 사람이 더 많을 테니 기본은 접어 둔다.
+const momentOn = document.getElementById("momentOn");
+const momentBox = document.getElementById("moments");
+const momentList = document.getElementById("momentList");
+
+function 순간줄(m = {}) {
+  const el = document.createElement("div");
+  el.className = "moment";
+  el.innerHTML = `
+    <div class="moment-head">
+      <input type="text" class="m-time" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="14:30" aria-label="몇 시" value="${이스케이프(m.시각)}">
+      <div class="seg3 m-feel" role="radiogroup" aria-label="어땠어">
+        ${느낌들.map(([v, 말]) => `<button type="button" role="radio" data-v="${v}" aria-checked="${m.느낌 === v}">${말}</button>`).join("")}
+      </div>
+      <button type="button" class="m-del" aria-label="이 줄 지우기">×</button>
+    </div>
+    <input type="text" class="m-text" autocomplete="off" placeholder="무슨 일이었어?" value="${이스케이프(m.글)}">`;
+  momentList.appendChild(el);
+  return el;
+}
+
+momentList.addEventListener("input", (e) => { if (e.target.dataset.kind) 입력다듬기(e.target); });
+momentList.addEventListener("click", (e) => {
+  const 느낌 = e.target.closest(".m-feel button");
+  if (느낌) {
+    // 같은 칸을 다시 누르면 풀린다. 느낌은 안 골라도 된다.
+    const 이미 = 느낌.getAttribute("aria-checked") === "true";
+    느낌.parentElement.querySelectorAll("button").forEach((b) => b.setAttribute("aria-checked", "false"));
+    if (!이미) 느낌.setAttribute("aria-checked", "true");
+    return;
+  }
+  if (e.target.closest(".m-del")) {
+    e.target.closest(".moment").remove();
+    if (!momentList.children.length) 순간줄();
+  }
+});
+document.getElementById("momentAdd").addEventListener("click", () => 순간줄().querySelector(".m-time").focus());
+momentOn.addEventListener("change", () => {
+  momentBox.hidden = !momentOn.checked;
+  if (momentOn.checked && !momentList.children.length) 순간줄().querySelector(".m-time").focus();
+});
+
+// 이미 적어 둔 것이 있으면 펼쳐서 채운다. 이 기기에서 쓰던 것이 있으면 덮지 않는다.
+function 순간채우기(r) {
+  if (!r?.순간?.length) return;
+  const 쓰던것 = [...momentList.querySelectorAll(".moment")]
+    .some((el) => el.querySelector(".m-time").value || el.querySelector(".m-text").value);
+  if (쓰던것) return;
+  momentList.innerHTML = "";
+  r.순간.forEach((m) => 순간줄(m));
+  momentOn.checked = true;
+  momentBox.hidden = false;
+}
+순간채우기(기록[오늘키]);
+
+// 적힌 줄을 읽는다. 다 빈 줄은 건너뛰고, 내용은 있는데 시각이 없거나 틀리면 문제를 돌려준다.
+function 순간읽기() {
+  if (!momentOn.checked) return { 순간: [] };
+  const 순간 = [];
+  for (const el of momentList.querySelectorAll(".moment")) {
+    const 시각글 = el.querySelector(".m-time").value.trim();
+    const 글 = el.querySelector(".m-text").value.trim();
+    const 느낌 = el.querySelector('.m-feel [aria-checked="true"]')?.dataset.v ?? null;
+    if (!시각글 && !글 && !느낌) continue;
+    const 시 = 시각읽기(시각글);
+    if (!시) return { 문제: 시각글 ? "시각을 14:30처럼 넣어줘. 오후 3시는 15:00이야." : "따로 적은 일에 몇 시였는지 넣어줘." };
+    순간.push({ 시각: `${String(시.h).padStart(2, "0")}:${String(시.mi).padStart(2, "0")}`, 느낌, 글 });
+  }
+  순간.sort((a, b) => a.시각.localeCompare(b.시각));
+  return { 순간 };
+}
+
 document.getElementById("todaySave").addEventListener("click", () => {
   if (!나있음()) {
     document.getElementById("todayMsg").textContent = "먼저 아래 '내 정보'에 생년월일시를 넣어줘.";
@@ -1462,7 +1569,12 @@ document.getElementById("todaySave").addEventListener("click", () => {
     document.getElementById("todayMsg").textContent = "점수를 밀어서 매겨줘.";
     return;
   }
-  담기(오늘키, 오늘상태.점수, 오늘상태.태그, document.getElementById("todayNote").value.trim());
+  const 읽은것 = 순간읽기();
+  if (읽은것.문제) {
+    document.getElementById("todayMsg").textContent = 읽은것.문제;
+    return;
+  }
+  담기(오늘키, 오늘상태.점수, 오늘상태.태그, document.getElementById("todayNote").value.trim(), { 순간: 읽은것.순간 });
   document.getElementById("todayMsg").textContent = "";
   알림(`✓ 오늘 기록 완료 · ${오늘상태.점수}점`);
   차트그리기();
@@ -1488,7 +1600,7 @@ const pastPanel = document.getElementById("pastPanel");
 // '아 그래서 그랬나' 하는 생각이 드는데, 그 생각까지가 이 앱의 재미다.
 // 시각까지 알면 시주를 더해 네 기둥으로 보여준다.
 const pastTime = document.getElementById("pastTime");
-const pastNoTime = document.getElementById("pastNoTime");
+const pastKnowTime = document.getElementById("pastKnowTime");
 // 하루를 다 보내고 자정이 지나서 적는 일이 많아, 어제와 그저께는 눌러서 고르게 한다.
 // 날짜만으로는 무슨 날이었는지 감이 안 오므로 그날 일진을 곁에 적는다.
 const pastQuick = document.getElementById("pastQuick");
@@ -1520,15 +1632,17 @@ function 지난날판() {
   const 날 = 날짜읽기(pastDate.value);
   pastQuick.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.key === 날?.키)));
   if (!날 || !나있음()) { pastPanel.hidden = true; return; }
-  const 시 = pastNoTime.checked ? null : 시각읽기(pastTime.value);
+  const 시 = pastKnowTime.checked ? 시각읽기(pastTime.value) : null;
   pastPanel.innerHTML = 간지판(날.y, 날.m, 날.d, 시 ? [시.h, 시.mi] : undefined);
   pastPanel.hidden = false;
 }
 pastDate.addEventListener("input", 지난날판);
 pastTime.addEventListener("input", 지난날판);
-// '시각을 모른다'를 고르면 시각 칸을 아예 걷는다. 안 쓸 칸이 남아 있으면 비워도 되는지 헷갈린다.
-pastNoTime.addEventListener("change", () => {
-  pastTime.hidden = pastNoTime.checked;
+// 지난 날은 몇 시였는지 모르는 게 보통이라 시각 칸은 접어 둔다. '시각을 알아'를 고를 때만 편다.
+// 안 쓸 칸이 펼쳐져 있으면 비워도 되는지 헷갈린다.
+pastKnowTime.addEventListener("change", () => {
+  pastTime.hidden = !pastKnowTime.checked;
+  if (pastKnowTime.checked) pastTime.focus();
   지난날판();
 });
 
@@ -1545,8 +1659,8 @@ document.getElementById("pastSave").addEventListener("click", () => {
   if (!날짜) { msg.textContent = "날짜를 2019-03-14처럼 넣어줘."; return; }
   if (날짜 >= 오늘키) { msg.textContent = "지난 날만 여기에 넣을 수 있어. 오늘은 위에서 적어줘."; return; }
   let 시각 = null;
-  if (!pastNoTime.checked) {
-    if (!pastTime.value.trim()) { msg.textContent = "몇 시였는지 넣거나 '시각을 모른다'를 체크해줘."; return; }
+  if (pastKnowTime.checked) {
+    if (!pastTime.value.trim()) { msg.textContent = "몇 시였는지 넣거나 '시각을 알아' 체크를 풀어줘."; return; }
     const 시 = 시각읽기(pastTime.value);
     if (!시) { msg.textContent = "시각을 09:30처럼 넣어줘. 오후 3시는 15:00이야."; return; }
     시각 = `${String(시.h).padStart(2, "0")}:${String(시.mi).padStart(2, "0")}`;
@@ -1566,6 +1680,8 @@ document.getElementById("pastSave").addEventListener("click", () => {
   알림(`✓ ${날짜}${시각 ? " " + 시각 : ""} 기록 완료 · ${그날.이름}일 · ${지난상태.점수}점`);
   document.getElementById("pastNote").value = "";
   pastTime.value = "";
+  pastKnowTime.checked = false;
+  pastTime.hidden = true;
   지난상태.비우기();
   차트그리기();
   목록그리기();
@@ -1853,7 +1969,7 @@ async function 금고확인() {
 // 않게 한다. 이 기기의 글이 비어 있을 때도 같다. 빈 글은 남의 글을 지우지 않는다.
 // 서버글을 넘기면 빈 글 자리에 그것을 그대로 되실어, 한꺼번에 올리는 줄들이 모두
 // 같은 칸을 갖게 한다. 칸이 들쭉날쭉하면 서버가 한꺼번에 받지 않는다.
-async function 서버모양(날짜, r, 서버글) {
+async function 서버모양(날짜, r, 서버글, 서버순간) {
   const 줄 = {
     date: 날짜,
     score: r.점수,
@@ -1873,6 +1989,11 @@ async function 서버모양(날짜, r, 서버글) {
   if (데이터열쇠) {
     if (r.글) 줄.note_cipher = await 글잠그기(r.글);
     else if (서버글 !== undefined) 줄.note_cipher = 서버글;
+    // 특정 시각에 있었던 일도 글이라 같은 열쇠로 잠근다. 빈 것은 남의 것을 지우지 않는다.
+    if (순간칸있음) {
+      if (r.순간?.length) 줄.moments_cipher = await 글잠그기(JSON.stringify(r.순간));
+      else if (서버순간 !== undefined) 줄.moments_cipher = 서버순간;
+    }
   }
   return 줄;
 }
@@ -1896,12 +2017,18 @@ const 로컬모양 = (s) => ({
 // 서버 표에 '그 일이 있었던 시각' 칸이 있는지. supabase.sql을 다시 돌리기 전에는 없다.
 // 없는 칸을 실어 보내면 동기화 전체가 실패하므로, 있을 때만 싣는다. 없으면 시각은
 // 이 기기에만 남는다.
+// '특정 시각에 있었던 일' 칸(moments_cipher)도 같은 식이다.
 let 시각칸있음 = false;
+let 순간칸있음 = false;
 let 시각칸확인됨 = false;
 async function 시각칸확인() {
   if (시각칸확인됨 || !sb) return;
-  const { error } = await sb.from("records").select("event_time").limit(1);
-  시각칸있음 = !error;
+  const [시각답, 순간답] = await Promise.all([
+    sb.from("records").select("event_time").limit(1),
+    sb.from("records").select("moments_cipher").limit(1),
+  ]);
+  시각칸있음 = !시각답.error;
+  순간칸있음 = !순간답.error;
   시각칸확인됨 = true;
 }
 
@@ -1968,6 +2095,13 @@ async function 동기화() {
           if (!서버가새것) 내림++;
         }
       }
+      if (s.moments_cipher && 데이터열쇠 && (서버가새것 || !기록[s.date].순간?.length)) {
+        const 풀린 = await 글풀기(s.moments_cipher);
+        try {
+          const 순간 = 풀린 === null ? null : JSON.parse(풀린);
+          if (Array.isArray(순간)) 기록[s.date].순간 = 순간;
+        } catch {}
+      }
     }
 
     // 이 기기 쪽이 새것이면 올린다. 서버에 글만 빠져 있는 줄도 올린다. 잠금을 처음
@@ -1977,8 +2111,12 @@ async function 동기화() {
       const s = 서버맵[날짜];
       const 새로 = !s || 새것(r.수정시각, s.updated_at);
       const 글만빠짐 = Boolean(데이터열쇠 && r.글 && s && !s.note_cipher);
-      if (새로 || 글만빠짐) {
-        올릴것.push({ ...(await 서버모양(날짜, r, s ? s.note_cipher ?? null : null)), user_id: 세션.user.id });
+      const 순간만빠짐 = Boolean(데이터열쇠 && 순간칸있음 && r.순간?.length && s && !s.moments_cipher);
+      if (새로 || 글만빠짐 || 순간만빠짐) {
+        올릴것.push({
+          ...(await 서버모양(날짜, r, s ? s.note_cipher ?? null : null, s ? s.moments_cipher ?? null : null)),
+          user_id: 세션.user.id,
+        });
       }
     }
     if (올릴것.length) {
@@ -1992,6 +2130,7 @@ async function 동기화() {
     오늘상태.채우기(기록[오늘키]);
     const 오늘글칸 = document.getElementById("todayNote");
     if (!오늘글칸.value && 기록[오늘키]?.글) 오늘글칸.value = 기록[오늘키].글;
+    순간채우기(기록[오늘키]);
     msg.textContent = `서버로 보냄 ${올릴것.length}개 · 받아옴 ${내림}개 · 이 기기의 기록 ${Object.keys(기록).length}개`;
   } catch (e) {
     msg.textContent = "동기화하지 못했어: " + (e?.message ?? e);

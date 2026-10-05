@@ -35,6 +35,9 @@ alter table public.records add column if not exists note_cipher text;
 -- 그 일이 있었던 시각(예: 14:30). 지난 날을 적을 때 받는다. 모르면 비워 둔다.
 alter table public.records add column if not exists event_time text;
 
+-- 그날 특정 시각에 있었던 일들(시각·느낌·글). 일기 본문과 같은 열쇠로 잠근 문자열이다.
+alter table public.records add column if not exists moments_cipher text;
+
 -- 일기 잠금의 열쇠 보관함.
 --
 -- 글을 잠그는 데이터 열쇠는 사용자마다 하나이고, 그 열쇠를 두 번 잠가 여기 둔다.
