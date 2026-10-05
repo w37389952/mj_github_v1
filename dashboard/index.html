@@ -818,13 +818,15 @@ tr.done td.title { text-decoration: line-through; }
       const making = videosOf(p.id).filter(v => v.status === "제작 중").length;
       if (openReq) return { cls: "work", text: `요청 ${openReq}건 처리 중`, mineN: 0, claudeN: openReq };
       if (making) return { cls: "work", text: "제작 중…", mineN: 0, claudeN: making };
-      return { cls: "rest", text: "요청 기다리는 중", mineN: 0, claudeN: 0, idle: true };
+      // 요청·제작이 없으면 아래 할 일 기준으로 넘어가고, 할 일도 없을 때만 요청을 기다린다.
     }
     const open = (data.tasks || []).filter(t => t.project === p.id && !isDone(t) && !isLong(t));
     const mineN = open.filter(t => t.owner === "MJ").length;
     const claudeN = open.length - mineN + reqOf(p.id).filter(r => r.status !== "완료").length;
     if (mineN) return { cls: "ask", text: "대표님 차례!", mineN, claudeN };
     if (claudeN) return { cls: "work", text: "작업 중…", mineN, claudeN };
+    const empty = !(data.tasks || []).some(t => t.project === p.id && !isDone(t));
+    if (isStudio(p) && empty) return { cls: "rest", text: "요청 기다리는 중", mineN, claudeN, idle: true };
     return { cls: "rest", text: p.status === "기획" ? "기획 중" : "대기 중", mineN, claudeN, idle: true };
   }
 
