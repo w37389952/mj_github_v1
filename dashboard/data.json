@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-06T01:36:00+09:00",
+  "updated": "2026-10-06T01:38:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -289,6 +289,20 @@
     },
     {
       "project": "iljin",
+      "title": "기록 30개쯤에 사주 적용법(억부·조후·궁통보감·격국)별 예측 적중률 비교, 가장 맞는 법으로 이후 일진 점수 전환",
+      "term": "장기",
+      "owner": "Claude",
+      "status": "할 일"
+    },
+    {
+      "project": "iljin",
+      "title": "궁통보감 일간×월 용신 표를 넣을 원문·정리본 자료 찾아 주기",
+      "term": "장기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "iljin",
       "title": "출시 전 카카오 앱의 회사명을 사업자 상호로 바꾸기",
       "term": "장기",
       "owner": "MJ",
@@ -305,7 +319,8 @@
       "project": "iljin",
       "title": "Supabase SQL Editor에서 supabase.sql 한 번 더 실행 (지난 날 시각·특정 시각에 있었던 일 동기화용)",
       "owner": "MJ",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-10-06"
     },
     {
       "project": "iljin",
@@ -423,6 +438,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-06",
+      "project": "iljin",
+      "text": "서버 표에 새 칸(시각·특정 시각에 있었던 일)이 들어간 것을 확인했고, 기록이 쌓이면 사주 적용법별 적중률을 견줘 가장 맞는 법으로 점수를 바꾸기로 했다."
+    },
     {
       "date": "2026-10-06",
       "project": "radar",
