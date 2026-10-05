@@ -62,7 +62,6 @@
       "id": "shorts",
       "name": "공포 쇼츠",
       "group": "수익화",
-      "floor": "영상",
       "studio": true,
       "status": "기획",
       "summary": "짧은 창작 공포 이야기를 유튜브 쇼츠로.",
@@ -72,7 +71,6 @@
       "id": "suno",
       "name": "수노 플레이리스트",
       "group": "수익화",
-      "floor": "영상",
       "status": "기획",
       "summary": "수노로 만든 곡을 주제별 플레이리스트로.",
       "progress": 0
