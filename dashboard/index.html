@@ -451,12 +451,16 @@ tr.done td.title { text-decoration: line-through; }
   // data.json 프로젝트에 emoji가 없으면 이 기본값을 쓴다.
   const EMOJI = {
     tistory: "📝", threads: "🛍️", shorts: "👻", suno: "🎵",
-    radar: "🍽️", iljin: "🔮", talk: "💬", "cafe-alert": "☕", video: "🎬"
+    radar: "🍽️", iljin: "🔮", talk: "💬", "cafe-alert": "☕", video: "🎬",
+    band: "🎸", romance: "💘", contest: "🏆"
   };
 
   let data = null;
   // 영상 스튜디오: 결과물(videos.json, Claude가 적음)과 MJ의 요청(requests.json, 페이지가 적음)
+  // 영상 방(스튜디오)은 data.json 프로젝트에 "studio": true. project가 없는 옛 요청·작업물은 "video" 방 것.
   const STUDIO_ID = "video";
+  const isStudio = p => !!p && (p.studio === true || p.id === STUDIO_ID);
+  const videosOf = pid => videos.filter(v => (v.project ?? STUDIO_ID) === pid);
   const REQ_PATH = "dashboard/requests.json";
   let videos = [];
   let requests = [];
@@ -526,7 +530,10 @@ tr.done td.title { text-decoration: line-through; }
     radar: { name: "레이", role: "맛집 레이더 담당", hair: "#2b2b2b", shirt: "#e46a4a" },
     iljin: { name: "달이", role: "일진일기 담당", hair: "#3b3170", shirt: "#8e80ea", long: true },
     talk: { name: "톡이", role: "단톡 정리 담당", hair: "#5a3a1a", shirt: "#6aa5e0" },
-    video: { name: "필름", role: "영상 담당", hair: "#2e2a3a", shirt: "#d9645a", long: true }
+    video: { name: "필름", role: "영상 담당", hair: "#2e2a3a", shirt: "#d9645a", long: true },
+    band: { name: "리듬", role: "애니 밴드 담당", hair: "#2a3f8f", shirt: "#f1c24b" },
+    romance: { name: "단비", role: "로맨스 담당", hair: "#4a2a3a", shirt: "#ef8fa8", long: true },
+    contest: { name: "상이", role: "공모전 담당", hair: "#3a2a22", shirt: "#d9645a" }
   };
   const SHIRTS = ["#f1c24b", "#ef8fa8", "#5bb3a6", "#e46a4a", "#8e80ea", "#6aa5e0"];
   function staffOf(p) {
@@ -607,7 +614,10 @@ tr.done td.title { text-decoration: line-through; }
     suno: { wall: "#5bb3a6", l: "speaker", r: "keys", w: "notes" },
     radar: { wall: "#e46a4a", l: "pin", r: "cloche", w: "map" },
     iljin: { wall: "#8e80ea", l: "plant", r: "ball", w: "calendar" },
-    talk: { wall: "#6aa5e0", l: "cabinet", r: "phone", w: "chat" }
+    talk: { wall: "#6aa5e0", l: "cabinet", r: "phone", w: "chat" },
+    band: { wall: "#2a3f8f", dark: true, l: "speaker", r: "keys", w: "notes" },
+    romance: { wall: "#f3b6c6", l: "plant", r: "mirror", w: "clapper" },
+    contest: { wall: "#d9645a", l: "camera", r: "softbox", w: "board" }
   };
   const decorOf = p => ({ wall: "#b9b3d6", l: "plant", r: "", w: "board", ...(DECOR[p.id] || {}), ...(p.decor || {}) });
   function propSvg(name, pos, px, float) {
@@ -803,9 +813,9 @@ tr.done td.title { text-decoration: line-through; }
     return urgentOf(p) ? { ...rs, cls: "alarm", text: "비상 상황!", idle: false } : rs;
   }
   function baseRoomState(p) {
-    if (p.id === STUDIO_ID) {
-      const openReq = reqOf(STUDIO_ID).filter(r => r.status !== "완료").length;
-      const making = videos.filter(v => v.status === "제작 중").length;
+    if (isStudio(p)) {
+      const openReq = reqOf(p.id).filter(r => r.status !== "완료").length;
+      const making = videosOf(p.id).filter(v => v.status === "제작 중").length;
       if (openReq) return { cls: "work", text: `요청 ${openReq}건 처리 중`, mineN: 0, claudeN: openReq };
       if (making) return { cls: "work", text: "제작 중…", mineN: 0, claudeN: making };
       return { cls: "rest", text: "요청 기다리는 중", mineN: 0, claudeN: 0, idle: true };
@@ -818,13 +828,20 @@ tr.done td.title { text-decoration: line-through; }
     return { cls: "rest", text: p.status === "기획" ? "기획 중" : "대기 중", mineN, claudeN, idle: true };
   }
 
-  // 오피스는 그룹별 층으로 나눈다: 수익화 층 먼저, 그다음 코드 층. 층 안은 최근 작업 순.
-  const FLOORS = [{ g: "수익화", label: "💰 수익화 층" }, { g: "코드", label: "🛠️ 코드 층" }];
+  // 오피스는 층으로 나눈다: 수익화(글·쇼핑) → 수익화(영상) → 코드. 층 안은 최근 작업 순.
+  // 수익화 프로젝트는 data.json의 "floor"로 층을 고른다("영상"). 없으면 글·쇼핑 층.
+  const FLOORS = [
+    { g: "수익화", f: "글·쇼핑", label: "💰 수익화 · 글·쇼핑" },
+    { g: "수익화", f: "영상", label: "🎬 수익화 · 영상" },
+    { g: "코드", label: "🛠️ 코드 층" }
+  ];
+  const floorOf = p => p.group === "수익화" ? (p.floor || "글·쇼핑") : "";
+  const onFloor = (p, f) => p.group === f.g && (!f.f || floorOf(p) === f.f);
   function officeHtml(projects, rankOf) {
     if (!projects.length) return `<div class="empty">프로젝트가 없어요.</div>`;
     let n = 0;
-    const floors = FLOORS.map(f => ({ ...f, list: projects.filter(p => p.group === f.g) }));
-    const rest = projects.filter(p => !FLOORS.some(f => f.g === p.group));
+    const floors = FLOORS.map(f => ({ ...f, list: projects.filter(p => onFloor(p, f)) }));
+    const rest = projects.filter(p => !FLOORS.some(f => onFloor(p, f)));
     if (rest.length) floors.push({ g: "", label: "📦 기타", list: rest });
     return floors.filter(f => f.list.length).map(f => `<div class="floor ${GROUP_CLASS[f.g] || ""}">
       <div class="floor-head"><span>${f.label}</span><span class="cnt">${f.list.length}개 방</span></div>
@@ -845,8 +862,8 @@ tr.done td.title { text-decoration: line-through; }
       ${stageHtml(p, "stage", rs, 4)}
       ${why ? `<div class="alarm-line">🚨 ${esc(why)}</div>` : ""}
       <div class="rfoot"><span class="staff">${esc(st.name)}</span><span>${esc(st.role)}</span></div>
-      ${p.id === STUDIO_ID
-        ? `<div class="rfoot"><span>완료 ${videos.filter(v => v.status === "완료").length} · 제작 중 ${videos.filter(v => v.status === "제작 중").length} · 요청 ${reqOf(STUDIO_ID).filter(r => r.status !== "완료").length}</span></div>`
+      ${isStudio(p)
+        ? `<div class="rfoot"><span>완료 ${videosOf(p.id).filter(v => v.status === "완료").length} · 제작 중 ${videosOf(p.id).filter(v => v.status === "제작 중").length} · 요청 ${reqOf(p.id).filter(r => r.status !== "완료").length}</span></div>`
         : `<div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>`}
     </a>`;
   }
@@ -858,13 +875,13 @@ tr.done td.title { text-decoration: line-through; }
   const whenOf = iso => String(iso || "").slice(0, 10);
   const videoTitle = id => (videos.find(v => v.id === id) || {}).title || "";
 
-  function studioHtml() {
+  function studioHtml(pid) {
     const order = { "제작 중": 0, "대기": 1, "완료": 2 };
-    const vs = videos.slice().sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || String(b.date || "").localeCompare(String(a.date || "")));
-    const rs = reqOf(STUDIO_ID).sort(byNewest).slice(0, 8);
-    const d = draftOf(STUDIO_ID);
+    const vs = videosOf(pid).sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || String(b.date || "").localeCompare(String(a.date || "")));
+    const rs = reqOf(pid).sort(byNewest).slice(0, 8);
+    const d = draftOf(pid);
     return `
-      ${reqFormHtml(STUDIO_ID, {
+      ${reqFormHtml(pid, {
         title: "✍️ 요청 남기기",
         select: `<select data-field="target" aria-label="어떤 작업에 대한 요청인지">
           <option value="">새로 만들어 줘</option>
@@ -943,7 +960,7 @@ tr.done td.title { text-decoration: line-through; }
     if (!token) { toast("요청은 저장소에 올라가야 Claude가 봐요. 위에서 열쇠를 먼저 넣어 주세요", 4000); openModal(); return; }
     sendingReq = true;
     const project = k === "main" ? d.project : k;
-    const item = { id: "r" + Date.now().toString(36), date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16) + "+09:00", project, target: project === STUDIO_ID ? d.target : "", text, status: "요청" };
+    const item = { id: "r" + Date.now().toString(36), date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16) + "+09:00", project, target: isStudio(projOf(project)) ? d.target : "", text, status: "요청" };
     const where = (data.projects || []).find(x => x.id === project);
     try {
       const obj = await writeJson(REQ_PATH, { requests: [] }, o => {
@@ -989,15 +1006,15 @@ tr.done td.title { text-decoration: line-through; }
           <h2>${esc(emojiOf(p))} ${esc(p.name)}</h2>
           <div class="who-line"><b>${esc(st.name)}</b> · ${esc(st.role)}</div>
           <p class="ssum">${esc(p.summary)}</p>
-          ${p.id === STUDIO_ID ? "" : `<div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
+          ${isStudio(p) ? "" : `<div class="bar-row" title="${esc(pr.title)}"><div class="bar"><i style="width:${pr.pct}%;background:${color}"></i></div><span class="pct">${esc(pr.label)}</span></div>
           ${p.goal ? `<div class="hint-line">${esc(p.goal.label)}</div>` : ""}`}
           <div class="counts"><span class="${rs.mineN ? "hot" : ""}">대표님 차례 ${rs.mineN}건</span><span>Claude 작업 ${rs.claudeN}건</span><span>기록 ${logs.length}건</span></div>
           ${links.length ? `<div class="links">${links.map((l, i) => `<a class="go${i === 0 ? " primary" : ""}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label || "열기")} ↗</a>`).join("")}</div>` : ""}
         </div>
       </div>
 
-      ${p.id === STUDIO_ID ? `<div class="section-title"><h2>🎬 스튜디오</h2><span class="hint">요청을 남기면 Claude가 힉스필드로 만들어 올려요</span></div>
-      <div class="panel studio-panel">${studioHtml()}</div>` : `<div class="section-title"><h2>💬 Claude에게 요청</h2><span class="hint">고칠 점이나 할 일을 남기면 Claude가 처리하고 결과를 적어요</span></div>
+      ${isStudio(p) ? `<div class="section-title"><h2>🎬 스튜디오</h2><span class="hint">요청을 남기면 Claude가 힉스필드로 만들어 올려요</span></div>
+      <div class="panel studio-panel">${studioHtml(p.id)}</div>` : `<div class="section-title"><h2>💬 Claude에게 요청</h2><span class="hint">고칠 점이나 할 일을 남기면 Claude가 처리하고 결과를 적어요</span></div>
       <div class="panel studio-panel">${reqFormHtml(p.id, { placeholder: `예) ${p.name}에서 바꾸고 싶은 점을 적어 주세요` })}
         <h4>📮 요청 기록</h4>
         ${reqOf(p.id).length ? `<ul class="req-list">${reqOf(p.id).sort(byNewest).slice(0, 8).map(r => reqItemHtml(r, false)).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
