@@ -1473,7 +1473,7 @@ function 입력다듬기(el) {
 }
 document.querySelectorAll("input[data-kind]").forEach((el) => el.addEventListener("input", () => 입력다듬기(el)));
 
-// 친 시각을 말로 읽어 준다. 20:16을 오전 8시로 잘못 알고 넣는 일을 막으려는 것이다.
+// 친 시각을 말로 읽어 준다. 21:30을 오전 9시 30분으로 잘못 알고 넣는 일을 막으려는 것이다.
 const 시각말 = (h, mi) =>
   `${h === 0 ? "밤" : h === 12 ? "낮" : h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시${mi ? ` ${mi}분` : ""}`;
 function 시각읽어주기(el) {
