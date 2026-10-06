@@ -304,6 +304,17 @@ details .body { padding:18px 16px 20px; }
 }
 .seg3 button:focus-visible { outline:2px solid var(--su); outline-offset:2px; }
 
+/* 24시 표기를 잘못 읽어 오전·오후가 뒤바뀌는 일이 없게, 친 시각을 말로 읽어 준다. */
+.time-read { display:block; font-size:13px; color:var(--ink-soft); margin-top:6px; min-height:1em; }
+.time-read:empty { display:none; }
+.conflict { border:1.5px solid var(--hwa); border-radius:4px; padding:12px; margin-bottom:16px; display:grid; gap:8px; }
+.conflict p { margin:0; font-size:14px; line-height:1.6; color:var(--ink); }
+.conflict-pick {
+  font:inherit; font-size:14px; text-align:left; color:var(--ink); cursor:pointer; line-height:1.5;
+  background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:10px 12px;
+}
+.conflict-pick:hover { border-color:var(--ink); }
+
 /* 특정 시각에 있었던 일. 하루 기록 아래에 몇 줄이고 덧붙인다. */
 .moment-toggle { margin:14px 0 4px; }
 .moments { margin-top:10px; }
@@ -442,6 +453,7 @@ details .body { padding:18px 16px 20px; }
     <div class="field">
       <span>태어난 시각</span>
       <input type="text" id="wTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 09:30 · 오후 3시는 15:00">
+      <span class="time-read" data-for="wTime"></span>
       <label class="check"><input type="checkbox" id="wNoTime"> 시각을 모른다</label>
     </div>
 
@@ -641,8 +653,13 @@ details .body { padding:18px 16px 20px; }
   <details id="meBox">
     <summary><span class="s-title">내 정보</span><span class="s-meta" id="meMeta">생년월일시를 넣어줘</span></summary>
     <div class="body">
+      <div class="conflict" id="meConflict" hidden>
+        <p><b>기기마다 생년월일시가 달라.</b> 맞는 쪽을 눌러줘. 고른 쪽으로 모든 기기를 맞춘다.</p>
+        <button type="button" class="conflict-pick" id="meKeepLocal"></button>
+        <button type="button" class="conflict-pick" id="meTakeServer"></button>
+      </div>
       <p class="hint">
-        브라우저에만 저장된다. 서버도 로그인도 없어서 이 기기 밖으로 나가지 않는다.
+        이 기기에 저장된다. 로그인해서 일기 잠금을 켜 두면 잠근 채로 다른 기기에도 따라가고, 서버도 운영자도 읽지 못한다.
       </p>
       <div class="field">
         <span>생년월일 (양력)</span>
@@ -651,6 +668,7 @@ details .body { padding:18px 16px 20px; }
       <div class="field">
         <span>태어난 시각</span>
         <input type="text" id="meTime" data-kind="time" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="예: 09:30 · 오후 3시는 15:00">
+        <span class="time-read" data-for="meTime"></span>
         <label class="check"><input type="checkbox" id="meNoTime"> 시각을 모른다</label>
       </div>
       <div class="field">
@@ -1455,6 +1473,20 @@ function 입력다듬기(el) {
 }
 document.querySelectorAll("input[data-kind]").forEach((el) => el.addEventListener("input", () => 입력다듬기(el)));
 
+// 친 시각을 말로 읽어 준다. 20:16을 오전 8시로 잘못 알고 넣는 일을 막으려는 것이다.
+const 시각말 = (h, mi) =>
+  `${h === 0 ? "밤" : h === 12 ? "낮" : h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시${mi ? ` ${mi}분` : ""}`;
+function 시각읽어주기(el) {
+  const 칸 = document.querySelector(`.time-read[data-for="${el.id}"]`);
+  if (!칸) return;
+  const 시 = 시각읽기(el.value);
+  칸.textContent = 시 && !el.disabled ? `${시각말(시.h, 시.mi)}에 태어났다는 뜻이야` : "";
+}
+document.querySelectorAll(".time-read").forEach((칸) => {
+  const el = document.getElementById(칸.dataset.for);
+  el.addEventListener("input", () => 시각읽어주기(el));
+});
+
 // 생년월일시가 정해지면 화면 전체가 그걸 따라 바뀐다. 첫 화면과 '내 정보'가 같이 쓴다.
 // 성별에 따라 자녀·연애 태그가 들어갈 줄이 달라지므로, 생년월일시가 정해지거나 바뀌면
 // 태그 칸을 다시 그리고 눌러 둔 태그를 되살린다.
@@ -1712,6 +1744,7 @@ const 나채우기 = () => {
     `${String(나.hour).padStart(2,"0")}:${String(나.minute).padStart(2,"0")}`;
   document.getElementById("meNoTime").checked = 나.시모름;
   document.getElementById("meTime").disabled = 나.시모름;
+  시각읽어주기(document.getElementById("meTime"));
   document.getElementById("meGender").value = 나.성별;
   me쌍둥이.고르기(나.쌍둥이 ? 나.순서 : "아님");
 };
@@ -1719,6 +1752,7 @@ const 나채우기 = () => {
 
 document.getElementById("meNoTime").addEventListener("change", (e) => {
   document.getElementById("meTime").disabled = e.target.checked;
+  시각읽어주기(document.getElementById("meTime"));
 });
 
 document.getElementById("meSave").addEventListener("click", () => {
@@ -1732,6 +1766,9 @@ document.getElementById("meSave").addEventListener("click", () => {
     ...쌍둥이로(me쌍둥이.값()),
   };
   나적용();
+  // 손으로 고쳐 저장한 값이 곧 답이다. 나적용이 서버로도 올리므로 엇갈림은 풀린다.
+  서버나 = null;
+  나다름보이기();
 
   msg.textContent =
     `${원국.연주} ${원국.월주} ${원국.일주}${원국.시주 ? " " + 원국.시주 : " (시주 없음)"}` +
@@ -1744,6 +1781,7 @@ document.getElementById("meSave").addEventListener("click", () => {
 // 고치기 전까지 틀린 시주로 기록이 쌓인다.
 document.getElementById("wNoTime").addEventListener("change", (e) => {
   document.getElementById("wTime").disabled = e.target.checked;
+  시각읽어주기(document.getElementById("wTime"));
 });
 document.getElementById("wStart").addEventListener("click", () => {
   const 생시 = 생시읽기("wDate", "wTime", "wNoTime");
@@ -1917,21 +1955,63 @@ async function 글풀기(문자열) {
 }
 
 // 생년월일시도 일기와 같은 열쇠로 잠가 금고에 둔다. 새 기기에서 잠금을 풀면 따라온다.
-// 이 기기에 이미 있으면 서버 것으로 덮지 않는다. 어느 쪽이 맞는지 가릴 수 없을 때는
-// 사용자가 눈앞에서 본 값을 믿는다. 이 기기에서 저장하면 그게 서버로 간다.
+//
+// 이 기기에 이미 있는데 서버 것과 다르면 어느 쪽도 몰래 덮지 않는다. 예전에는 이 기기
+// 것을 말없이 믿었는데, 그러면 서버에 틀린 값이 남아 있어도 아무도 모르고, 새 브라우저
+// (카톡에서 연 링크 같은)에서 열 때마다 그 틀린 값이 따라 나왔다. 이제는 둘을 나란히
+// 보여 주고 사용자가 고르게 한다. 고른 쪽이 서버로 가서 모든 기기가 같아진다.
 async function 나올리기() {
   if (!sb || !세션 || !데이터열쇠 || !금고 || !나있음()) return;
   try { await 금고고치기({ me_cipher: await 글잠그기(JSON.stringify(나)) }); } catch {}
 }
+const 나칸들 = ["y", "m", "d", "hour", "minute", "시모름", "성별", "쌍둥이", "순서"];
+const 같은나 = (a, b) => 나칸들.every((k) => a[k] === b[k]);
+const 생시말 = (n) => {
+  const p = (v) => String(v).padStart(2, "0");
+  return `${n.y}-${p(n.m)}-${p(n.d)} · ` +
+    (n.시모름 ? "시각 모름" : `${p(n.hour)}:${p(n.minute)} (${시각말(n.hour, n.minute)})`) +
+    ` · ${n.성별}` + (n.쌍둥이 ? ` · 쌍둥이 ${n.순서 === "둘째" ? "동생" : "언니·형"}` : "");
+};
+let 서버나 = null;
+function 나다름보이기() {
+  const 칸 = document.getElementById("meConflict");
+  칸.hidden = !서버나;
+  if (!서버나) return;
+  document.getElementById("meKeepLocal").textContent = `이 기기: ${생시말(나)}`;
+  document.getElementById("meTakeServer").textContent = `다른 기기에서 저장한 것: ${생시말(서버나)}`;
+  document.getElementById("meBox").open = true;
+}
 async function 나받기() {
-  if (나있음() || !데이터열쇠 || !금고?.me_cipher) return;
+  if (!데이터열쇠 || !금고?.me_cipher) return;
   const 글 = await 글풀기(금고.me_cipher);
   if (!글) return;
-  try { 나 = { ...기본나, ...JSON.parse(글) }; } catch { return; }
+  let 받은;
+  try { 받은 = { ...기본나, ...JSON.parse(글) }; } catch { return; }
+  if (나있음()) {
+    서버나 = 같은나(나, 받은) ? null : 받은;
+    나다름보이기();
+    if (서버나) 알림("기기마다 생년월일시가 달라. '내 정보'에서 맞는 쪽을 골라줘.");
+    return;
+  }
+  나 = 받은;
   쓰기(KEY_나, 나);
   나채우기();
-  if (나있음()) { 원국계산(); 오늘그리기(); 태그다시그리기(); 시작끝(); }
+  if (나있음()) { 원국계산(); 오늘그리기(); 태그다시그리기(); 시작끝(); 차트그리기(); 목록그리기(); }
+  알림(`다른 기기에서 저장한 생년월일시를 불러왔어 · ${생시말(나)}`);
 }
+document.getElementById("meKeepLocal").addEventListener("click", async () => {
+  서버나 = null;
+  나다름보이기();
+  await 나올리기();
+  알림("✓ 이 기기 것으로 모든 기기를 맞췄어");
+});
+document.getElementById("meTakeServer").addEventListener("click", () => {
+  나 = 서버나;
+  서버나 = null;
+  나다름보이기();
+  나적용();   // 나올리기까지 부른다
+  알림("✓ 다른 기기에서 저장한 것으로 바꿨어");
+});
 // 잠금이 열린 직후마다 부른다. 서버에 있으면 받고, 없으면 이 기기 것을 올린다.
 async function 나맞추기() {
   await 나받기();
