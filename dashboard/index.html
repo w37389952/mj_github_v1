@@ -690,24 +690,7 @@ tr.done td.title { text-decoration: line-through; }
     const roomP = roomId && (data.projects || []).find(x => x.id === roomId);
     if (roomP) { renderRoomPage(root, roomP); return; }
     const projects = (data.projects || []).filter(p => group === "all" || p.group === group);
-    const tasks = (data.tasks || []).filter(t => inGroup(t.project));
-    const logs = (data.log || []).filter(l => inGroup(l.project)).slice().sort((a, b) => b.date.localeCompare(a.date));
-    const open = tasks.filter(t => !isDone(t));
-    const today = kstToday();
-    const weekAgo = addDays(today, -6);
-
-    // 목록에는 남은 일 + 오늘 끝낸 일(줄 그어서)만 둔다. 끝낸 날이 지나면 빠진다.
-    const listed = tasks.filter(t => !isDone(t) || doneDate(t) >= today);
-    const shortOpen = open.filter(t => !isLong(t));
-    const mine = shortOpen.filter(t => t.owner === "MJ");
-    const claude = shortOpen.filter(t => t.owner !== "MJ");
-    const shortListed = listed.filter(t => !isLong(t));
-    const longListed = listed.filter(isLong).sort(byDue);
-    const mineListed = shortListed.filter(t => t.owner === "MJ").sort(byDue);
-    const claudeListed = shortListed.filter(t => t.owner !== "MJ").sort(byDue);
-    const running = projects.filter(p => p.status === "운영 중" || p.status === "진행 중").length;
-    const waiting = projects.filter(p => tone(p.status) === "warn" || tone(p.status) === "bad");
-    const weekLogs = logs.filter(l => l.date >= weekAgo && l.date <= today).length;
+    const mine = (data.tasks || []).filter(t => inGroup(t.project) && !isDone(t) && !isLong(t) && t.owner === "MJ");
     const rankOf = recentRank();
 
     root.innerHTML = `
@@ -721,61 +704,9 @@ tr.done td.title { text-decoration: line-through; }
       <div class="section-title"><h2>🏢 MJ 오피스</h2><span class="hint">층마다 최근 작업한 방부터 · 방을 누르면 그 방 페이지로 가요</span></div>
       ${projects.filter(urgentOf).map(p => `<div class="alarm-banner" role="alert"><span>🚨 비상 · <a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a> — ${esc(urgentOf(p))}</span></div>`).join("")}
       <div class="panel office">${officeHtml(projects, rankOf)}</div>
-
-      ${routinesHomeHtml(projects)}
-
-      <div class="section-title"><h2>⚡ 지금 할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
-      <div class="todo-cols">
-        ${todoCol("내가 할 일", mineListed)}
-        ${todoCol("Claude가 할 일", claudeListed)}
-      </div>
-
-      <div class="section-title"><h2>📮 Claude에게 요청</h2><span class="hint">어느 창에서든 못 한 요청을 여기 남기면 Claude가 처리해요</span></div>
-      ${mainReqHtml()}
-
-      <div class="section-title"><h2>🗓️ 장기 과제</h2><span class="hint">꾸준히 쌓아 가는 일, 때가 되면 할 일, 아직 기획 중인 채널</span></div>
-      <div class="panel long-panel">
-        ${longListed.length ? `<div class="long-grid">${groupsHtml(longListed, true)}</div>` : `<div class="empty">장기 과제가 없어요.</div>`}
-      </div>
-
-      <div class="section-title"><h2>한눈에</h2></div>
-      <div class="tiles">
-        ${tile("돌아가는 프로젝트", running, `전체 ${projects.length}개 중`)}
-        ${tile("지금 내가 할 일", mine.length, `Claude 몫 ${claude.length}개 · 장기 ${open.filter(isLong).length}개`)}
-        ${tile("확인이 필요한 곳", waiting.length, waiting.map(p => p.name).slice(0, 2).join(", ") || "없음")}
-        ${tile("최근 7일 기록", weekLogs, `${md(weekAgo)} ~ ${md(today)}`)}
-      </div>
-
-      <div class="section-title"><h2>최근 ${DAYS}일 작업량</h2><span class="hint">하루에 남긴 기록 수</span></div>
-      <div class="panel chart-panel">
-        <div class="legend">${GROUPS.filter(g => group === "all" || g === group).map(g => `<span>${dotFor(g)}${g}</span>`).join("")}</div>
-        <div id="chart"></div>
-      </div>
-
-      <div class="section-title"><h2>한 일 기록</h2><span class="hint">각 창에서 올린 내용</span></div>
-      <div class="panel">
-        <div class="log">${logHtml(logs)}</div>
-        ${logs.length > logLimit ? `<button class="more" id="more">이전 기록 더 보기 (${logs.length - logLimit}개)</button>` : ""}
-      </div>
-
-      <div class="section-title"><h2>할 일 전체</h2></div>
-      <div class="panel">
-        <div class="tbl-tools"><label><input type="checkbox" id="showDone" ${showDone ? "checked" : ""}> 끝난 일도 보기</label></div>
-        <div class="table-wrap">${taskTable(tasks)}</div>
-      </div>
     `;
 
-    drawChart(logs, today);
-    bindChecks(root);
-    bindReqForms(root);
-
-    const more = $("#more");
-    if (more) more.onclick = () => { logLimit += 20; render(); };
-    $("#showDone").onchange = e => {
-      showDone = e.target.checked;
-      try { localStorage.setItem("dash.done", showDone ? "1" : "0"); } catch (err) {}
-      render();
-    };
+    // 홈은 오피스만 둔다. 할 일·요청·루틴·기록은 각 방 페이지에서 본다(MJ 요청).
   }
 
   function byDue(a, b) {
