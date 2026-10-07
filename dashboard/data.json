@@ -208,8 +208,9 @@
       "project": "threads",
       "title": "쿠팡 파트너스 가입",
       "owner": "MJ",
-      "status": "할 일",
-      "due": "2026-10-14"
+      "status": "완료",
+      "due": "2026-10-14",
+      "done": "2026-10-07"
     },
     {
       "project": "threads",
@@ -445,6 +446,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-07",
+      "project": "threads",
+      "text": "쿠팡 파트너스 가입 완료(쓰레드·티스토리 채널 등록). 링크 글은 10/22쯤부터."
+    },
     {
       "date": "2026-10-07",
       "project": "romance",
