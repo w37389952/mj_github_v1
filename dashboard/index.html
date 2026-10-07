@@ -326,6 +326,15 @@ a.room:hover { text-decoration: none; }
 .req-list li:first-child { border-top: 0; }
 .req-list .t { flex: 1; min-width: 0; }
 .req-list .meta { color: var(--text-3); font-size: 12px; }
+.routine-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.routine-card { padding: 12px 14px; }
+.routine-card h3 { margin: 0 0 6px; font-size: 14px; }
+.routine-card h3 a { color: inherit; text-decoration: none; }
+.routine-list { list-style: none; margin: 0; padding: 0; }
+.routine-list li { padding: 6px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
+.routine-list li:first-child { border-top: 0; }
+.routine-list .when { display: inline-block; margin-left: 6px; font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 6px; }
+.routine-list .what { color: var(--text-3); font-size: 12px; margin-top: 2px; }
 .req-photo-btn { cursor: pointer; background: var(--panel); border: 1px solid var(--line) !important; color: var(--text-2); }
 .req-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .req-photos:empty { display: none; }
@@ -717,6 +726,8 @@ tr.done td.title { text-decoration: line-through; }
         ${todoCol("Claude가 할 일", claudeListed)}
       </div>
 
+      ${routinesHomeHtml(projects)}
+
       <div class="section-title"><h2>📮 Claude에게 요청</h2><span class="hint">어느 창에서든 못 한 요청을 여기 남기면 Claude가 처리해요</span></div>
       ${mainReqHtml()}
 
@@ -1004,6 +1015,20 @@ tr.done td.title { text-decoration: line-through; }
     });
     loadReqPhotos(host);
   }
+  // ── 자동으로 돌아가는 일 (data.json "routines") ──
+  // 루틴·예약 알림·GitHub 자동 작업처럼 Claude나 서버가 정해진 시간에 혼자 하는 일. project ""는 현황판 전체.
+  const routinesOf = pid => (data.routines || []).filter(r => (r.project || "") === pid);
+  const routineListHtml = list => `<ul class="routine-list">${list.map(r => `<li><b>${esc(r.name)}</b><span class="when">${esc(r.when || "")}</span>
+    ${r.what ? `<div class="what">${esc(r.what)}</div>` : ""}</li>`).join("")}</ul>`;
+  function routinesHomeHtml(projects) {
+    const groups = [...projects.map(p => ({ p, list: routinesOf(p.id) })), { p: null, list: routinesOf("") }].filter(g => g.list.length);
+    if (!groups.length) return "";
+    return `<div class="section-title"><h2>🔁 자동으로 돌아가는 일</h2><span class="hint">Claude와 서버가 정해진 시간에 알아서 하는 일</span></div>
+      <div class="routine-grid">${groups.map(({ p, list }) => `<div class="panel routine-card">
+        <h3>${p ? `<a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a>` : "🏢 현황판 전체"}</h3>
+        ${routineListHtml(list)}</div>`).join("")}</div>`;
+  }
+
   // 오피스 첫 화면의 요청 칸: 방을 고르고 남기면, 남은 요청과 최근 처리한 요청이 보인다.
   function mainReqHtml() {
     const d = draftOf("main");
@@ -1092,6 +1117,9 @@ tr.done td.title { text-decoration: line-through; }
         <h4>📮 요청 기록</h4>
         ${reqOf(p.id).length ? `<ul class="req-list">${reqOf(p.id).sort(byNewest).slice(0, 8).map(r => reqItemHtml(r, false)).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
       </div>
+
+      ${routinesOf(p.id).length ? `<div class="section-title"><h2>🔁 자동으로 돌아가는 일</h2><span class="hint">이 방에서 정해진 시간에 알아서 하는 일</span></div>
+      <div class="panel routine-card">${routineListHtml(routinesOf(p.id))}</div>` : ""}
 
       ${postsHtml(p.id, today)}
 
