@@ -326,6 +326,8 @@ a.room:hover { text-decoration: none; }
 .req-list li:first-child { border-top: 0; }
 .req-list .t { flex: 1; min-width: 0; }
 .req-list .meta { color: var(--text-3); font-size: 12px; }
+.rroutine { margin-top: 4px; font-size: 11.5px; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 2px 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rroutine b { font-weight: 700; }
 .routine-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
 .routine-card { padding: 12px 14px; }
 .routine-card h3 { margin: 0 0 6px; font-size: 14px; }
@@ -720,13 +722,13 @@ tr.done td.title { text-decoration: line-through; }
       ${projects.filter(urgentOf).map(p => `<div class="alarm-banner" role="alert"><span>🚨 비상 · <a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a> — ${esc(urgentOf(p))}</span></div>`).join("")}
       <div class="panel office">${officeHtml(projects, rankOf)}</div>
 
+      ${routinesHomeHtml(projects)}
+
       <div class="section-title"><h2>⚡ 지금 할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
       <div class="todo-cols">
         ${todoCol("내가 할 일", mineListed)}
         ${todoCol("Claude가 할 일", claudeListed)}
       </div>
-
-      ${routinesHomeHtml(projects)}
 
       <div class="section-title"><h2>📮 Claude에게 요청</h2><span class="hint">어느 창에서든 못 한 요청을 여기 남기면 Claude가 처리해요</span></div>
       ${mainReqHtml()}
@@ -880,6 +882,7 @@ tr.done td.title { text-decoration: line-through; }
       ${stageHtml(p, "stage", rs, 4)}
       ${why ? `<div class="alarm-line">🚨 ${esc(why)}</div>` : ""}
       <div class="rfoot"><span class="staff">${esc(st.name)}</span><span>${esc(st.role)}</span></div>
+      ${routinesOf(p.id).map(r => `<div class="rroutine" title="${esc(r.what || "")}">🔁 <b>${esc(r.name)}</b> · ${esc(r.when || "")}</div>`).join("")}
       <div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>
     </a>`;
   }
