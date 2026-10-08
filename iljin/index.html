@@ -373,6 +373,10 @@ details .body { padding:18px 16px 20px; }
   background:transparent; border:1px solid var(--line); border-radius:2px; padding:2px 8px;
 }
 .unfold[aria-expanded="true"] { color:var(--ink); border-color:var(--ink-soft); }
+.fix {
+  font:inherit; font-size:11px; color:var(--ink-soft); cursor:pointer;
+  background:transparent; border:1px solid var(--line); border-radius:2px; padding:2px 8px;
+}
 
 /* 그날 사주 펼치기. 대운은 십 년짜리 바탕이라 따로 떼어 왼쪽에 두고,
    연월일시는 한 덩어리로 묶는다. 사주를 배우는 사람이 한눈에 읽게 한다. */
@@ -1238,6 +1242,15 @@ function 기록판(prefix, 초기 = {}) {
     document.querySelectorAll(`#${prefix}Tags .tag`).forEach((b) => 토글(b, 상태.태그.has(b.dataset.code)));
   };
 
+  // 지난 기록을 고치러 왔을 때는 손댄 것과 상관없이 그날 기록으로 바꿔 끼운다.
+  상태.넣기 = (r) => {
+    상태.점수 = r.점수 ?? null;
+    상태.태그 = new Set(r.영역 ?? []);
+    if (상태.점수 === null) 막대.value = 50;
+    그리기();
+    document.querySelectorAll(`#${prefix}Tags .tag`).forEach((b) => 토글(b, 상태.태그.has(b.dataset.code)));
+  };
+
   상태.비우기 = () => {
     상태.점수 = null;
     상태.태그.clear();
@@ -1355,6 +1368,7 @@ function 목록그리기() {
           ${r.소급 ? `<span class="badge">소급 · ${r.확실성}</span>` : ""}
           ${끝인가(예측결과.백분위) ? `<span class="badge edge${예측결과.백분위 < 0.05 ? " low" : ""}">${예측결과.백분위 < 0.05 ? "올해 하위 5%" : "올해 상위 5%"}</span>` : ""}
           <button type="button" class="unfold" data-day="${k}" aria-expanded="${펼친날.has(k)}">그날 사주 ${펼친날.has(k) ? "▴" : "▾"}</button>
+          <button type="button" class="fix" data-day="${k}">고치기</button>
         </div>
         ${펼친날.has(k) ? 그날사주(k, r) : ""}
         ${r.영역?.length ? `<div class="areas">${r.영역.map((c) => 영역이름[c] ?? c).join(" · ")}</div>` : ""}
@@ -1368,6 +1382,8 @@ function 목록그리기() {
 
 // 목록은 자주 다시 그려지므로 단추마다 듣지 않고 목록 전체에서 듣는다.
 document.getElementById("log").addEventListener("click", (e) => {
+  const f = e.target.closest(".fix");
+  if (f) { 고치러가기(f.dataset.day); return; }
   const b = e.target.closest(".unfold");
   if (!b) return;
   const k = b.dataset.day;
@@ -1660,9 +1676,34 @@ document.getElementById("lateGo").addEventListener("click", () => {
   box.scrollIntoView({ block: "start", behavior: "smooth" });
 });
 
+// 이미 적은 날을 고르면 그날 기록을 칸에 채워, 고쳐서 다시 남기게 한다.
+let 불러온날 = null;
+function 지난기록불러오기(키) {
+  const r = 키 < 오늘키 ? 기록[키] : null;
+  if (키 === 불러온날) return;
+  // 불러온 날에서 기록 없는 날로 옮기면 앞 날 내용이 딸려 가지 않게 비운다.
+  if (!r) {
+    if (불러온날) {
+      불러온날 = null;
+      지난상태.비우기();
+      document.getElementById("pastNote").value = "";
+      document.getElementById("pastMsg").textContent = "";
+    }
+    return;
+  }
+  불러온날 = 키;
+  지난상태.넣기(r);
+  document.getElementById("pastNote").value = r.글 ?? "";
+  if (r.시각) { pastKnowTime.checked = true; pastTime.hidden = false; pastTime.value = r.시각; }
+  else { pastKnowTime.checked = false; pastTime.hidden = true; pastTime.value = ""; }
+  if (r.소급) document.getElementById("pastSure").value = r.확실성 ?? "정확";
+  document.getElementById("pastMsg").textContent = "이미 적은 날이라 그 기록을 불러왔어. 고친 뒤 '남기기'를 누르면 바뀌어.";
+}
+
 function 지난날판() {
   const 날 = 날짜읽기(pastDate.value);
   pastQuick.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.key === 날?.키)));
+  if (날) 지난기록불러오기(날.키);
   if (!날 || !나있음()) { pastPanel.hidden = true; return; }
   const 시 = pastKnowTime.checked ? 시각읽기(pastTime.value) : null;
   pastPanel.innerHTML = 간지판(날.y, 날.m, 날.d, 시 ? [시.h, 시.mi] : undefined);
@@ -1708,8 +1749,10 @@ document.getElementById("pastSave").addEventListener("click", () => {
   });
 
   const 그날 = Manse.iljin(...날짜.split("-").map(Number));
+  const 고침 = 불러온날 === 날짜;
+  불러온날 = null;
   msg.textContent = "";
-  알림(`✓ ${날짜}${시각 ? " " + 시각 : ""} 기록 완료 · ${그날.이름}일 · ${지난상태.점수}점`);
+  알림(`✓ ${날짜}${시각 ? " " + 시각 : ""} ${고침 ? "고침" : "기록"} 완료 · ${그날.이름}일 · ${지난상태.점수}점`);
   document.getElementById("pastNote").value = "";
   pastTime.value = "";
   pastKnowTime.checked = false;
@@ -1718,6 +1761,21 @@ document.getElementById("pastSave").addEventListener("click", () => {
   차트그리기();
   목록그리기();
 });
+
+// 지난 기록 목록의 '고치기'. 오늘은 위 오늘 칸이 이미 그 기록을 들고 있으니 그리로 보내고,
+// 지난 날은 '지난 날 적기'를 열어 그날 기록을 채워 준다.
+function 고치러가기(키) {
+  if (키 === 오늘키) {
+    document.getElementById("todayNote").scrollIntoView({ block: "center", behavior: "smooth" });
+    return;
+  }
+  const box = document.getElementById("pastBox");
+  box.open = true;
+  불러온날 = null;
+  pastDate.value = 키;
+  pastDate.dispatchEvent(new Event("input", { bubbles: true }));
+  box.scrollIntoView({ block: "start", behavior: "smooth" });
+}
 
 // ── 내 정보 ───────────────────────────────────────────────
 // 쌍둥이 세 칸. "아님 / 첫째 / 둘째" 가운데 하나를 고르고, 저장할 때는 나의
