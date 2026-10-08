@@ -27,9 +27,9 @@
       "group": "수익화",
       "floor": "영상",
       "studio": true,
-      "status": "기획",
-      "summary": "AI 영상·음악 공모전 출품작. 지금은 Muzig AI Music Contest 2026 작업 중(GPT와 작업).",
-      "progress": 0
+      "status": "확인 대기",
+      "summary": "AI 영상·음악 공모전 출품작. Muzig AI Music Contest 2026 출품 완료(10/9), 심사 결과 기다리는 중.",
+      "progress": 100
     },
     {
       "id": "tistory",
@@ -160,8 +160,9 @@
       "project": "contest",
       "title": "Muzig AI Music Contest 2026 출품작 만들기 (GPT와 작업)",
       "owner": "MJ",
-      "status": "진행 중",
-      "term": "단기"
+      "status": "완료",
+      "term": "단기",
+      "done": "2026-10-09"
     },
     {
       "project": "tistory",
@@ -459,6 +460,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-09",
+      "project": "contest",
+      "text": "Muzig AI Music Contest 2026 출품작 완성해서 제출. 이제 심사 결과만 기다리면 된다."
+    },
     {
       "date": "2026-10-08",
       "project": "radar",
