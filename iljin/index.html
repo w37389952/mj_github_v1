@@ -257,6 +257,29 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
    위 칸 것인지 아래 칸 것인지 헷갈린다. 제목 아래에는 지금 상태를 한 줄로 적어
    펴지 않고도 무엇이 들어 있는지 보이게 한다. */
 .drawers { display:grid; gap:8px; margin-top:36px; }
+
+/* 앞날 달력. 앞으로 두 달의 일진과 예측 점수를 한 칸씩. 좋은 날은 목, 궂은 날은 화 색으로 옅게 칠한다. */
+.ahead-note { margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
+.ahead-month { margin:16px 0 6px; font-size:13px; font-weight:700; }
+.ahead-month:first-of-type { margin-top:0; }
+.ahead-grid { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:3px; }
+.ahead-grid .wd { text-align:center; font-size:10.5px; color:var(--ink-faint); padding-bottom:2px; }
+.ahead-day {
+  font:inherit; color:inherit; cursor:pointer; text-align:center; padding:4px 0 5px;
+  background:var(--surface); border:1px solid var(--line-soft); border-radius:3px;
+  display:flex; flex-direction:column; align-items:center; gap:1px; min-width:0;
+}
+.ahead-day.blank { visibility:hidden; }
+.ahead-day .dn { font-size:10.5px; color:var(--ink-faint); }
+.ahead-day .gz { font-size:13px; line-height:1.1; }
+.ahead-day .sc { font-size:11px; font-weight:700; }
+.ahead-day.good { background:color-mix(in srgb, var(--mok) 16%, var(--surface)); }
+.ahead-day.bad { background:color-mix(in srgb, var(--hwa) 14%, var(--surface)); }
+.ahead-day.edge { border-color:var(--ink-soft); }
+.ahead-day.today { outline:1.5px solid var(--ink); }
+.ahead-day[aria-pressed="true"] { outline:2px solid var(--ink); }
+.ahead-detail { margin-top:14px; }
+.ahead-detail h3 { margin:0 0 6px; font-size:14px; }
 details { background:var(--surface); border:1px solid var(--line); border-radius:4px; }
 details > summary {
   list-style:none; cursor:pointer; padding:14px 16px;
@@ -596,6 +619,15 @@ details .body { padding:18px 16px 20px; }
   </section>
 
   <div class="drawers">
+  <details id="aheadBox">
+    <summary><span class="s-title">앞날 달력</span><span class="s-meta">앞으로 두 달 미리 보기</span></summary>
+    <div class="body">
+      <p class="ahead-note">앞으로 60일의 일진과 예측 점수야. 초록은 좋은 날, 붉은 칸은 조심할 날, 진한 테두리는 올해 상·하위 5%인 날. 날짜를 누르면 왜 그런지 보여 줘.</p>
+      <div id="ahead"></div>
+      <div class="ahead-detail" id="aheadDetail" hidden></div>
+    </div>
+  </details>
+
   <details id="pastBox">
     <summary><span class="s-title">지난 날 적기</span><span class="s-meta">기억나는 날을 지금 남겨 두기</span></summary>
     <div class="body">
@@ -1415,6 +1447,59 @@ function 차트그리기() {
   document.getElementById("fill").style.width = Math.min(100, (n / 70) * 100) + "%";
 }
 
+// ── 앞날 달력 ─────────────────────────────────────────────
+// 앞으로 두 달을 달마다 묶어 일진과 예측 점수를 깐다. 60날을 다 재는 일이라
+// 펼쳤을 때만 그린다.
+const 앞날일수 = 60;
+let 고른앞날 = null;
+function 앞날그리기() {
+  const el = document.getElementById("ahead");
+  if (!document.getElementById("aheadBox").open) return;
+  if (!나있음()) { el.innerHTML = `<p class="empty">생년월일시를 넣으면 보여 줄게.</p>`; return; }
+  const 달들 = [];
+  for (let i = 0; i < 앞날일수; i++) {
+    const d = new Date(Y, M - 1, D + i);
+    const y = d.getFullYear(), m = d.getMonth() + 1, dd = d.getDate();
+    const 결과 = 예측하기(y, m, dd);
+    const 날 = { 키: 키로(d), y, m, d: dd, 요일: d.getDay(), 일진: Manse.iljin(y, m, dd).이름, 점수: 결과.점수, 백분위: 결과.백분위 };
+    const 끝달 = 달들[달들.length - 1];
+    if (!끝달 || 끝달.m !== m) 달들.push({ y, m, 날들: [날] }); else 끝달.날들.push(날);
+  }
+  el.innerHTML = 달들.map((달) => `
+    <div class="ahead-month">${달.y}년 ${달.m}월</div>
+    <div class="ahead-grid">
+      ${[..."일월화수목금토"].map((w) => `<span class="wd">${w}</span>`).join("")}
+      ${'<span class="ahead-day blank"></span>'.repeat(달.날들[0].요일)}
+      ${달.날들.map((날) => {
+        const 결 = 날.점수 >= 65 ? " good" : 날.점수 <= 35 ? " bad" : "";
+        return `<button type="button" class="ahead-day${결}${끝인가(날.백분위) ? " edge" : ""}${날.키 === 오늘키 ? " today" : ""}"
+          data-key="${날.키}" aria-pressed="${날.키 === 고른앞날}" title="${날.m}/${날.d} ${날.일진}일 · 예측 ${날.점수}">
+          <span class="dn">${날.d}</span><span class="gz">${색한자(날.일진)}</span><span class="sc">${날.점수}</span>
+        </button>`;
+      }).join("")}
+    </div>`).join("");
+  앞날자세히();
+}
+function 앞날자세히() {
+  const box = document.getElementById("aheadDetail");
+  if (!고른앞날 || !나있음()) { box.hidden = true; return; }
+  const [y, m, d] = 고른앞날.split("-").map(Number);
+  const 결과 = 예측하기(y, m, d);
+  const 일진이름 = Manse.iljin(y, m, d).이름;
+  box.innerHTML = `<h3>${m}월 ${d}일 ${"일월화수목금토"[new Date(y, m - 1, d).getDay()]}요일 · ${일진이름}일 · 예측 ${결과.점수}점</h3>` +
+    (끝인가(결과.백분위) ? `<p class="ahead-note">${결과.백분위 < 0.05 ? "올해 하위 5%에 드는 날이야." : "올해 상위 5%에 드는 날이야."}</p>` : "") +
+    근거표(결과, 6);
+  box.hidden = false;
+}
+document.getElementById("aheadBox").addEventListener("toggle", 앞날그리기);
+document.getElementById("ahead").addEventListener("click", (e) => {
+  const b = e.target.closest(".ahead-day[data-key]");
+  if (!b) return;
+  고른앞날 = 고른앞날 === b.dataset.key ? null : b.dataset.key;
+  document.querySelectorAll("#ahead .ahead-day[data-key]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.key === 고른앞날)));
+  앞날자세히();
+});
+
 // 생년월일시가 없으면 원국을 셀 수 없다. 첫 방문자에게 그것부터 청한다.
 // 처음 온 사람에게는 입력 카드를 맨 위에 띄우고, 원국이 있어야 채워지는 칸들은 숨긴다.
 function 첫방문() {
@@ -1523,6 +1608,7 @@ function 나적용() {
   나올리기();   // 잠금이 켜져 있으면 잠가서 다른 기기로도 보낸다
   차트그리기();
   목록그리기();
+  앞날그리기();
 }
 
 // ── 화면 붙이기 ───────────────────────────────────────────
