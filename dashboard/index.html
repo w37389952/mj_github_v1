@@ -209,8 +209,8 @@ header.top .sub { color: var(--text-2); font-size: 13px; margin-top: 2px; }
 .floor.money .floor-head span:first-child { border-color: var(--g-money); background: var(--mustard-soft); }
 .floor.code .floor-head span:first-child { border-color: var(--g-code); background: var(--accent-soft); }
 .floor-head .cnt { color: var(--text-3); font-weight: 600; font-size: 12px; }
-.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-.room { position: relative; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 12px 14px 12px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow); transition: transform .12s, border-color .12s; }
+.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 12px; }
+.room { position: relative; min-width: 0; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 14px; padding: 12px 14px 12px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow); transition: transform .12s, border-color .12s; }
 .room:hover { transform: translateY(-2px); border-color: var(--accent); }
 .room:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .room.code { border-top: 4px solid var(--g-code); }
@@ -326,6 +326,26 @@ a.room:hover { text-decoration: none; }
 .req-list li:first-child { border-top: 0; }
 .req-list .t { flex: 1; min-width: 0; }
 .req-list .meta { color: var(--text-3); font-size: 12px; }
+.rroutine { margin-top: 4px; font-size: 11.5px; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 2px 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rroutine b { font-weight: 700; }
+.routine-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.routine-card { padding: 12px 14px; }
+.routine-card h3 { margin: 0 0 6px; font-size: 14px; }
+.routine-card h3 a { color: inherit; text-decoration: none; }
+.routine-list { list-style: none; margin: 0; padding: 0; }
+.routine-list li { padding: 6px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
+.routine-list li:first-child { border-top: 0; }
+.routine-list .when { display: inline-block; margin-left: 6px; font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 6px; }
+.routine-list .what { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+.req-photo-btn { cursor: pointer; background: var(--panel); border: 1px solid var(--line) !important; color: var(--text-2); }
+.req-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.req-photos:empty { display: none; }
+.req-thumb { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+.req-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.req-thumb button { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border: 0; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; line-height: 20px; padding: 0; cursor: pointer; }
+.req-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.req-imgs a { display: block; width: 56px; height: 56px; border-radius: 7px; overflow: hidden; border: 1px solid var(--line); }
+.req-imgs img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 6px; }
 .vcard { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel-2); display: flex; flex-direction: column; }
 .vcard img, .vcard .noimg { width: 100%; aspect-ratio: 9 / 12; object-fit: cover; display: block; background: var(--muted-soft); }
@@ -378,7 +398,8 @@ tr.done td.title { text-decoration: line-through; }
 
 @media (max-width: 760px) {
   header.top h1 { font-size: 20px; }
-  .rooms { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .rooms { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .rroutine { white-space: normal; line-height: 1.35; font-size: 11px; }
   .room { padding: 10px 11px; }
   .room .rname { font-size: 13.5px; }
   .room .stage { height: 116px; }
@@ -418,7 +439,7 @@ tr.done td.title { text-decoration: line-through; }
     <ol>
       <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub 토큰 만들기</a>를 열어요.</li>
       <li>Token name은 아무거나(예: 현황판 체크), Expiration은 1년 정도로.</li>
-      <li>Repository access에서 <b>Only select repositories</b> → <b>mj_github_v1</b>만 골라요.</li>
+      <li>Repository access에서 <b>Only select repositories</b> → <b>mj_github_v1</b>과 <b>mj_monetization</b>(요청 사진 보관용 비공개 저장소)을 골라요.</li>
       <li>Permissions → Repository permissions → <b>Contents</b>를 <b>Read and write</b>로.</li>
       <li>Generate token을 누르고 나온 <code>github_pat_…</code>을 아래에 붙여 넣어요.</li>
     </ol>
@@ -670,24 +691,7 @@ tr.done td.title { text-decoration: line-through; }
     const roomP = roomId && (data.projects || []).find(x => x.id === roomId);
     if (roomP) { renderRoomPage(root, roomP); return; }
     const projects = (data.projects || []).filter(p => group === "all" || p.group === group);
-    const tasks = (data.tasks || []).filter(t => inGroup(t.project));
-    const logs = (data.log || []).filter(l => inGroup(l.project)).slice().sort((a, b) => b.date.localeCompare(a.date));
-    const open = tasks.filter(t => !isDone(t));
-    const today = kstToday();
-    const weekAgo = addDays(today, -6);
-
-    // 목록에는 남은 일 + 오늘 끝낸 일(줄 그어서)만 둔다. 끝낸 날이 지나면 빠진다.
-    const listed = tasks.filter(t => !isDone(t) || doneDate(t) >= today);
-    const shortOpen = open.filter(t => !isLong(t));
-    const mine = shortOpen.filter(t => t.owner === "MJ");
-    const claude = shortOpen.filter(t => t.owner !== "MJ");
-    const shortListed = listed.filter(t => !isLong(t));
-    const longListed = listed.filter(isLong).sort(byDue);
-    const mineListed = shortListed.filter(t => t.owner === "MJ").sort(byDue);
-    const claudeListed = shortListed.filter(t => t.owner !== "MJ").sort(byDue);
-    const running = projects.filter(p => p.status === "운영 중" || p.status === "진행 중").length;
-    const waiting = projects.filter(p => tone(p.status) === "warn" || tone(p.status) === "bad");
-    const weekLogs = logs.filter(l => l.date >= weekAgo && l.date <= today).length;
+    const mine = (data.tasks || []).filter(t => inGroup(t.project) && !isDone(t) && !isLong(t) && t.owner === "MJ");
     const rankOf = recentRank();
 
     root.innerHTML = `
@@ -701,59 +705,9 @@ tr.done td.title { text-decoration: line-through; }
       <div class="section-title"><h2>🏢 MJ 오피스</h2><span class="hint">층마다 최근 작업한 방부터 · 방을 누르면 그 방 페이지로 가요</span></div>
       ${projects.filter(urgentOf).map(p => `<div class="alarm-banner" role="alert"><span>🚨 비상 · <a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a> — ${esc(urgentOf(p))}</span></div>`).join("")}
       <div class="panel office">${officeHtml(projects, rankOf)}</div>
-
-      <div class="section-title"><h2>⚡ 지금 할 일</h2><span class="hint">최근 작업한 프로젝트 순 · 체크하면 오늘은 줄 긋고 내일 사라져요</span></div>
-      <div class="todo-cols">
-        ${todoCol("내가 할 일", mineListed)}
-        ${todoCol("Claude가 할 일", claudeListed)}
-      </div>
-
-      <div class="section-title"><h2>📮 Claude에게 요청</h2><span class="hint">어느 창에서든 못 한 요청을 여기 남기면 Claude가 처리해요</span></div>
-      ${mainReqHtml()}
-
-      <div class="section-title"><h2>🗓️ 장기 과제</h2><span class="hint">꾸준히 쌓아 가는 일, 때가 되면 할 일, 아직 기획 중인 채널</span></div>
-      <div class="panel long-panel">
-        ${longListed.length ? `<div class="long-grid">${groupsHtml(longListed, true)}</div>` : `<div class="empty">장기 과제가 없어요.</div>`}
-      </div>
-
-      <div class="section-title"><h2>한눈에</h2></div>
-      <div class="tiles">
-        ${tile("돌아가는 프로젝트", running, `전체 ${projects.length}개 중`)}
-        ${tile("지금 내가 할 일", mine.length, `Claude 몫 ${claude.length}개 · 장기 ${open.filter(isLong).length}개`)}
-        ${tile("확인이 필요한 곳", waiting.length, waiting.map(p => p.name).slice(0, 2).join(", ") || "없음")}
-        ${tile("최근 7일 기록", weekLogs, `${md(weekAgo)} ~ ${md(today)}`)}
-      </div>
-
-      <div class="section-title"><h2>최근 ${DAYS}일 작업량</h2><span class="hint">하루에 남긴 기록 수</span></div>
-      <div class="panel chart-panel">
-        <div class="legend">${GROUPS.filter(g => group === "all" || g === group).map(g => `<span>${dotFor(g)}${g}</span>`).join("")}</div>
-        <div id="chart"></div>
-      </div>
-
-      <div class="section-title"><h2>한 일 기록</h2><span class="hint">각 창에서 올린 내용</span></div>
-      <div class="panel">
-        <div class="log">${logHtml(logs)}</div>
-        ${logs.length > logLimit ? `<button class="more" id="more">이전 기록 더 보기 (${logs.length - logLimit}개)</button>` : ""}
-      </div>
-
-      <div class="section-title"><h2>할 일 전체</h2></div>
-      <div class="panel">
-        <div class="tbl-tools"><label><input type="checkbox" id="showDone" ${showDone ? "checked" : ""}> 끝난 일도 보기</label></div>
-        <div class="table-wrap">${taskTable(tasks)}</div>
-      </div>
     `;
 
-    drawChart(logs, today);
-    bindChecks(root);
-    bindReqForms(root);
-
-    const more = $("#more");
-    if (more) more.onclick = () => { logLimit += 20; render(); };
-    $("#showDone").onchange = e => {
-      showDone = e.target.checked;
-      try { localStorage.setItem("dash.done", showDone ? "1" : "0"); } catch (err) {}
-      render();
-    };
+    // 홈은 오피스만 둔다. 할 일·요청·루틴·기록은 각 방 페이지에서 본다(MJ 요청).
   }
 
   function byDue(a, b) {
@@ -860,6 +814,7 @@ tr.done td.title { text-decoration: line-through; }
       ${stageHtml(p, "stage", rs, 4)}
       ${why ? `<div class="alarm-line">🚨 ${esc(why)}</div>` : ""}
       <div class="rfoot"><span class="staff">${esc(st.name)}</span><span>${esc(st.role)}</span></div>
+      ${routinesOf(p.id).map(r => `<div class="rroutine" title="${esc(r.what || "")}">🔁 <b>${esc(r.name)}</b> · ${esc(r.when || "")}</div>`).join("")}
       <div class="rfoot" title="${esc(pr.title)}"><span class="mini"><i style="width:${pr.pct}%;background:${color}"></i></span><span class="pct">${esc(pr.label)}</span></div>
     </a>`;
   }
@@ -898,7 +853,58 @@ tr.done td.title { text-decoration: line-through; }
   // project가 없는 옛 요청은 영상 스튜디오 것, ""는 특정 방이 아닌 전체 요청.
   const reqOf = pid => requests.filter(r => (r.project ?? STUDIO_ID) === pid);
   const byNewest = (a, b) => String(b.date || "").localeCompare(String(a.date || ""));
-  const draftOf = k => reqDraft[k] || (reqDraft[k] = { text: "", target: "", project: "" });
+  const draftOf = k => reqDraft[k] || (reqDraft[k] = { text: "", target: "", project: "", photos: [] });
+
+  // ── 사진 첨부 ──
+  // 사진은 비공개 저장소(mj_monetization)에 올리고, 공개 requests.json에는 그 경로만 남긴다.
+  // 그래서 사진은 열쇠가 있는 대표님 브라우저와 Claude만 볼 수 있다.
+  const PHOTO_REPO = "w37389952/mj_monetization";
+  const PHOTO_DIR = "dashboard-uploads";
+  const MAX_PHOTOS = 4;
+  const photoApi = (path, opts = {}) => fetch(`https://api.github.com/repos/${PHOTO_REPO}/contents/${path}`, {
+    cache: "no-store", ...opts,
+    headers: { "Accept": "application/vnd.github+json", "Authorization": `Bearer ${token}`, ...(opts.headers || {}) }
+  });
+  // 폰 사진은 크니까 긴 쪽 1600px JPEG로 줄여서 올린다.
+  function shrinkPhoto(file, max = 1600) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("사진을 열지 못했어요")); };
+      img.src = url;
+    });
+  }
+  async function uploadPhoto(dataUrl, path) {
+    const r = await photoApi(path, { method: "PUT", body: JSON.stringify({ message: `현황판 요청 사진: ${path}`, content: dataUrl.split(",")[1], branch: "main" }) });
+    if (r.ok) return;
+    if (r.status === 401) throw new Error("열쇠가 맞지 않거나 만료됐어요");
+    if (r.status === 403 || r.status === 404) throw new Error("열쇠에 사진 저장소(mj_monetization) 권한이 없어요. 토큰 설정에서 그 저장소를 추가해 주세요");
+    throw new Error(`사진 저장 GitHub ${r.status}`);
+  }
+  const photoCache = new Map();
+  function loadReqPhotos(host) {
+    if (!token) return;
+    host.querySelectorAll(".req-imgs[data-imgs]").forEach(box => {
+      box.dataset.imgs.split("|").filter(Boolean).forEach(async path => {
+        const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener";
+        box.appendChild(a);
+        try {
+          if (!photoCache.has(path)) photoCache.set(path, photoApi(`${path}?ref=main`, { headers: { "Accept": "application/vnd.github.raw" } })
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); }).then(b => URL.createObjectURL(b)));
+          const src = await photoCache.get(path);
+          a.href = src; a.innerHTML = `<img src="${src}" alt="첨부 사진">`;
+        } catch { photoCache.delete(path); a.remove(); }
+      });
+      box.removeAttribute("data-imgs");
+    });
+  }
   function projLabel(pid) {
     const p = (data.projects || []).find(x => x.id === pid);
     return p ? `<a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a>` : "전체";
@@ -906,7 +912,8 @@ tr.done td.title { text-decoration: line-through; }
   function reqItemHtml(r, withProject) {
     const target = r.target ? `<b>${esc(videoTitle(r.target) || "이전 작업")}</b> 수정 · ` : "";
     return `<li><span class="badge ${RSTATUS_TONE[r.status] || "muted"}">${esc(r.status || "요청")}</span>
-      <div class="t"><div>${target}${esc(r.text)}</div>
+      <div class="t"><div>${target}${esc(r.text)}${(r.images || []).length ? ` <span class="small">📎 사진 ${r.images.length}장</span>` : ""}</div>
+      ${(r.images || []).length && token ? `<div class="req-imgs" data-imgs="${esc(r.images.join("|"))}"></div>` : ""}
       <div class="meta">${withProject ? `${projLabel(r.project ?? STUDIO_ID)} · ` : ""}${esc(whenOf(r.date))}${r.reply ? ` · Claude: ${esc(r.reply)}` : ""}</div></div></li>`;
   }
   function reqFormHtml(k, { title = "✍️ Claude에게 요청", select = "", placeholder = "" } = {}) {
@@ -914,7 +921,8 @@ tr.done td.title { text-decoration: line-through; }
         <h4 style="margin-top:4px">${title}</h4>
         ${select}
         <textarea class="req-text" rows="3" aria-label="요청 내용" placeholder="${esc(placeholder)}">${esc(draftOf(k).text)}</textarea>
-        <div class="req-actions"><span class="small">공개 페이지라 요청 글도 누구나 볼 수 있어요. 개인 정보는 적지 마세요.</span><button type="button" class="go primary req-send">보내기</button></div>
+        <div class="req-photos"></div>
+        <div class="req-actions"><span class="small">요청 글은 공개라 누구나 볼 수 있어요. 사진은 비공개 저장소에 올라가요.</span><label class="go req-photo-btn">📷 사진<input type="file" accept="image/*" multiple hidden></label><button type="button" class="go primary req-send">보내기</button></div>
       </div>`;
   }
   function bindReqForms(host) {
@@ -924,8 +932,38 @@ tr.done td.title { text-decoration: line-through; }
       text.oninput = () => { d.text = text.value; };
       if (sel) sel.onchange = () => { d[sel.dataset.field] = sel.value; };
       $(".req-send", box).onclick = () => sendRequest(k);
+      const strip = $(".req-photos", box), pick = $("input[type=file]", box);
+      const drawPhotos = () => {
+        strip.innerHTML = d.photos.map((src, i) => `<span class="req-thumb"><img src="${src}" alt="첨부할 사진"><button type="button" data-i="${i}" aria-label="사진 빼기">✕</button></span>`).join("");
+        strip.querySelectorAll("button[data-i]").forEach(b => b.onclick = () => { d.photos.splice(+b.dataset.i, 1); drawPhotos(); });
+      };
+      pick.onchange = async () => {
+        const files = [...pick.files].slice(0, MAX_PHOTOS - d.photos.length);
+        if (pick.files.length > files.length) toast(`사진은 한 번에 ${MAX_PHOTOS}장까지예요`);
+        pick.value = "";
+        for (const f of files) {
+          try { d.photos.push(await shrinkPhoto(f)); } catch (err) { toast(err.message); }
+        }
+        drawPhotos();
+      };
+      drawPhotos();
     });
+    loadReqPhotos(host);
   }
+  // ── 자동으로 돌아가는 일 (data.json "routines") ──
+  // 루틴·예약 알림·GitHub 자동 작업처럼 Claude나 서버가 정해진 시간에 혼자 하는 일. project ""는 현황판 전체.
+  const routinesOf = pid => (data.routines || []).filter(r => (r.project || "") === pid);
+  const routineListHtml = list => `<ul class="routine-list">${list.map(r => `<li><b>${esc(r.name)}</b><span class="when">${esc(r.when || "")}</span>
+    ${r.what ? `<div class="what">${esc(r.what)}</div>` : ""}</li>`).join("")}</ul>`;
+  function routinesHomeHtml(projects) {
+    const groups = [...projects.map(p => ({ p, list: routinesOf(p.id) })), { p: null, list: routinesOf("") }].filter(g => g.list.length);
+    if (!groups.length) return "";
+    return `<div class="section-title"><h2>🔁 자동으로 돌아가는 일</h2><span class="hint">Claude와 서버가 정해진 시간에 알아서 하는 일</span></div>
+      <div class="routine-grid">${groups.map(({ p, list }) => `<div class="panel routine-card">
+        <h3>${p ? `<a href="?room=${encodeURIComponent(p.id)}">${esc(emojiOf(p))} ${esc(p.name)}</a>` : "🏢 현황판 전체"}</h3>
+        ${routineListHtml(list)}</div>`).join("")}</div>`;
+  }
+
   // 오피스 첫 화면의 요청 칸: 방을 고르고 남기면, 남은 요청과 최근 처리한 요청이 보인다.
   function mainReqHtml() {
     const d = draftOf("main");
@@ -954,6 +992,11 @@ tr.done td.title { text-decoration: line-through; }
     const item = { id: "r" + Date.now().toString(36), date: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16) + "+09:00", project, target: isStudio(projOf(project)) ? d.target : "", text, status: "요청" };
     const where = (data.projects || []).find(x => x.id === project);
     try {
+      if (d.photos.length) {
+        toast("사진 올리는 중…", 8000);
+        item.images = d.photos.map((_, i) => `${PHOTO_DIR}/${item.date.slice(0, 7)}/${item.id}-${i + 1}.jpg`);
+        for (let i = 0; i < d.photos.length; i++) await uploadPhoto(d.photos[i], item.images[i]);
+      }
       const obj = await writeJson(REQ_PATH, { requests: [] }, o => {
         if (!Array.isArray(o.requests)) o.requests = [];
         o.requests.push(item);
@@ -1009,6 +1052,9 @@ tr.done td.title { text-decoration: line-through; }
         <h4>📮 요청 기록</h4>
         ${reqOf(p.id).length ? `<ul class="req-list">${reqOf(p.id).sort(byNewest).slice(0, 8).map(r => reqItemHtml(r, false)).join("")}</ul>` : `<div class="empty">아직 요청이 없어요.</div>`}
       </div>
+
+      ${routinesOf(p.id).length ? `<div class="section-title"><h2>🔁 자동으로 돌아가는 일</h2><span class="hint">이 방에서 정해진 시간에 알아서 하는 일</span></div>
+      <div class="panel routine-card">${routineListHtml(routinesOf(p.id))}</div>` : ""}
 
       ${postsHtml(p.id, today)}
 

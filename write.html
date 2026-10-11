@@ -233,6 +233,12 @@
   ul.check .why { display: block; font-size: 12.5px; color: var(--ink-faint); margin-top: 2px; }
   ul.check .mark { flex-shrink: 0; }
 
+  .dump {
+    margin-bottom: 14px; padding: 12px 14px; border-radius: 12px;
+    border: 1.5px dashed var(--accent); background: var(--accent-soft);
+  }
+  .dump label { display: block; margin-bottom: 6px; font-size: 13.5px; color: var(--ink); }
+  .dump textarea { width: 100%; }
   .note.areacold { background: #fbeee4; color: #8a3b12; border: 1px solid #efc9ae; }
   .note.areawarm { background: var(--ok-bg); color: var(--ok); }
   @media (prefers-color-scheme: dark) {
@@ -284,6 +290,21 @@
 
   <section>
     <h2>가게 정보 <span class="sub">역명과 동네를 꼭 채우세요 — 제목 검색어가 여기서 나옵니다</span></h2>
+    <!-- 칸을 하나하나 나눠 적기 번거로울 때. 메모를 통째로 넣으면 아래 칸에 나눠 담는다.
+         나눈 뒤에도 원문은 지시문에 함께 붙여, 칸에서 빠진 말이 글에서 사라지지 않게 한다. -->
+    <div class="dump">
+      <label for="fDump"><b>메모 통째로 붙여넣기</b>
+        <span class="hint">— 다녀와서 적어 둔 메모를 그대로 넣고 ‘칸 나누기’를 누르면 아래 칸에 알아서 나눠 담습니다. 칸에 직접 적어도 됩니다.</span></label>
+      <textarea id="fDump" style="min-height:96px" placeholder="드웰
+오래된 집을 개조해서 만듦. 조용한 클래식 재즈가 나온다. 독일에서 공수한 스피커.
+커피는 산미 있는 편. 케냐 시킴.
+오후 2시쯤 햇살이 안까지 안 들어서 덥지 않음"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="btn" id="dumpAI">칸 나누기 (AI)</button>
+        <button type="button" class="btn ghost" id="dumpRule">무료로 대충 나누기</button>
+        <span id="dumpMsg" style="font-size:12.5px;color:var(--ink-soft)"></span>
+      </div>
+    </div>
     <div class="grid">
       <div class="field" style="position:relative">
         <label for="fName">가게 이름 <span class="hint">(치면 레이더에서 찾아 채웁니다)</span></label>
@@ -551,7 +572,7 @@
 
 <script>
 const KEY = "seoul-radar:write";
-const F = ["fPaste","fName","fArea","fStation","fNear","fType","fVisit","fMenu","fTrait",
+const F = ["fDump","fPaste","fName","fArea","fStation","fNear","fType","fVisit","fMenu","fTrait",
            "fHours","fPark","fInsta","fSound",
            "fTaste","fMood","fSeat","fWait","fPrice","fWho","fMemo"];
 
@@ -888,7 +909,7 @@ function mentionsYes(text, re) {
    제목마다 그 제목에 담긴 말에 맞는 것을 고른다(emojiFor). */
 function emojiCandidates(v) {
   const near = [...v.menus, ...v.traits, ...(v.proseBits || [])].join(" ");
-  const far = [v.mood, v.seat, v.taste, v.sound, v.who, v.memo].filter(Boolean).join(" ");
+  const far = [v.mood, v.seat, v.taste, v.sound, v.who, v.memo, v.dump].filter(Boolean).join(" ");
   const out = [];
   [near, far].forEach(text => {
     for (const [re, e] of EMOJI_BY_WORD) {
@@ -1005,8 +1026,9 @@ function saysWord(text, word) {
 /* 내가 어느 칸에든 적어 둔 말 전부. 칸마다 따로 훑던 것을 한 곳으로 모은다 —
    음악·웨이팅·가격 칸이 빠져 있는 데가 있었다. */
 function allNotes(v) {
+  // 통째로 붙인 메모(dump)도 본다. 칸으로 안 나눴어도 업종어·태그를 찾을 수 있게.
   return [...v.menus, ...v.traits, v.taste, v.mood, v.seat,
-          v.sound, v.wait, v.price, v.who, v.memo].filter(Boolean).join(" ");
+          v.sound, v.wait, v.price, v.who, v.memo, v.dump].filter(Boolean).join(" ");
 }
 
 function writtenKinds(v) {
@@ -1087,7 +1109,7 @@ function titlePhrases(v) {
   });
 
   const text = [...(v.proseBits || []), ...v.traits,
-    v.taste, v.mood, v.seat, v.sound, v.wait, v.price, v.who, v.memo]
+    v.taste, v.mood, v.seat, v.sound, v.wait, v.price, v.who, v.memo, v.dump]
     .filter(Boolean).join("\n");
   // 앞 낱말이 '을/를'로 끝나면 조사만 떼어 붙이고('커피를 마시기' → '커피 마시기'),
   // 다른 조사로 끝나면 그 낱말은 버린다('자리가 작업하기' → '작업하기').
@@ -1765,7 +1787,17 @@ ${v.proseBits.length
 그 내용이 빠지지 않게 문장으로 풀어 쓰라는 뜻이다.
 
 ${NOTE_FIELDS.map(([k, label]) => (v[k] ? `· ${label}: ${v[k]}` : ""))
-  .filter(Boolean).join("\n") || "(아직 아무것도 안 적었다. 그러면 글을 억지로 쓰지 말고, 무엇을 알려주면 되는지만 물어라.)"}
+  .filter(Boolean).join("\n") || (v.dump
+    ? "(칸에는 나눠 적지 않았다. 아래 메모 원문을 뼈대로 삼아라.)"
+    : "(아직 아무것도 안 적었다. 그러면 글을 억지로 쓰지 말고, 무엇을 알려주면 되는지만 물어라.)")}
+${v.dump ? `
+[메모 원문 — 다녀와서 통째로 적어 둔 것]
+위 칸은 이 메모를 나눠 담은 것이다. 칸에서 빠진 말이 있으면 여기서 찾아 살려라.
+칸과 겹치는 내용은 한 번만 써라. '?'가 붙은 것은 내가 확실하지 않은 것이니
+단정하지 말고 '~라고 하셨다', '~인 듯'처럼 써라.
+
+${v.dump}
+` : ""}
 
 [반드시 지킬 형식 — 네이버 블로그에 그대로 붙여넣을 글이다]
 - **굵게**, ## 제목, --- 구분선, - 목록표 같은 마크다운 기호를 절대 쓰지 마라.
@@ -2878,6 +2910,248 @@ $("fName").addEventListener("blur", () => setTimeout(() => { $("ac").hidden = tr
 // 동네를 손으로 넣거나 고쳤을 때도 역·인접 지역을 채워 준다.
 $("fArea").addEventListener("change", () => {
   if (fillAreaExtras($("fArea").value.trim())) save();
+});
+
+/* ───── 메모 통째로 붙여넣기 ─────
+
+   다녀와서 메모를 한 뭉텅이로 적어 두는데, 그걸 칸마다 나눠 옮기는 게 번거롭다.
+   통째로 넣으면 칸에 나눠 담는다. 두 길이 있다.
+     AI로 나누기 — 가장 싼 모델(Haiku)로 한 번 부른다. 메모 한 장에 몇 원.
+                   맞춤법 틀린 메뉴(파블로파 → 파블로바)도 바로잡고 특징 말도 뽑는다.
+     무료로 나누기 — 문장마다 낱말을 보고 칸을 고른다. 대충이지만 돈이 안 든다.
+   이미 적어 둔 칸은 지우지 않고 뒤에 덧붙인다. */
+
+const SPLIT_MODEL = "claude-haiku-4-5";
+const SPLIT_OUT_TOKENS = 1500;
+const SPLIT_TARGETS = {
+  taste: "fTaste", mood: "fMood", sound: "fSound", seat: "fSeat", wait: "fWait",
+  price: "fPrice", who: "fWho", memo: "fMemo", hours: "fHours", park: "fPark",
+};
+const SPLIT_LABELS = {
+  taste: "맛", mood: "분위기", sound: "음악", seat: "좌석", wait: "웨이팅",
+  price: "가격", who: "누구에게", memo: "그 밖에", hours: "영업시간", park: "주차·반려동물",
+};
+
+function splitPrompt(text) {
+  return `아래는 카페·맛집에 다녀와서 적어 둔 메모다. 블로그 글쓰기 칸에 나눠 담아라.
+JSON 하나만 출력하라. 설명이나 코드블록 표시 없이.
+
+{
+  "name": "가게 이름. 보통 메모 첫 줄. 모르면 빈 문자열",
+  "menus": ["메모에 나온 메뉴 이름. 맞춤법이 틀린 메뉴 이름은 바로잡는다(예: 파블로파 → 파블로바)"],
+  "traits": ["제목·태그에 쓸 짧은 특징 말 3~6개. 검색어처럼 짧게. 예: 파스텔톤, 팝아트, 주택 개조, 클래식 재즈, 스페셜티 커피, 원두 판매"],
+  "taste": "맛. 메뉴별로",
+  "mood": "분위기·인테리어·외관·건물·햇살",
+  "sound": "음악·소리·스피커",
+  "seat": "좌석·자리",
+  "wait": "웨이팅·붐빔·방문 시각",
+  "price": "가격",
+  "who": "누구에게 맞나·재방문 의사",
+  "hours": "영업시간·휴무",
+  "park": "주차·반려동물 동반",
+  "memo": "그 밖의 것. 사장님 이야기, 앞으로 바뀔 것 등"
+}
+
+- 메모의 말을 거의 그대로 옮겨라. 문장으로 다듬거나 없는 말을 지어내지 마라.
+- 한 문장은 한 칸에만 넣어라. 어디 넣을지 애매하면 memo에 넣어라.
+- '?'를 붙여 둔 것은 내가 확실하지 않다는 뜻이다. '?'를 그대로 남겨라.
+- '않음·없음·불가'처럼 아니라고 적은 것을 traits에 넣지 마라.
+  (예: '햇살이 안까지 안 들어 덥지 않음'에서 '햇살 맛집'을 뽑지 마라.)
+- 메모에 없는 칸은 빈 문자열이나 빈 배열로 둬라.
+
+[메모]
+${text}`;
+}
+
+function guessSplitCost(text) {
+  const price = PRICE[SPLIT_MODEL];
+  if (!price || !text) return null;
+  const inTok = (splitPrompt(text).length) * 1.1;
+  const outTok = text.length * 1.3 + 120;
+  return (inTok * price.in + outTok * price.out) / 1e6;
+}
+
+/* 이미 적은 칸은 지우지 않는다. 비었으면 채우고, 있으면 덧붙인다. */
+function putText(id, text) {
+  const el = $(id);
+  // 한 줄 칸(input)에는 줄바꿈이 안 들어가므로 띄어쓰기로 잇는다.
+  const t = (text || "").trim().replace(/\n+/g, el && el.tagName === "INPUT" ? " " : "\n");
+  if (!el || !t) return false;
+  const cur = el.value.trim();
+  if (cur.includes(t)) return false;
+  el.value = !cur ? t : el.tagName === "INPUT" ? `${cur} / ${t}` : `${cur}\n${t}`;
+  return true;
+}
+function putList(id, items) {
+  const el = $(id);
+  const cur = splitList(el.value);
+  const add = (items || []).map(s => String(s || "").trim())
+    .filter(s => s && !cur.includes(s));
+  if (!add.length) return 0;
+  el.value = [...cur, ...add].join(", ");
+  return add.length;
+}
+
+/* 나눈 결과를 칸에 담고, 무엇을 어디에 담았는지 한 줄로 알려 준다. */
+async function applySplit(got) {
+  const done = [];
+  const name = (got.name || "").trim();
+  if (name && !$("fName").value.trim()) {
+    $("fName").value = name;
+    done.push("가게 이름");
+    /* 레이더 목록에 있는 가게면 동네·역·업종까지 채운다. 딱 하나만 걸릴 때만
+       바로 채우고, 여럿이면 이름 칸 아래에 골라 쓰도록 띄운다. */
+    try {
+      await loadShops();
+      const hits = findShops(name);
+      if (hits.length === 1) { fillFromShop(hits[0]); done.push("동네·역"); }
+      else if (hits.length > 1) renderAc(hits);
+    } catch (e) {}
+  }
+  const nMenu = putList("fMenu", got.menus);
+  if (nMenu) done.push(`메뉴 ${nMenu}`);
+  const nTrait = putList("fTrait", got.traits);
+  if (nTrait) done.push(`특징 ${nTrait}`);
+  for (const [k, id] of Object.entries(SPLIT_TARGETS)) {
+    if (putText(id, got[k])) done.push(SPLIT_LABELS[k]);
+  }
+  save();
+  return done;
+}
+
+/* 무료로 나누기. 문장마다 낱말을 세어 가장 많이 걸린 칸 하나에 넣는다.
+   비기면 위에 있는 칸이 이긴다. */
+const SPLIT_RULES = [
+  // '원두'·'로스팅'은 맛 말이 아니다. '다음주부터 원두 판매'가 맛 칸으로 간 일이 있었다.
+  ["taste", /맛|달달|달콤|상큼|새콤|산미|쌉쌀|씁쓸|쓰지|고소|풍미|향이|바디감|진하|진했|부드러|쫀득|촉촉|바삭|느끼|짭짤|어울|인텐스/g],
+  ["sound", /음악|노래|팝송|재즈|클래식|플레이리스트|스피커|사운드|소리|볼륨|독백|LP|bgm|BGM/g],
+  ["price", /\d[\d,]*\s?원|가격|비싸|저렴|가성비/g],
+  ["hours", /영업|휴무|브레이크|라스트\s?오더|오픈\s?시간|마감/g],
+  ["park",  /주차|반려|애견|동반/g],
+  ["wait",  /웨이팅|대기|줄\s?서|붐비|붐빔|한산|북적|사람이 많|자리 여유|만석/g],
+  ["seat",  /좌석|자리|테이블|의자|소파|창가|콘센트|단체석|\d층/g],
+  ["who",   /혼자|친구|연인|데이트|가족|아이와|재방문|다시 (가|오|방문)|또 (가|오|방문)/g],
+  ["mood",  /인테리어|분위기|톤|우드|원목|조명|그림|포스터|소품|오브제|햇살|햇빛|채광|통창|외관|건물|개조|천장|벽|바닥|공간|감성|아늑|넓|좁|밝|어둡|팝아트|빈티지|레트로/g],
+];
+const RULE_TRAITS = [
+  [/파스텔/, "파스텔톤"], [/우드톤|원목/, "우드톤"], [/화이트톤/, "화이트톤"],
+  [/통창/, "통창"], [/테라스/, "테라스"], [/루프탑|옥상/, "루프탑"],
+  [/팝아트/, "팝아트"], [/빈티지/, "빈티지"], [/레트로/, "레트로"],
+  [/(집|주택|건물).{0,6}개조|개조.{0,4}(집|주택)/, "주택 개조"], [/한옥/, "한옥"],
+  [/노키즈/, "노키즈존"], [/스페셜티/, "스페셜티 커피"], [/핸드드립|드립/, "핸드드립"],
+  [/로스터리|로스팅/, "로스터리"], [/원두.{0,6}판매/, "원두 판매"],
+  [/클래식/, "클래식 음악"], [/재즈/, "재즈"], [/\bLP\b|엘피/, "LP"], [/북카페/, "북카페"],
+];
+const MENU_WORDS = /[가-힣]{0,8}(라떼|커피|에이드|레모네이드|케이크|파르페|빙수|젤라또|타르트|스콘|쿠키|크로플|와플|파블로바|휘낭시에|마들렌|티라미수|푸딩|토스트|샌드위치|파스타|피자|버거|아메리카노|에스프레소|플랫화이트|밀크티)/g;
+const NOT_MENU = new Set(["약간", "전반적", "전체", "맛", "메뉴", "디저트", "음료", "커피", "스페셜티커피", "원두"]);
+
+function splitByRules(text) {
+  const got = { name: "", menus: [], traits: [] };
+  Object.keys(SPLIT_TARGETS).forEach(k => { got[k] = ""; });
+
+  const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  // 첫 줄이 짧고 문장으로 끝나지 않으면 가게 이름으로 본다.
+  if (lines.length && lines[0].length <= 20 && !/[.!?]|(다|음|함|요|듯|임|됨)$/.test(lines[0])
+      && !SPLIT_RULES.some(([, re]) => (lines[0].match(re) || []).length)) {
+    got.name = lines.shift();
+  }
+  const sentences = lines.flatMap(l => l.split(/(?<=[.!?])\s+/)).map(s => s.trim()).filter(Boolean);
+  const menus = new Set();
+  sentences.forEach(s => {
+    let best = "memo", score = 0;
+    for (const [k, re] of SPLIT_RULES) {
+      const n = (s.match(re) || []).length;
+      if (n > score) { best = k; score = n; }
+    }
+    got[best] = got[best] ? `${got[best]}\n${s}` : s;
+    // 맛 문장 맨 앞의 '○○는/의'는 대개 메뉴 이름이다 — '레모네이드는', '파블로바의'.
+    if (best === "taste") {
+      const lead = s.match(/^([가-힣]{2,10})(은|는|의|이|가|도)\s/);
+      if (lead && !NOT_MENU.has(lead[1])) menus.add(lead[1]);
+    }
+    // 뒤에 '?'를 단 말은 내가 확실하지 않은 것이라 메뉴로 올리지 않는다 — '(파인커피?)'.
+    for (const m of s.matchAll(MENU_WORDS)) {
+      if (s[m.index + m[0].length] === "?" || NOT_MENU.has(m[0])) continue;
+      menus.add(m[0]);
+    }
+  });
+  got.menus = [...menus].slice(0, 6);
+  const all = sentences.join(" ");
+  RULE_TRAITS.forEach(([re, label]) => {
+    // '햇살이 안 들어 덥지 않음'처럼 아니라고 적은 것은 뺀다.
+    if (mentionsYes(all, re) && !got.traits.includes(label)) got.traits.push(label);
+  });
+  return got;
+}
+
+function refreshSplitCost() {
+  const d = guessSplitCost(($("fDump").value || "").trim());
+  $("dumpAI").textContent = "칸 나누기 (AI" + (d == null ? ")" : ` · 약 ${won(d)}원)`);
+}
+$("fDump").addEventListener("input", refreshSplitCost);
+
+$("dumpRule").addEventListener("click", async () => {
+  const text = ($("fDump").value || "").trim();
+  if (!text) { $("dumpMsg").textContent = "위 칸에 메모를 붙여넣어 주세요."; return; }
+  const done = await applySplit(splitByRules(text));
+  $("dumpMsg").textContent = done.length
+    ? `${done.join(" · ")} 칸에 나눠 담았습니다. 대충 나눈 것이니 아래 칸을 훑어 고쳐 주세요.`
+    : "새로 담을 것이 없었습니다(이미 적혀 있는 내용입니다).";
+});
+
+$("dumpAI").addEventListener("click", async () => {
+  const text = ($("fDump").value || "").trim();
+  if (!text) { $("dumpMsg").textContent = "위 칸에 메모를 붙여넣어 주세요."; return; }
+  const key = $("apiKey").value.trim();
+  if (!key) {
+    $("dumpMsg").textContent = "API 키가 없습니다. ‘무료로 대충 나누기’를 쓰거나, 아래 ‘초안 생성 (API)’에서 키를 넣어 주세요.";
+    return;
+  }
+  const btn = $("dumpAI");
+  btn.disabled = true;
+  $("dumpMsg").textContent = "나누는 중… 5초쯤 걸립니다.";
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: SPLIT_MODEL,
+        max_tokens: SPLIT_OUT_TOKENS,
+        messages: [{ role: "user", content: splitPrompt(text) }],
+      }),
+    });
+    if (!resp.ok) {
+      const detail = await resp.text();
+      $("dumpMsg").textContent = `실패 (HTTP ${resp.status}) — ${detail.slice(0, 140)}`;
+      return;
+    }
+    const data = await resp.json();
+    const out = (data.content || []).map(b => b.text || "").join("");
+    const body = out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1);
+    let got;
+    try { got = JSON.parse(body); }
+    catch (e) {
+      $("dumpMsg").textContent = "AI가 낸 결과를 읽지 못했습니다. ‘무료로 대충 나누기’를 써 주세요.";
+      return;
+    }
+    const done = await applySplit(got);
+    const u = data.usage || {};
+    const price = PRICE[SPLIT_MODEL];
+    const cost = price ? ((u.input_tokens || 0) * price.in + (u.output_tokens || 0) * price.out) / 1e6 : null;
+    $("dumpMsg").textContent = (done.length
+      ? `${done.join(" · ")} 칸에 나눠 담았습니다.`
+      : "새로 담을 것이 없었습니다(이미 적혀 있는 내용입니다).")
+      + (cost != null ? ` 실제 ${won(cost)}원.` : "");
+  } catch (e) {
+    $("dumpMsg").textContent = `실패 — ${e.message}`;
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 $("parse").addEventListener("click", () => {
