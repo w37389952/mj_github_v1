@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-10T19:17:44+00:00",
+  "generatedAt": "2026-10-11T19:36:31+00:00",
   "period": {
-    "from": "2026-07-12",
-    "to": "2026-10-10"
+    "from": "2026-07-13",
+    "to": "2026-10-11"
   },
   "source": "seoul-opendata",
   "places": [
@@ -244,13 +244,6 @@
       "lat": 37.513488,
       "lon": 127.109993,
       "firstSeen": "2026-08-07",
-      "changes": [
-        {
-          "field": "name",
-          "label": "상호",
-          "before": "멘야니쿠"
-        }
-      ],
       "updatedSeen": "2026-10-10"
     },
     {
@@ -491,13 +484,6 @@
       "lat": 37.52447,
       "lon": 127.133333,
       "firstSeen": "2026-08-24",
-      "changes": [
-        {
-          "field": "bizType",
-          "label": "업종",
-          "before": "중국식"
-        }
-      ],
       "updatedSeen": "2026-10-10"
     },
     {
@@ -898,13 +884,6 @@
       "lat": 37.676245,
       "lon": 127.047666,
       "firstSeen": "2026-09-12",
-      "changes": [
-        {
-          "field": "name",
-          "label": "상호",
-          "before": "두리담"
-        }
-      ],
       "updatedSeen": "2026-10-10"
     },
     {
@@ -951,13 +930,6 @@
       "lat": 37.577323,
       "lon": 127.031761,
       "firstSeen": "2026-10-08",
-      "changes": [
-        {
-          "field": "name",
-          "label": "상호",
-          "before": "대한국밥만세 용두동점"
-        }
-      ],
       "updatedSeen": "2026-10-10"
     },
     {
@@ -1118,13 +1090,6 @@
       "lat": 37.522844,
       "lon": 126.910057,
       "firstSeen": "2026-08-20",
-      "changes": [
-        {
-          "field": "address",
-          "label": "주소",
-          "before": "서울특별시 영등포구 버드나루로7길 7, 카보드동우빌딩 107호 (영등포동2가)"
-        }
-      ],
       "updatedSeen": "2026-10-10"
     },
     {
@@ -1157,23 +1122,6 @@
       "lat": 37.515779,
       "lon": 127.03356,
       "firstSeen": "2026-09-24",
-      "changes": [
-        {
-          "field": "name",
-          "label": "상호",
-          "before": "이음 by Lapuce"
-        },
-        {
-          "field": "address",
-          "label": "주소",
-          "before": "서울특별시 강남구 논현로132길 39, 1층 (논현동)"
-        },
-        {
-          "field": "area",
-          "label": "면적",
-          "before": "118.30"
-        }
-      ],
       "updatedSeen": "2026-10-10"
     },
     {
@@ -1252,13 +1200,6 @@
       "phone": "",
       "area": "42.21",
       "firstSeen": "2026-10-04",
-      "changes": [
-        {
-          "field": "name",
-          "label": "상호",
-          "before": "cafe 시드시"
-        }
-      ],
       "updatedSeen": "2026-10-10"
     },
     {
@@ -1291,13 +1232,6 @@
       "lat": 37.488784,
       "lon": 127.068361,
       "firstSeen": "2026-09-16",
-      "changes": [
-        {
-          "field": "name",
-          "label": "상호",
-          "before": "스텔라떡볶이 서울개포점"
-        }
-      ],
       "updatedSeen": "2026-10-10"
     },
     {
