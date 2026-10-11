@@ -406,6 +406,7 @@
         <option value="">전체 구분</option>
         <option value="휴게음식점">휴게음식점</option>
         <option value="일반음식점">일반음식점</option>
+        <option value="제과점영업">제과점(빵집)</option>
       </select>
       <select id="monthFilter" class="field"><option value="">전체 기간</option></select>
       <button type="button" class="multi-btn" id="rangeToggle">기간검색 <span class="caret">▾</span></button>
@@ -1099,6 +1100,7 @@ function hotspotTokens(address) {
 // 업태값은 docs/data-source-findings.md의 실측 목록을 따른다.
 const CAFE_BIZ = new Set([
   "커피숍", "다방", "전통찻집", "떡카페", "과자점", "아이스크림", "까페", "키즈카페",
+  "제과점영업",   // 빵집은 음식점이 아니라 이 이름의 별도 목록으로 들어온다(2026-10-11부터 수집)
 ]);
 // 업태가 '기타'로 뭉뚱그려진 곳들. 상호명으로 갈라야 한다.
 const VAGUE_BIZ = new Set(["기타", "기타 휴게음식점", "일반조리판매"]);

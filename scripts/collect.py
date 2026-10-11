@@ -3,6 +3,10 @@
 데이터 소스 (2026-08-07 실제 호출로 검증됨):
   LOCALDATA_072405 = 휴게음식점 (서울 전역 약 14.7만건)
   LOCALDATA_072404 = 일반음식점 (서울 전역 약 53.6만건)
+  LOCALDATA_072218 = 제과점영업 (서울 전역 약 1.7만건, 2026-10-11부터)
+  식품 인허가는 영업 종류마다 목록이 26가지로 나뉜다. 나머지(즉석판매제조가공업,
+  식품소분업 등)는 반찬가게·떡집이 많이 섞여 밤 수집에는 넣지 않고,
+  find_shop.py로 가게 하나를 찾을 때만 뒤진다.
 
 두 갈래로 나눠 담는다.
   신규 오픈 : 최근 WINDOW_DAYS 안에 새로 인허가가 난 곳
@@ -49,6 +53,10 @@ DISTRICTS = [d.strip() for d in os.environ.get("DISTRICTS", "").split(",") if d.
 SERVICES = {
     "휴게음식점": "LOCALDATA_072405",
     "일반음식점": "LOCALDATA_072404",
+    # 빵집은 음식점이 아니라 '제과점영업'으로 따로 신고한다. 2026-10-11까지 이
+    # 목록을 안 봐서 그렇게 신고한 베이커리는 레이더에 한 번도 안 떴다.
+    # 휴게음식점 안의 '과자점'과는 다른 목록이다(서울 전체 약 1.7만 건).
+    "제과점영업": "LOCALDATA_072218",
 }
 
 # 기본값은 '전 업종 수집'이다. 업태를 좁히고 싶으면 환경변수로 지정한다.
@@ -283,10 +291,18 @@ def stamp_history(items, seen, today):
     올라오면서도 firstSeen은 예전 그대로다. 그러면 위쪽에 NEW 아닌 것이
     섞여 순서와 어긋나 보인다.
     """
+    # 처음 보는 건이라도 원본 날짜가 열흘보다 오래됐으면 '오늘 새로 생김'이 아니다.
+    # 원본은 신고 이틀 뒤에 실리고 늦어도 이레 안에 들어온다(2026-10-10 측정).
+    # 그보다 오래된 건이 처음 보인다면 우리가 새 목록을 보기 시작한 것이다 —
+    # 2026-10-11에 제과점영업을 더했을 때 지난 90일치 빵집이 한꺼번에 NEW가
+    # 되지 않도록, 그런 건은 원본 날짜를 처음 본 날로 쓴다.
+    stale = (date.fromisoformat(today) - timedelta(days=10)).isoformat()
     for item in items:
         before = seen.get(item["id"])
         fallback = item["modifiedDate"] or item["licenseDate"]
-        item["firstSeen"] = (before or {}).get("first") or (today if seen else fallback)
+        # 날짜가 비어 있으면 견줄 수 없으니 예전처럼 오늘로 본다.
+        fresh = bool(seen) and (not fallback or fallback >= stale)
+        item["firstSeen"] = (before or {}).get("first") or (today if fresh else fallback)
 
         changes = []
         if before:
