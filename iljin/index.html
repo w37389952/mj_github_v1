@@ -277,6 +277,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .ahead-day.bad { background:color-mix(in srgb, var(--hwa) 14%, var(--surface)); }
 .ahead-day.edge { border-color:var(--ink-soft); }
 .ahead-day.today { outline:1.5px solid var(--ink); }
+.ahead-day.past { opacity:.5; }
+.ahead-day.past:has(.rec) { opacity:.85; }
+.ahead-day .rec { font-size:10px; color:var(--ink); font-weight:700; line-height:1; }
 .ahead-day[aria-pressed="true"] { outline:2px solid var(--ink); }
 .ahead-detail { margin-top:14px; }
 .ahead-detail h3 { margin:0 0 6px; font-size:14px; }
@@ -622,7 +625,7 @@ details .body { padding:18px 16px 20px; }
   <details id="aheadBox">
     <summary><span class="s-title">앞날 달력</span><span class="s-meta">앞으로 두 달 미리 보기</span></summary>
     <div class="body">
-      <p class="ahead-note">앞으로 60일의 일진과 예측 점수야. 초록은 좋은 날, 붉은 칸은 조심할 날, 진한 테두리는 올해 상·하위 5%인 날. 날짜를 누르면 왜 그런지 보여 줘.</p>
+      <p class="ahead-note">이번 달 1일부터 앞으로 60일까지의 일진과 예측 점수야. 초록은 좋은 날, 붉은 칸은 조심할 날, 진한 테두리는 올해 상·하위 5%인 날. 지난 날은 흐리게, 기록한 날은 ● 옆에 네가 매긴 점수가 있어. 날짜를 누르면 왜 그런지 보여 줘.</p>
       <div id="ahead"></div>
       <div class="ahead-detail" id="aheadDetail" hidden></div>
     </div>
@@ -1412,6 +1415,8 @@ function 목록그리기() {
         ${r.글 ? `<div class="txt">${r.글.replace(/[<>&]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;" }[c]))}</div>` : ""}
       </div>`;
   }).join("") + `</div>`;
+  // 달력에도 내가 매긴 점수가 실리므로, 기록이 바뀌면 펼쳐져 있는 달력도 다시 그린다.
+  앞날그리기();
 }
 
 // 목록은 자주 다시 그려지므로 단추마다 듣지 않고 목록 전체에서 듣는다.
@@ -1452,6 +1457,10 @@ function 차트그리기() {
 // ── 앞날 달력 ─────────────────────────────────────────────
 // 앞으로 두 달을 달마다 묶어 일진과 예측 점수를 깐다. 60날을 다 재는 일이라
 // 펼쳤을 때만 그린다.
+//
+// 이번 달은 1일부터 채운다. 오늘부터만 깔면 이번 달 앞쪽이 빈칸으로 남아 달력 같지 않다.
+// 지난 날은 흐리게 두고, 기록한 날은 내가 매긴 점수를 예측 곁에 보여 준다.
+// 예측이 맞았는지 달력에서 바로 견줘 볼 수 있게.
 const 앞날일수 = 60;
 let 고른앞날 = null;
 function 앞날그리기() {
@@ -1459,11 +1468,12 @@ function 앞날그리기() {
   if (!document.getElementById("aheadBox").open) return;
   if (!나있음()) { el.innerHTML = `<p class="empty">생년월일시를 넣으면 보여 줄게.</p>`; return; }
   const 달들 = [];
-  for (let i = 0; i < 앞날일수; i++) {
+  for (let i = 1 - D; i < 앞날일수; i++) {
     const d = new Date(Y, M - 1, D + i);
     const y = d.getFullYear(), m = d.getMonth() + 1, dd = d.getDate();
     const 결과 = 예측하기(y, m, dd);
-    const 날 = { 키: 키로(d), y, m, d: dd, 요일: d.getDay(), 일진: Manse.iljin(y, m, dd).이름, 점수: 결과.점수, 백분위: 결과.백분위 };
+    const 날 = { 키: 키로(d), y, m, d: dd, 요일: d.getDay(), 일진: Manse.iljin(y, m, dd).이름, 점수: 결과.점수, 백분위: 결과.백분위,
+      지남: i < 0, 기록: 기록[키로(d)]?.점수 ?? null };
     const 끝달 = 달들[달들.length - 1];
     if (!끝달 || 끝달.m !== m) 달들.push({ y, m, 날들: [날] }); else 끝달.날들.push(날);
   }
@@ -1474,9 +1484,10 @@ function 앞날그리기() {
       ${'<span class="ahead-day blank"></span>'.repeat(달.날들[0].요일)}
       ${달.날들.map((날) => {
         const 결 = 날.점수 >= 65 ? " good" : 날.점수 <= 35 ? " bad" : "";
-        return `<button type="button" class="ahead-day${결}${끝인가(날.백분위) ? " edge" : ""}${날.키 === 오늘키 ? " today" : ""}"
-          data-key="${날.키}" aria-pressed="${날.키 === 고른앞날}" title="${날.m}/${날.d} ${날.일진}일 · 예측 ${날.점수}">
+        return `<button type="button" class="ahead-day${결}${끝인가(날.백분위) ? " edge" : ""}${날.키 === 오늘키 ? " today" : ""}${날.지남 ? " past" : ""}"
+          data-key="${날.키}" aria-pressed="${날.키 === 고른앞날}" title="${날.m}/${날.d} ${날.일진}일 · 예측 ${날.점수}${날.기록 !== null ? ` · 내 기록 ${날.기록}` : ""}">
           <span class="dn">${날.d}</span><span class="gz">${색한자(날.일진)}</span><span class="sc">${날.점수}</span>
+          ${날.기록 !== null ? `<span class="rec">●${날.기록}</span>` : ""}
         </button>`;
       }).join("")}
     </div>`).join("");
@@ -1488,7 +1499,9 @@ function 앞날자세히() {
   const [y, m, d] = 고른앞날.split("-").map(Number);
   const 결과 = 예측하기(y, m, d);
   const 일진이름 = Manse.iljin(y, m, d).이름;
-  box.innerHTML = `<h3>${m}월 ${d}일 ${"일월화수목금토"[new Date(y, m - 1, d).getDay()]}요일 · ${일진이름}일 · 예측 ${결과.점수}점</h3>` +
+  const 내점수 = 기록[고른앞날]?.점수;
+  box.innerHTML = `<h3>${m}월 ${d}일 ${"일월화수목금토"[new Date(y, m - 1, d).getDay()]}요일 · ${일진이름}일 · 예측 ${결과.점수}점` +
+    `${내점수 != null ? ` · 내 기록 ${내점수}점` : ""}</h3>` +
     (끝인가(결과.백분위) ? `<p class="ahead-note">${결과.백분위 < 0.05 ? "올해 하위 5%에 드는 날이야." : "올해 상위 5%에 드는 날이야."}</p>` : "") +
     근거표(결과, 6);
   box.hidden = false;
