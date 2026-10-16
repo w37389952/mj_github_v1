@@ -1,0 +1,44 @@
+name: 카카오맵 새 가게 수집
+
+# 밤 수집(collect.yml)에도 같은 단계가 들어 있다. 이 워크플로는 키를 막 넣었을 때
+# 한 번 돌려 '오늘 카카오맵에 있는 가게'를 기준으로 잡아 두는 용도다.
+# 그러면 그날 밤 수집부터 바로 '어제 없던 가게'가 나온다.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  kakao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 카카오맵 훑기
+        env:
+          KAKAO_REST_KEY: ${{ secrets.KAKAO_REST_KEY }}
+        run: python scripts/collect_kakao.py
+
+      - name: 결과 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/kakao-seen.json data/kakao-new.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "변경 없음 — 커밋을 건너뜁니다."
+            exit 0
+          fi
+          git commit -m "카카오맵 수집: $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && exit 0
+            echo "push 실패 — 재시도 $i"
+            sleep 5
+          done
+          echo "커밋을 올리지 못했습니다."
+          exit 1
