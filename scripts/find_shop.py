@@ -25,6 +25,15 @@ import collect  # noqa: E402  (수집기의 내려받기·정리 코드를 그�
 
 QUERY = os.environ.get("QUERY", "").strip()
 
+# 밤 수집은 휴게·일반음식점, 제과점, 즉석판매제조가공업만 본다. 그런데 서울시 식품
+# 인허가는 영업 종류마다 목록이 따로 있다(2026-10-11 샘플 키로 26가지를 확인했다).
+# 송파 무수이처럼 '시음해 보고 구매'하는 차 가게는 아래로 신고했을 수 있어,
+# 가게 하나를 찾을 때는 이것까지 다 뒤진다.
+EXTRA_SERVICES = {
+    "식품소분업": "LOCALDATA_072208",           # 찻잎·원두를 덜어 파는 곳
+    "식품제조가공업": "LOCALDATA_072211",
+}
+
 
 def squash(text):
     """띄어쓰기를 없애 견준다. '어니언 컴퍼니'와 '어니언컴퍼니'를 같게 본다."""
@@ -37,11 +46,12 @@ def main():
         return 1
 
     needle = squash(QUERY)
+    services = {**collect.SERVICES, **EXTRA_SERVICES}
     print(f"'{QUERY}'을(를) 서울시 인허가 자료에서 찾습니다.")
-    print("두 종류를 다 훑습니다 — 휴게음식점, 일반음식점.\n")
+    print(f"{len(services)}종류를 다 훑습니다 — {', '.join(services)}.\n")
 
     hits = []
-    for category, service in collect.SERVICES.items():
+    for category, service in services.items():
         print(f"[{category}]", file=sys.stderr)
         scanned = 0
         for row in collect.fetch_all(service):

@@ -186,6 +186,12 @@
   .result-count:empty { display: none; }
 
   .day-group { margin-top: 30px; }
+  /* 블로그 탭 맨 위의 오픈 소식 모음. 아래 날짜 묶음과 한눈에 갈리게 테를 두른다. */
+  .pinned-news {
+    padding: 14px 16px 6px; border-radius: var(--radius);
+    border: 1.5px solid var(--accent); background: var(--accent-soft);
+  }
+  .pinned-why { font-size: 12.5px; color: var(--ink-soft); margin: -4px 0 10px; line-height: 1.5; }
   .day-group h2 {
     font-size: 15px; color: var(--ink-soft); font-weight: 700;
     padding-bottom: 8px; border-bottom: 1px solid var(--line);
@@ -400,6 +406,8 @@
         <option value="">전체 구분</option>
         <option value="휴게음식점">휴게음식점</option>
         <option value="일반음식점">일반음식점</option>
+        <option value="제과점영업">제과점(빵집)</option>
+        <option value="즉석판매제조가공업">즉석판매제조가공(로스팅·수제청·디저트·반찬 등)</option>
       </select>
       <select id="monthFilter" class="field"><option value="">전체 기간</option></select>
       <button type="button" class="multi-btn" id="rangeToggle">기간검색 <span class="caret">▾</span></button>
@@ -473,6 +481,34 @@ let onlyKnownChanges = false;
 const STRONG_NEW = /신상|가오픈|프리오픈|정식\s?오픈|새로\s?생긴|새로\s?오픈|오픈\s?예정|그랜드\s?오픈|뉴\s?오픈|신규\s?오픈/;
 const isStrongNew = p => STRONG_NEW.test((p.title || "") + (p.description || ""));
 let onlyStrongNew = false;
+
+/* 블로그 탭 맨 위에 따로 모을 '오픈 소식 글'.
+
+   블로그 수집은 1,300편 남짓을 긁어 오지만 대부분은 이미 아는 곳 후기다.
+   사용자가 정말 쓸모 있다고 한 것은 송파 무수이처럼 사업자명으로 못 찾을 때
+   '무수이(Musui) 티룸 오픈날' 같은 글이다. 그런 글을 가르는 기준을
+   2026-10-10 실제 수집분 1,309편으로 맞춰 보니 13편이 남았고, 거의 다
+   서울 음식점·카페의 실제 오픈 소식이었다(연남동 소요 가오픈, 을지올드비어하우스,
+   도하앤그레이, 홍대 꾸감, 삼신 가로수길점…).
+
+   - 제목에 오픈 낌새가 있어야 한다. 본문 요약에만 있으면 '오픈 시간'이 섞인다.
+   - 음식점·카페 이야기여야 한다. 네일샵·필라테스·전시가 걸렸었다.
+   - 포스기·간판 같은 업체 홍보와 서울 밖 글은 뺀다.
+   가게 이름이 인허가 자료에 있는지로 가르려 했으나 '그레이' 같은 짧은 이름이
+   '도하앤그레이'에 겹쳐 진짜 신상을 빼 버려서 쓰지 않는다. */
+const OPEN_TITLE = /가오픈|프리\s?오픈|오픈\s?날|오픈\s?첫\s?날|오픈\s?당일|첫\s?손님|막\s?오픈|새로\s?(오픈|생긴)|신규\s?오픈|그랜드\s?오픈|오픈\s?했|오픈\s?소식|오픈\s?예정|오픈\s?[!♡❤]|오픈$/;
+const OPEN_FOOD = /먹거리|음식|요리|카페|커피|베이커리|빵|디저트|맛집|술집|와인|비어|맥주|하이볼|위스키|칵테일|야장|티룸|찻집|브런치|레스토랑|식당|베이글|도넛|젤라또|케이크|에스프레소|파스타|라멘|스시|이자카야|포차|중식|양식|한식|일식|쌀국수|버거|피자/;
+const OPEN_NOT_FOOD = /네일|헤어|미용|속눈썹|왁싱|필라테스|요가|바레|발레|스튜디오|병원|의원|치과|약국|학원|부동산|분양|모델하우스|전시|공연|궁|축제|팝업|월간|보고/;
+const OPEN_VENDOR = /포스기|단말기|키오스크|인테리어\s?시공|시공|철거|간판|창업|가맹|프랜차이즈\s?모집|컨설팅|렌탈|도매|납품/;
+const OPEN_FAR = /부산|제주|인천|경기|수원|용인|성남|분당|판교|일산|고양|김포|검단|검암|대구|대전|광주|울산|세종|천안|청주|전주|강릉|속초|여수|기장|해운대|아울렛/;
+const PIN_MAX = 20;
+
+function isOpeningNews(p) {
+  const title = p.title || "";
+  const text = title + " " + (p.description || "");
+  return OPEN_TITLE.test(title) && OPEN_FOOD.test(text)
+    && !OPEN_NOT_FOOD.test(text) && !OPEN_VENDOR.test(text) && !OPEN_FAR.test(title);
+}
 const tab = () => TABS[activeTab];
 let today = null;
 const selected = { district: new Set(), bizType: new Set() };
@@ -1065,6 +1101,7 @@ function hotspotTokens(address) {
 // 업태값은 docs/data-source-findings.md의 실측 목록을 따른다.
 const CAFE_BIZ = new Set([
   "커피숍", "다방", "전통찻집", "떡카페", "과자점", "아이스크림", "까페", "키즈카페",
+  "제과점영업",   // 빵집은 음식점이 아니라 이 이름의 별도 목록으로 들어온다(2026-10-11부터 수집)
 ]);
 // 업태가 '기타'로 뭉뚱그려진 곳들. 상호명으로 갈라야 한다.
 const VAGUE_BIZ = new Set(["기타", "기타 휴게음식점", "일반조리판매"]);
@@ -1680,7 +1717,17 @@ function render() {
   const t = tab();
   const allPlaces = t.places || [];
   const f = currentFilters();
-  const filtered = allPlaces.filter(p => matches(p, f, t));
+  let filtered = allPlaces.filter(p => matches(p, f, t));
+
+  // 블로그 탭: 오픈 소식 글은 맨 위에 따로 모으고 아래 목록에서는 뺀다(두 번 안 보이게).
+  let pinned = [];
+  if (t.kind === "blog") {
+    pinned = filtered.filter(isOpeningNews)
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+      .slice(0, PIN_MAX);
+    const pinnedLinks = new Set(pinned.map(p => p.link));
+    filtered = filtered.filter(p => !pinnedLinks.has(p.link));
+  }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   if (t.page > totalPages) t.page = totalPages;
@@ -1688,7 +1735,8 @@ function render() {
   const page = filtered.slice(start, start + PAGE_SIZE);
 
   $("resultCount").textContent = filtered.length === 0 ? ""
-    : `${filtered.length.toLocaleString("ko-KR")}곳 중 ` +
+    : (pinned.length ? `오픈 소식 ${pinned.length}건 따로 · 나머지 ` : "") +
+      `${filtered.length.toLocaleString("ko-KR")}${t.kind === "blog" ? "건" : "곳"} 중 ` +
       `${(start + 1).toLocaleString("ko-KR")}–${(start + page.length).toLocaleString("ko-KR")}`;
 
   const byDate = {};
@@ -1701,6 +1749,24 @@ function render() {
   const list = $("list");
   list.innerHTML = "";
   const unit = t.kind === "blog" ? "건" : "곳";
+
+  if (pinned.length && t.page === 1) {
+    const box = document.createElement("section");
+    box.className = "day-group pinned-news";
+    box.innerHTML = `<h2>📌 오픈 소식 글 <span class="count">${pinned.length}건</span></h2>
+      <div class="pinned-why">제목에 ‘가오픈·오픈날·새로 생긴’ 같은 말이 있는 서울 음식점·카페 글만
+      모았습니다. 인허가 자료는 허가 이틀 뒤에야 실리고 가오픈은 그보다 빠르니,
+      가게 이름으로 못 찾을 때 여기를 먼저 보세요.</div>`;
+    pinned.forEach(p => {
+      const card = blogCard(p);
+      const badge = document.createElement("span");
+      badge.className = "badge new";
+      badge.textContent = "오픈 소식";
+      card.querySelector(".meta").prepend(badge);
+      box.appendChild(card);
+    });
+    list.appendChild(box);
+  }
   dates.forEach(date => {
     const group = document.createElement("section");
     group.className = "day-group";
@@ -1749,7 +1815,7 @@ function render() {
   });
 
   renderPager(filtered.length);
-  $("empty").classList.toggle("show", filtered.length === 0);
+  $("empty").classList.toggle("show", filtered.length === 0 && !pinned.length);
 }
 
 /* ---------- 초기화 ---------- */
