@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-16T16:56:00+09:00",
+  "updated": "2026-10-16T17:14:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -447,14 +447,26 @@
     },
     {
       "project": "radar",
-      "title": "레이더 수정분(블로그 검색어·오픈 소식 모음·빵집 수집) 푸시하고 PR 합치기",
+      "title": "레이더 수정분 4개(블로그 검색어·오픈 소식·빵집·즉석판매 수집) PR 합치기",
       "owner": "MJ",
       "status": "할 일"
     },
     {
       "project": "radar",
-      "title": "푸시 후 Actions '가게 하나 찾기'에 '동남로8길 30' 넣고 돌려 결과 붙여주기 (무수이 확인용)",
+      "title": "PR 합친 뒤 Actions '가게 하나 찾기'에 '동남로8길 30'·'누도' 넣고 돌려 결과 붙여주기",
       "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "카카오 개발자 앱 만들고 REST API 키를 깃허브 Secrets에 KAKAO_REST_KEY로 넣기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "카카오맵으로 '어제 없던 가게' 찾는 수집 만들기",
+      "owner": "Claude",
       "status": "할 일"
     },
     {
@@ -486,6 +498,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-16",
+      "project": "radar",
+      "text": "즉석판매제조가공업(로스팅·수제청·디저트 등)도 밤 수집에 넣고, 이제 작업 브랜치 푸시는 Claude가 직접 한다. 카카오맵 공식 API로 새 가게를 찾는 방법을 확인했다(하루 무료 10만 번)."
+    },
     {
       "date": "2026-10-16",
       "project": "radar",
