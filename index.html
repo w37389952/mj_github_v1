@@ -375,6 +375,14 @@
     <button type="button" class="stats-toggle" id="onlyKnown" style="margin:0"></button>
     <span id="changedWhy"></span>
   </div>
+  <!-- 2026-10-16에 빵집·즉석판매 목록을 더했다. 그 전에는 아예 안 모아서 놓친 곳이
+       날짜 사이사이에 섞여 들어갔다. 한 번에 모아 볼 수 있게 버튼을 둔다. -->
+  <div class="tab-hint" id="addedNote" hidden style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span>빵집·즉석판매 가게는 10/16부터 모읍니다. 그동안 놓친 곳만 모아 보기:</span>
+    <button type="button" class="stats-toggle" id="showBakery" style="margin:0"></button>
+    <button type="button" class="stats-toggle" id="showInstant" style="margin:0"></button>
+    <button type="button" class="stats-toggle" id="showAllCats" style="margin:0" hidden>← 전체 보기</button>
+  </div>
   <div class="tab-hint" id="blogNote" hidden style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <button type="button" class="stats-toggle" id="onlyStrong" style="margin:0"></button>
     <span id="blogWhy"></span>
@@ -502,6 +510,10 @@ const OPEN_NOT_FOOD = /네일|헤어|미용|속눈썹|왁싱|필라테스|요가
 const OPEN_VENDOR = /포스기|단말기|키오스크|인테리어\s?시공|시공|철거|간판|창업|가맹|프랜차이즈\s?모집|컨설팅|렌탈|도매|납품/;
 const OPEN_FAR = /부산|제주|인천|경기|수원|용인|성남|분당|판교|일산|고양|김포|검단|검암|대구|대전|광주|울산|세종|천안|청주|전주|강릉|속초|여수|기장|해운대|아울렛/;
 const PIN_MAX = 20;
+
+// 빵집·즉석판매 목록을 모으기 시작한 날. 이 전에 신고한 곳은 그동안 놓친 곳이다.
+const ADDED_ON = "2026-10-16";
+const DAY_BEFORE_ADDED = "2026-10-15";
 
 function isOpeningNews(p) {
   const title = p.title || "";
@@ -1844,6 +1856,19 @@ function refreshForTab() {
      있어서, 우리가 두 번 보고 견줘야 무엇이 달라졌는지 알 수 있다.
      값을 남기기 시작한 것이 2026-07-21이라 그 전에 바뀐 것은 알 길이 없다.
      지금은 몇 건 안 되므로 3,500장 사이에서 찾을 수가 없다. 그래서 따로 센다. */
+  /* 빵집(제과점영업)과 즉석판매는 2026-10-16부터 모았다. 그 전에 신고한 곳은 그동안
+     놓친 곳인데, 신고일 차례로 날짜 사이사이에 섞여 들어가 찾기 어렵다. 버튼 하나로
+     '그 구분이면서 10/16 전에 신고한 곳'만 모아 보게 한다. */
+  const isOpened = activeTab === "opened";
+  $("addedNote").hidden = !isOpened;
+  if (isOpened) {
+    const missed = cat => places.filter(p =>
+      p.category === cat && (p.licenseDate || "") < ADDED_ON).length;
+    $("showBakery").textContent = `빵집 ${missed("제과점영업")}곳`;
+    $("showInstant").textContent = `즉석판매(로스팅·디저트·반찬 등) ${missed("즉석판매제조가공업")}곳`;
+    $("showAllCats").hidden = !$("categoryFilter").value;
+  }
+
   // kind는 블로그 탭에만 붙어 있다. 나머지는 열쇠 이름으로 가른다.
   const isChanged = activeTab === "changed";
   $("changedNote").hidden = !isChanged;
@@ -1994,6 +2019,23 @@ function init(data) {
 
   $("search").addEventListener("input", resetPaging);
   $("categoryFilter").addEventListener("input", resetPaging);
+  // 놓친 빵집·즉석판매 모아 보기: 구분을 고르고 신고일을 10/16 전으로 묶는다.
+  const showMissed = cat => {
+    $("categoryFilter").value = cat;
+    $("monthFilter").value = "";
+    $("fromDate").value = "";
+    $("toDate").value = DAY_BEFORE_ADDED;
+    $("showAllCats").hidden = false;
+    resetPaging();
+  };
+  $("showBakery").addEventListener("click", () => showMissed("제과점영업"));
+  $("showInstant").addEventListener("click", () => showMissed("즉석판매제조가공업"));
+  $("showAllCats").addEventListener("click", () => {
+    $("categoryFilter").value = "";
+    $("toDate").value = "";
+    $("showAllCats").hidden = true;
+    resetPaging();
+  });
   $("monthFilter").addEventListener("input", () => {
     // 달 선택과 기간검색은 서로 헷갈리므로 한쪽을 고르면 다른 쪽을 비운다.
     if ($("monthFilter").value) { $("fromDate").value = ""; $("toDate").value = ""; }
