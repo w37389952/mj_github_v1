@@ -511,6 +511,11 @@ const OPEN_VENDOR = /포스기|단말기|키오스크|인테리어\s?시공|시�
 const OPEN_FAR = /부산|제주|인천|경기|수원|용인|성남|분당|판교|일산|고양|김포|검단|검암|대구|대전|광주|울산|세종|천안|청주|전주|강릉|속초|여수|기장|해운대|아울렛/;
 const PIN_MAX = 20;
 
+/* 상호에 '(한시적)'이 붙은 곳은 백화점·행사장에서 며칠만 여는 부스다.
+   2026-10-17 수집분에서 즉석판매 769곳 중 57곳, 전체로는 170곳 남짓이었다.
+   숨기지 말고 표시만 해 달라고 해서 카드에 딱지를 붙인다. */
+const isPopupBooth = p => /한시적/.test(p.name || "");
+
 // 빵집·즉석판매 목록을 모으기 시작한 날. 이 전에 신고한 곳은 그동안 놓친 곳이다.
 const ADDED_ON = "2026-10-16";
 const DAY_BEFORE_ADDED = "2026-10-15";
@@ -1803,6 +1808,7 @@ function render() {
             <span class="badge ${badgeClass}">${p.category}</span>
             ${p.bizType ? `<span class="badge plain biz-badge"></span>` : ""}
             <span class="badge plain district-badge"></span>
+            ${isPopupBooth(p) ? `<span class="badge change" title="상호에 '한시적'이 붙은 곳입니다. 백화점·행사장에서 며칠만 여는 부스라 신상 가게와는 다릅니다.">행사 부스</span>` : ""}
           </div>
         </div>
         <div class="actions">
