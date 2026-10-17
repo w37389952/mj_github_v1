@@ -375,14 +375,8 @@
     <button type="button" class="stats-toggle" id="onlyKnown" style="margin:0"></button>
     <span id="changedWhy"></span>
   </div>
-  <!-- 2026-10-16에 빵집·즉석판매 목록을 더했다. 그 전에는 아예 안 모아서 놓친 곳이
-       날짜 사이사이에 섞여 들어갔다. 한 번에 모아 볼 수 있게 버튼을 둔다. -->
-  <div class="tab-hint" id="addedNote" hidden style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <span>빵집·즉석판매 가게는 10/16부터 모읍니다. 그동안 놓친 곳만 모아 보기:</span>
-    <button type="button" class="stats-toggle" id="showBakery" style="margin:0"></button>
-    <button type="button" class="stats-toggle" id="showInstant" style="margin:0"></button>
-    <button type="button" class="stats-toggle" id="showAllCats" style="margin:0" hidden>← 전체 보기</button>
-  </div>
+  <!-- 새 목록을 모으기 시작한 직후에만 뜨는 안내. 내용은 ADDITIONS를 보고 그린다. -->
+  <div class="tab-hint" id="addedNote" hidden style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
   <div class="tab-hint" id="blogNote" hidden style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <button type="button" class="stats-toggle" id="onlyStrong" style="margin:0"></button>
     <span id="blogWhy"></span>
@@ -516,9 +510,23 @@ const PIN_MAX = 20;
    숨기지 말고 표시만 해 달라고 해서 카드에 딱지를 붙인다. */
 const isPopupBooth = p => /한시적/.test(p.name || "");
 
-// 빵집·즉석판매 목록을 모으기 시작한 날. 이 전에 신고한 곳은 그동안 놓친 곳이다.
-const ADDED_ON = "2026-10-16";
-const DAY_BEFORE_ADDED = "2026-10-15";
+/* 새 영업 종류 목록을 모으기 시작하면, 그 전에 신고해서 그동안 놓친 곳을 잠깐 따로
+   모아 볼 수 있게 신규 오픈 탭 위에 안내를 띄운다.
+
+   놓친 곳은 이미 신규 오픈 목록의 신고일 자리에 들어가 있다. 안내의 버튼은 그것만
+   골라 보는 거름망일 뿐 따로 된 목록이 아니다. 사용자가 '다 봤어요'를 누르거나
+   30일이 지나면 안내가 사라진다. 상설 탭으로 두면 헷갈린다는 말을 들어서다.
+   나중에 또 새 목록을 더하면 여기에 한 줄을 더하면 그때 다시 뜬다. */
+const ADDITIONS = [
+  {
+    key: "bakery-instant-2026-10-16",
+    since: "2026-10-16",
+    label: "빵집·즉석판매",
+    cats: [["제과점영업", "빵집"], ["즉석판매제조가공업", "즉석판매(로스팅·디저트·반찬 등)"]],
+  },
+];
+const ADDITION_DAYS = 30;
+const ADDITION_SEEN_KEY = "seoul-radar:additionsSeen";
 
 function isOpeningNews(p) {
   const title = p.title || "";
@@ -1845,6 +1853,80 @@ function setStatsHidden(hidden) {
   $("statsToggle").querySelector(".caret").textContent = hidden ? "▾" : "▴";
 }
 
+/* ---------- 새 목록을 더했을 때의 '그동안 놓친 곳' 안내 ---------- */
+
+// 저장이 막힌 브라우저(사생활 보호 창 등)에서도 그 자리에서는 닫히게 한다.
+const seenThisVisit = new Set();
+
+function seenAdditions() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(ADDITION_SEEN_KEY) || "[]"); }
+  catch (e) { saved = []; }                // 저장이 막힌 환경
+  return [...new Set([...saved, ...seenThisVisit])];
+}
+
+/** 아직 '다 봤어요'를 안 눌렀고 더한 지 30일이 안 된 것 하나. 없으면 null. */
+function activeAddition() {
+  const seen = seenAdditions();
+  const now = today || new Date().toLocaleDateString("sv-SE");
+  const daysSince = since => (new Date(now) - new Date(since)) / 86400000;
+  return ADDITIONS.find(a => !seen.includes(a.key) && daysSince(a.since) <= ADDITION_DAYS) || null;
+}
+
+function dayBefore(iso) {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString("sv-SE");
+}
+
+function drawAddedNote(add, places) {
+  const box = $("addedNote");
+  box.innerHTML = "";
+  const filtering = ADDITIONS.some(a => a.cats.some(([c]) => c === $("categoryFilter").value))
+    && $("toDate").value === dayBefore(add.since);
+  const button = (text, onClick) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "stats-toggle";
+    b.style.margin = "0";
+    b.textContent = text;
+    b.addEventListener("click", onClick);
+    return b;
+  };
+  const msg = document.createElement("span");
+  const [, m, d] = add.since.split("-").map(Number);
+  msg.textContent = `${add.label} 가게는 ${m}/${d}부터 모읍니다. 그전에 신고한 곳도 이미 아래 목록의 `
+    + "신고일 자리에 들어가 있어요. 그동안 놓친 곳만 골라 보기:";
+  box.append(msg);
+
+  add.cats.forEach(([cat, name]) => {
+    const n = places.filter(p => p.category === cat && (p.licenseDate || "") < add.since).length;
+    box.append(button(`${name} ${n}곳`, () => {
+      $("categoryFilter").value = cat;
+      $("monthFilter").value = "";
+      $("fromDate").value = "";
+      $("toDate").value = dayBefore(add.since);
+      resetPaging();
+      refreshForTab();
+    }));
+  });
+  const clearFilter = () => {
+    $("categoryFilter").value = "";
+    $("toDate").value = "";
+  };
+  if (filtering) {
+    box.append(button("← 전체 보기", () => { clearFilter(); resetPaging(); refreshForTab(); }));
+  }
+  // 다 봤으면 이 안내를 접는다. 놓친 곳은 원래부터 목록 안에 있으므로 따로 옮길 것은 없다.
+  box.append(button("✓ 다 봤어요 · 안내 닫기", () => {
+    seenThisVisit.add(add.key);
+    try { localStorage.setItem(ADDITION_SEEN_KEY, JSON.stringify(seenAdditions())); } catch (e) {}
+    if (filtering) clearFilter();
+    resetPaging();
+    refreshForTab();
+  }));
+}
+
 function countBy(places, key) {
   const counts = new Map();
   places.forEach(p => p[key] && counts.set(p[key], (counts.get(p[key]) || 0) + 1));
@@ -1862,18 +1944,10 @@ function refreshForTab() {
      있어서, 우리가 두 번 보고 견줘야 무엇이 달라졌는지 알 수 있다.
      값을 남기기 시작한 것이 2026-07-21이라 그 전에 바뀐 것은 알 길이 없다.
      지금은 몇 건 안 되므로 3,500장 사이에서 찾을 수가 없다. 그래서 따로 센다. */
-  /* 빵집(제과점영업)과 즉석판매는 2026-10-16부터 모았다. 그 전에 신고한 곳은 그동안
-     놓친 곳인데, 신고일 차례로 날짜 사이사이에 섞여 들어가 찾기 어렵다. 버튼 하나로
-     '그 구분이면서 10/16 전에 신고한 곳'만 모아 보게 한다. */
-  const isOpened = activeTab === "opened";
-  $("addedNote").hidden = !isOpened;
-  if (isOpened) {
-    const missed = cat => places.filter(p =>
-      p.category === cat && (p.licenseDate || "") < ADDED_ON).length;
-    $("showBakery").textContent = `빵집 ${missed("제과점영업")}곳`;
-    $("showInstant").textContent = `즉석판매(로스팅·디저트·반찬 등) ${missed("즉석판매제조가공업")}곳`;
-    $("showAllCats").hidden = !$("categoryFilter").value;
-  }
+  // 새 목록을 막 더했을 때만 '그동안 놓친 곳' 안내를 띄운다(ADDITIONS 참고).
+  const addition = activeTab === "opened" ? activeAddition() : null;
+  $("addedNote").hidden = !addition;
+  if (addition) drawAddedNote(addition, places);
 
   // kind는 블로그 탭에만 붙어 있다. 나머지는 열쇠 이름으로 가른다.
   const isChanged = activeTab === "changed";
@@ -2025,23 +2099,6 @@ function init(data) {
 
   $("search").addEventListener("input", resetPaging);
   $("categoryFilter").addEventListener("input", resetPaging);
-  // 놓친 빵집·즉석판매 모아 보기: 구분을 고르고 신고일을 10/16 전으로 묶는다.
-  const showMissed = cat => {
-    $("categoryFilter").value = cat;
-    $("monthFilter").value = "";
-    $("fromDate").value = "";
-    $("toDate").value = DAY_BEFORE_ADDED;
-    $("showAllCats").hidden = false;
-    resetPaging();
-  };
-  $("showBakery").addEventListener("click", () => showMissed("제과점영업"));
-  $("showInstant").addEventListener("click", () => showMissed("즉석판매제조가공업"));
-  $("showAllCats").addEventListener("click", () => {
-    $("categoryFilter").value = "";
-    $("toDate").value = "";
-    $("showAllCats").hidden = true;
-    resetPaging();
-  });
   $("monthFilter").addEventListener("input", () => {
     // 달 선택과 기간검색은 서로 헷갈리므로 한쪽을 고르면 다른 쪽을 비운다.
     if ($("monthFilter").value) { $("fromDate").value = ""; $("toDate").value = ""; }
