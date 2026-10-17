@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-18T02:46:00+09:00",
+  "updated": "2026-10-18T03:16:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -456,6 +456,13 @@
       "project": "radar",
       "title": "네이버 '새로 오픈' 수집 PR 합치기",
       "owner": "MJ",
+      "status": "완료",
+      "done": "2026-10-18"
+    },
+    {
+      "project": "radar",
+      "title": "'놓친 빵집 모아 보기' 버튼과 행사 부스 표시 PR 합치기",
+      "owner": "MJ",
       "status": "할 일"
     },
     {
@@ -469,12 +476,13 @@
       "project": "radar",
       "title": "카카오 개발자 앱 만들고 REST API 키를 깃허브 Secrets에 KAKAO_REST_KEY로 넣기",
       "owner": "MJ",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-10-18"
     },
     {
       "project": "radar",
-      "title": "키 넣은 뒤 Actions '카카오맵 새 가게 수집'을 한 번 돌려 기준 잡기",
-      "owner": "MJ",
+      "title": "밤 수집에서 카카오맵 기준(첫날 목록)이 잡혔는지 확인",
+      "owner": "Claude",
       "status": "할 일"
     },
     {
@@ -525,6 +533,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-18",
+      "project": "radar",
+      "text": "신규 오픈 탭에 '그동안 놓친 빵집·즉석판매' 모아 보기 버튼을 만들었다. 카카오 키가 들어가 오늘 밤 수집부터 카카오맵 기준을 잡는다."
+    },
     {
       "date": "2026-10-18",
       "project": "radar",
