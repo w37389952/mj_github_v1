@@ -260,8 +260,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
 /* 앞날 달력. 앞으로 두 달의 일진과 예측 점수를 한 칸씩. 좋은 날은 목, 궂은 날은 화 색으로 옅게 칠한다. */
 .ahead-note { margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
-.ahead-month { margin:16px 0 6px; font-size:13px; font-weight:700; }
-.ahead-month:first-of-type { margin-top:0; }
+.ahead-month { font-size:13px; font-weight:700; }
+.ahead-head + .ahead-grid + .ahead-head { margin-top:16px; }
 .ahead-grid { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:3px; }
 .ahead-grid .wd { text-align:center; font-size:10.5px; color:var(--ink-faint); padding-bottom:2px; }
 .ahead-day {
@@ -273,9 +273,17 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .ahead-day .dn { font-size:10.5px; color:var(--ink-faint); }
 .ahead-day .gz { font-size:13px; line-height:1.1; }
 .ahead-day .sc { font-size:11px; font-weight:700; }
-.ahead-day.good { background:color-mix(in srgb, var(--mok) 16%, var(--surface)); }
-.ahead-day.bad { background:color-mix(in srgb, var(--hwa) 14%, var(--surface)); }
-.ahead-day.edge { border-color:var(--ink-soft); }
+/* 칸 바탕은 점수가 50에서 멀수록 진하다. 진하기는 그리면서 칸마다 정한다. */
+.ahead-day.edge { border-color:var(--ink-soft); border-width:1.5px; }
+/* 표 오른쪽 위의 범례. 설명 글 대신 색 네모로 읽게 한다. */
+.ahead-head { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+.ahead-head .ahead-month { margin:0; }
+.ahead-legend { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; margin-left:auto; font-size:11.5px; color:var(--ink-soft); }
+.ahead-legend span { display:inline-flex; align-items:center; gap:4px; }
+.ahead-legend i { display:inline-block; width:12px; height:12px; border-radius:2px; border:1px solid var(--line-soft); }
+.ahead-legend i.good { background:color-mix(in srgb, var(--mok) 30%, var(--surface)); }
+.ahead-legend i.bad { background:color-mix(in srgb, var(--hwa) 28%, var(--surface)); }
+.ahead-legend i.edge { background:var(--surface); border:1.5px solid var(--ink-soft); }
 .ahead-day.today { outline:1.5px solid var(--ink); }
 .ahead-day.past { opacity:.5; }
 .ahead-day.past:has(.rec) { opacity:.85; }
@@ -479,6 +487,25 @@ details .body { padding:18px 16px 20px; }
 }
 @keyframes toast-in { from { opacity:0; transform:translate(-50%, 10px); } }
 
+/* 적용법이 바뀌었을 때 띄우는 창. 어느 날이 어떻게 더 맞게 바뀌었는지 보여 준다. */
+.modal {
+  position:fixed; inset:0; z-index:60; display:flex; align-items:flex-end; justify-content:center;
+  background:rgba(0,0,0,.4); padding:16px;
+}
+.modal-card {
+  width:100%; max-width:420px; max-height:85vh; overflow:auto; background:var(--ground);
+  border-radius:10px; padding:20px 16px 16px; box-shadow:0 10px 40px rgba(0,0,0,.25);
+}
+.modal-card h3 { margin:0 0 6px; font-size:17px; line-height:1.4; }
+.modal-card .mm-sum { margin:0 0 14px; font-size:13.5px; line-height:1.65; color:var(--ink-soft); }
+.mm-list { display:grid; gap:8px; margin-bottom:14px; }
+.mm-day { background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:10px 12px; display:grid; gap:4px; }
+.mm-day .mm-head { font-size:14px; font-weight:600; }
+.mm-day .mm-what { font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
+.mm-day .mm-move { font-family:"IBM Plex Mono",monospace; font-size:13px; }
+.mm-day .mm-move b { color:var(--mok); }
+.mm-day .mm-close { font-size:12.5px; color:var(--mok); font-weight:600; }
+
 @media (prefers-reduced-motion:reduce) { * { transition:none !important; } .toast { animation:none; } }
 </style>
 
@@ -638,7 +665,7 @@ details .body { padding:18px 16px 20px; }
   <details id="aheadBox">
     <summary><span class="s-title">앞날 달력</span><span class="s-meta">앞으로 두 달 미리 보기</span></summary>
     <div class="body">
-      <p class="ahead-note">이번 달 1일부터 앞으로 60일까지의 일진과 예측 점수야. 초록은 좋은 날, 붉은 칸은 조심할 날, 진한 테두리는 올해 상·하위 5%인 날. 지난 날은 흐리게, 기록한 날은 ● 옆에 네가 매긴 점수가 있어. 날짜를 누르면 왜 그런지 보여 줘.</p>
+      <p class="ahead-note">이번 달 1일부터 앞으로 60일까지. 색은 50에서 멀수록 진해. 날짜를 누르면 왜 그런지 보여 줘.</p>
       <div id="ahead"></div>
       <div class="ahead-detail" id="aheadDetail" hidden></div>
     </div>
@@ -858,6 +885,14 @@ details .body { padding:18px 16px 20px; }
   </details>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="modal" id="methodModal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mmTitle">
+      <h3 id="mmTitle"></h3>
+      <p class="mm-sum" id="mmSum"></p>
+      <div class="mm-list" id="mmList"></div>
+      <button class="save" id="mmClose" type="button">확인</button>
+    </div>
+  </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1069,9 +1104,52 @@ function 적용법맞추기() {
   if (최고.맞음 - 지금.맞음 < Math.max(2, Math.ceil(n * 0.1))) return;
   적용.고른 = 최고.법.id;
   쓰기(KEY_적용법, 적용);
-  알림(`기록 ${n}개로 견줘 보니 '${최고.법.이름}'${받침(최고.법.이름) ? "이" : "가"} 더 잘 맞아서 바꿨어 (${지금.맞음} → ${최고.맞음}번 맞음)`);
+  바뀜알리기(지금.법.id, 최고.법.id, true);
   return true;
 }
+
+// 적용법이 바뀌면 창을 띄워, 어느 날이 어떻게 더 맞게 바뀌었는지 보여 준다.
+// 날마다 내 기록(태그·글), 내 점수, 예측이 몇 점에서 몇 점으로 바뀌었는지,
+// 그래서 내 점수와 얼마나 가까워졌는지까지. 가까움은 맞음 판정과 같은 잣대로 잰다.
+function 바뀜알리기(이전id, 새id, 자동) {
+  const 이전 = 적용법(이전id), 새 = 적용법(새id);
+  const 평균 = 내평균();
+  const 차이 = (p, s) => Math.round(Math.abs((p - 50) - (s - 평균)));
+  const 날들 = Object.entries(기록).filter(([, r]) => Number.isFinite(r.점수)).map(([k, r]) => {
+    const [y, m, d] = k.split("-").map(Number);
+    const t = 시각쌍(r.시각);
+    const 전 = 예측하기(y, m, d, t, 이전.설정).점수, 후 = 예측하기(y, m, d, t, 새.설정).점수;
+    return { k, r, 전, 후, 전차: 차이(전, r.점수), 후차: 차이(후, r.점수) };
+  });
+  const 나아짐 = 날들.filter((x) => x.후차 < x.전차 - 3).sort((a, b) => (b.전차 - b.후차) - (a.전차 - a.후차));
+  const 나빠짐 = 날들.filter((x) => x.후차 > x.전차 + 3).length;
+  const 맞음수 = (키) => 날들.filter((x) => x[키] <= 20).length;
+
+  document.getElementById("mmTitle").textContent =
+    `${자동 ? "더 잘 맞는 적용법으로 바꿨어" : "적용법을 바꿨어"}: ${이전.이름} → ${새.이름}`;
+  document.getElementById("mmSum").textContent =
+    `기록 ${날들.length}개 가운데 맞음이 ${맞음수("전차")}번에서 ${맞음수("후차")}번이 됐어. ` +
+    `${나아짐.length}개 날은 예측이 네 점수에 더 가까워졌고, ${나빠짐}개 날은 멀어졌어. ` +
+    `가까운 정도는 네 평균(${Math.round(평균)}점)에 맞춰 잰 차이야. 20 안이면 맞음.`;
+  document.getElementById("mmList").innerHTML = 나아짐.slice(0, 10).map((x) => {
+    const [, m, d] = x.k.split("-").map(Number);
+    const 무엇 = [
+      ...(x.r.영역 ?? []).map((c) => 영역이름[c] ?? c),
+      ...(x.r.글 ? [`"${이스케이프(x.r.글.slice(0, 40))}${x.r.글.length > 40 ? "…" : ""}"`] : []),
+    ].join(" · ");
+    return `<div class="mm-day">
+      <span class="mm-head">${m}월 ${d}일 ${x.r.일진 ? 색한자(x.r.일진) : ""} · 내 점수 ${x.r.점수}</span>
+      ${무엇 ? `<span class="mm-what">${무엇}</span>` : ""}
+      <span class="mm-move">예측 ${x.전} → <b>${x.후}</b> · 내 점수와 차이 ${x.전차} → <b>${x.후차}</b></span>
+      <span class="mm-close">${x.전차 > 20 && x.후차 <= 20 ? "빗나감에서 맞음으로" : "네 점수에 더 가까워짐"}</span>
+    </div>`;
+  }).join("") || `<p class="mm-sum">더 가까워진 날이 따로 없어.</p>`;
+  document.getElementById("methodModal").hidden = false;
+}
+document.getElementById("mmClose").addEventListener("click", () => { document.getElementById("methodModal").hidden = true; });
+document.getElementById("methodModal").addEventListener("click", (e) => {
+  if (e.target.id === "methodModal") e.target.hidden = true;   // 바깥을 눌러도 닫힌다
+});
 
 // 점수 근거를 큰 것부터 줄 세운다. 사주를 배우는 사람이 왜 이 점수인지 따라갈 수 있게.
 // '올해 평균에 맞춤' 줄은 크기와 상관없이 맨 끝에 둔다. 근거가 아니라 눈금 맞추기라서.
@@ -1546,10 +1624,11 @@ document.getElementById("methodBox").addEventListener("toggle", 적용법그리�
 document.getElementById("method").addEventListener("click", (e) => {
   const b = e.target.closest(".method");
   if (!b || b.dataset.id === 적용.고른) return;
+  const 이전 = 적용.고른;
   적용.고른 = b.dataset.id;
   쓰기(KEY_적용법, 적용);
   적용법바꾸기();
-  알림(`✓ '${적용법(적용.고른).이름}'${받침(적용법(적용.고른).이름) ? "으로" : "로"} 볼게`);
+  바뀜알리기(이전, 적용.고른, false);
 });
 document.getElementById("method").addEventListener("change", (e) => {
   if (e.target.id !== "methodAuto") return;
@@ -1616,14 +1695,23 @@ function 앞날그리기() {
     const 끝달 = 달들[달들.length - 1];
     if (!끝달 || 끝달.m !== m) 달들.push({ y, m, 날들: [날] }); else 끝달.날들.push(날);
   }
-  el.innerHTML = 달들.map((달) => `
-    <div class="ahead-month">${달.y}년 ${달.m}월</div>
+  // 색은 두 칸으로 끊지 않고 점수가 50에서 멀수록 진하게 칠한다. 58~42 사이는 칠하지 않는다.
+  const 바탕색 = (s) =>
+    s >= 58 ? `background:color-mix(in srgb, var(--mok) ${Math.min(34, 6 + (s - 58) * 0.9)}%, var(--surface))`
+    : s <= 42 ? `background:color-mix(in srgb, var(--hwa) ${Math.min(32, 6 + (42 - s) * 0.9)}%, var(--surface))`
+    : "";
+  const 범례 = `<div class="ahead-legend" aria-label="범례">
+      <span><i class="good"></i>좋은 날</span><span><i class="bad"></i>나쁜 날</span>
+      <span><i class="edge"></i>올해 상·하위 5%</span><span>●내 기록</span>
+    </div>`;
+  el.innerHTML = 달들.map((달, 몇째) => `
+    <div class="ahead-head"><div class="ahead-month">${달.y}년 ${달.m}월</div>${몇째 === 0 ? 범례 : ""}</div>
     <div class="ahead-grid">
       ${[..."일월화수목금토"].map((w) => `<span class="wd">${w}</span>`).join("")}
       ${'<span class="ahead-day blank"></span>'.repeat(달.날들[0].요일)}
       ${달.날들.map((날) => {
-        const 결 = 날.점수 >= 65 ? " good" : 날.점수 <= 35 ? " bad" : "";
-        return `<button type="button" class="ahead-day${결}${끝인가(날.백분위) ? " edge" : ""}${날.키 === 오늘키 ? " today" : ""}${날.지남 ? " past" : ""}"
+        return `<button type="button" class="ahead-day${끝인가(날.백분위) ? " edge" : ""}${날.키 === 오늘키 ? " today" : ""}${날.지남 ? " past" : ""}"
+          style="${바탕색(날.점수)}"
           data-key="${날.키}" aria-pressed="${날.키 === 고른앞날}" title="${날.m}/${날.d} ${날.일진}일 · 예측 ${날.점수}${날.기록 !== null ? ` · 내 기록 ${날.기록}` : ""}">
           <span class="dn">${날.d}</span><span class="gz">${색한자(날.일진)}</span><span class="sc">${날.점수}</span>
           ${날.기록 !== null ? `<span class="rec">●${날.기록}</span>` : ""}
