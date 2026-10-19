@@ -470,6 +470,13 @@
       "project": "radar",
       "title": "'놓친 곳' 안내를 다 보면 닫히게 바꾼 것 PR 합치기",
       "owner": "MJ",
+      "status": "완료",
+      "done": "2026-10-19"
+    },
+    {
+      "project": "radar",
+      "title": "'놓친 곳' 안내 상자·지역/업종 전체 선택 PR 합치기",
+      "owner": "MJ",
       "status": "할 일"
     },
     {
@@ -490,7 +497,8 @@
       "project": "radar",
       "title": "밤 수집에서 카카오맵 기준(첫날 목록)이 잡혔는지 확인",
       "owner": "Claude",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-10-19"
     },
     {
       "project": "radar",
