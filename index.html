@@ -82,6 +82,19 @@
   .tab-hint {
     font-size: 12.5px; color: var(--ink-faint); margin-top: 8px;
   }
+  /* 안내 칸들은 style로 display:flex를 줘서 hidden만으로는 안 사라진다. */
+  .tab-hint[hidden] { display: none !important; }
+  /* '그동안 놓친 곳' 안내. 회색 글씨로 두었더니 눈에 안 띈다는 말을 들어 상자로 띄운다. */
+  .added-note {
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    border-radius: 12px; padding: 10px 12px; color: var(--ink); font-size: 13.5px;
+  }
+  .added-note .chip {
+    font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    color: var(--bg); background: var(--accent); border: 1px solid var(--accent);
+    border-radius: 999px; padding: 5px 12px;
+  }
+  .added-note .chip.ghost { color: var(--accent); background: transparent; }
 
   /* 블로그 탭 안에서만 나오는 하위 탭. 글쓰기는 별도 페이지라 데이터를 안 받는다. */
   .subtabs { display: flex; gap: 4px; margin-top: 12px; }
@@ -164,6 +177,7 @@
     border-radius: 7px; font-size: 14px; cursor: pointer;
   }
   .multi-panel label:hover { background: var(--accent-soft); }
+  .multi-panel .multi-all { font-weight: 600; border-bottom: 1px solid var(--line); border-radius: 7px 7px 0 0; margin-bottom: 4px; }
   .multi-panel .cnt { margin-left: auto; color: var(--ink-faint); font-size: 12.5px; }
   .multi-clear {
     width: 100%; font: inherit; font-size: 13px; cursor: pointer;
@@ -376,7 +390,7 @@
     <span id="changedWhy"></span>
   </div>
   <!-- 새 목록을 모으기 시작한 직후에만 뜨는 안내. 내용은 ADDITIONS를 보고 그린다. -->
-  <div class="tab-hint" id="addedNote" hidden style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
+  <div class="tab-hint added-note" id="addedNote" hidden style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
   <div class="tab-hint" id="blogNote" hidden style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <button type="button" class="stats-toggle" id="onlyStrong" style="margin:0"></button>
     <span id="blogWhy"></span>
@@ -1326,6 +1340,12 @@ function buildMulti(container, field, label, entries) {
   const btn = container.querySelector(".multi-btn");
   const panel = container.querySelector(".multi-panel");
 
+  // 맨 위의 '전체 선택'. 다 고른 뒤 몇 개만 빼고 싶을 때 쓴다.
+  const allRow = document.createElement("label");
+  allRow.className = "multi-all";
+  allRow.innerHTML = `<input type="checkbox" data-all="1"><span>전체 선택</span>`;
+  panel.appendChild(allRow);
+
   entries.forEach(([name, count]) => {
     const row = document.createElement("label");
     row.innerHTML = `<input type="checkbox"><span></span><span class="cnt"></span>`;
@@ -1348,7 +1368,12 @@ function buildMulti(container, field, label, entries) {
       : picked.size === 1 ? [...picked][0]
       : `${label.replace("전체 ", "")} ${picked.size}개`;
     btn.classList.toggle("active", picked.size > 0);
-    panel.querySelectorAll("input").forEach(i => (i.checked = picked.has(i.value)));
+    const items = panel.querySelectorAll("input:not([data-all])");
+    items.forEach(i => (i.checked = picked.has(i.value)));
+    const all = panel.querySelector("input[data-all]");
+    const on = [...items].filter(i => i.checked).length;
+    all.checked = items.length > 0 && on === items.length;
+    all.indeterminate = on > 0 && on < items.length;
   };
 
   btn.addEventListener("click", e => {
@@ -1360,7 +1385,10 @@ function buildMulti(container, field, label, entries) {
   });
   panel.addEventListener("click", e => e.stopPropagation());
   panel.addEventListener("change", e => {
-    if (e.target.checked) selected[field].add(e.target.value);
+    if (e.target.dataset.all) {
+      selected[field].clear();
+      if (e.target.checked) entries.forEach(([name]) => selected[field].add(name));
+    } else if (e.target.checked) selected[field].add(e.target.value);
     else selected[field].delete(e.target.value);
     sync();
     resetPaging();
@@ -1884,19 +1912,19 @@ function drawAddedNote(add, places) {
   box.innerHTML = "";
   const filtering = ADDITIONS.some(a => a.cats.some(([c]) => c === $("categoryFilter").value))
     && $("toDate").value === dayBefore(add.since);
-  const button = (text, onClick) => {
+  const button = (text, onClick, ghost) => {
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "stats-toggle";
-    b.style.margin = "0";
+    b.className = ghost ? "chip ghost" : "chip";
     b.textContent = text;
     b.addEventListener("click", onClick);
     return b;
   };
   const msg = document.createElement("span");
   const [, m, d] = add.since.split("-").map(Number);
-  msg.textContent = `${add.label} 가게는 ${m}/${d}부터 모읍니다. 그전에 신고한 곳도 이미 아래 목록의 `
-    + "신고일 자리에 들어가 있어요. 그동안 놓친 곳만 골라 보기:";
+  msg.textContent = `📌 ${add.label} 가게는 ${m}/${d}부터 모았어요. 그전에 신고한 곳도 아래 목록의 `
+    + "신고일 자리에 섞여 들어가 있어요. 그동안 놓친 곳만 골라 보기:";
+  msg.style.flex = "1 1 100%";
   box.append(msg);
 
   add.cats.forEach(([cat, name]) => {
@@ -1915,7 +1943,7 @@ function drawAddedNote(add, places) {
     $("toDate").value = "";
   };
   if (filtering) {
-    box.append(button("← 전체 보기", () => { clearFilter(); resetPaging(); refreshForTab(); }));
+    box.append(button("← 전체 보기", () => { clearFilter(); resetPaging(); refreshForTab(); }, true));
   }
   // 다 봤으면 이 안내를 접는다. 놓친 곳은 원래부터 목록 안에 있으므로 따로 옮길 것은 없다.
   box.append(button("✓ 다 봤어요 · 안내 닫기", () => {
@@ -1924,7 +1952,7 @@ function drawAddedNote(add, places) {
     if (filtering) clearFilter();
     resetPaging();
     refreshForTab();
-  }));
+  }, true));
 }
 
 function countBy(places, key) {
