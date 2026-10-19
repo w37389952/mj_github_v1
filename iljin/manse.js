@@ -410,18 +410,33 @@ const 삼합 = [[[8, 0, 4], "수"], [[2, 6, 10], "화"], [[5, 9, 1], "금"], [[1
 const 쌍 = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
 const 간자 = "甲乙丙丁戊己庚辛壬癸", 지자 = "子丑寅卯辰巳午未申酉戌亥";
 
-// 오행마다 이 사람에게 얼마나 반가운지. 억부를 바탕으로 조후를 반만큼 얹는다.
-function 오행값표(판정) {
+// ── 적용법 ────────────────────────────────────────────────
+// 같은 사주도 보는 법에 따라 반가운 오행과 따지는 것이 다르다. 어느 법이 이 사람의
+// 실제 하루와 맞는지는 기록이 정하므로, 법을 바꿔 가며 같은 날을 다시 잴 수 있게 한다.
+//   억부·조후 — 두 용신 판정에 얼마씩 무게를 둘지
+//   순환     — 판 전체의 흐름(통관)과 일진 위아래 생극을 넣을지
+//   합충     — 원국·운과의 합·충·삼합을 넣을지
+const 적용법들 = [
+  { id: "기본", 이름: "억부 + 조후 보조", 설명: "억부 용신을 기본으로 조후를 절반 얹고, 합충·순환까지 본다", 설정: { 억부: 1, 조후: 0.5, 순환: true, 합충: true } },
+  { id: "억부", 이름: "억부만", 설명: "일간의 강약만으로 용신을 정하고 조후는 뺀다", 설정: { 억부: 1, 조후: 0, 순환: true, 합충: true } },
+  { id: "조후", 이름: "조후 중심", 설명: "계절의 차고 더움을 먼저 보고 억부는 절반만", 설정: { 억부: 0.5, 조후: 1, 순환: true, 합충: true } },
+  { id: "순환없이", 이름: "순환 빼기", 설명: "통관과 위아래 흐름을 빼고 본다", 설정: { 억부: 1, 조후: 0.5, 순환: false, 합충: true } },
+  { id: "합충없이", 이름: "합충 빼기", 설명: "합·충을 빼고 오행과 순환만 본다", 설정: { 억부: 1, 조후: 0.5, 순환: true, 합충: false } },
+];
+const 기본설정 = 적용법들[0].설정;
+
+// 오행마다 이 사람에게 얼마나 반가운지. 억부와 조후를 적용법의 무게대로 얹는다.
+function 오행값표(판정, 설정 = 기본설정) {
   const { 억부, 조후, 강약 } = 판정;
   const 표 = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
-  for (const o of 억부.용신) 표[o] += 1;
-  for (const o of 억부.기신) 표[o] -= 1;
+  for (const o of 억부.용신) 표[o] += 설정.억부;
+  for (const o of 억부.기신) 표[o] -= 설정.억부;
   // 억부가 이름 붙이지 않은 나머지 하나. 신약에게 재성은 힘을 끌어 쓰는 부담이고,
   // 신강에게 관성은 넘치는 힘을 다잡아 주는 쪽이다.
   const 남은것 = Object.keys(표).find((o) => !억부.용신.includes(o) && !억부.기신.includes(o));
-  표[남은것] += 강약.신강 ? 0.5 : -0.5;
-  for (const o of 조후.용신) 표[o] += 0.5;
-  for (const o of 조후.기신) 표[o] -= 0.5;
+  표[남은것] += (강약.신강 ? 0.5 : -0.5) * 설정.억부;
+  for (const o of 조후.용신) 표[o] += 설정.조후;
+  for (const o of 조후.기신) 표[o] -= 설정.조후;
   return 표;
 }
 
@@ -453,19 +468,22 @@ function 조습(ji, 절) {
 const 이름 = (p) => `${간자[p.gan]}${지자[p.ji]}(${GAN[p.gan]}${JI[p.ji]})`;
 
 // 한 사람에 대해 매번 같은 값을 다시 만들지 않도록 묶어 둔다.
-// 원국이 바뀌면 판정도 새로 만들어지므로 판정을 열쇠로 쓴다.
+// 원국이 바뀌면 판정도 새로 만들어지므로 판정을 열쇠로 쓰고, 그 안에서 성별·적용법마다 따로 둔다.
 const 문맥캐시 = new WeakMap();
-function 문맥(birth, 판정, gender) {
-  const 있던 = 문맥캐시.get(판정);
-  if (있던 && 있던.gender === gender && 있던.birth === birth) return 있던;
+function 문맥(birth, 판정, gender, 설정 = 기본설정) {
+  if (!문맥캐시.has(판정)) 문맥캐시.set(판정, new Map());
+  const 칸 = 문맥캐시.get(판정);
+  const 열쇠 = gender + JSON.stringify(설정);
+  const 있던 = 칸.get(열쇠);
+  if (있던 && 있던.birth === birth) return 있던;
 
-  const 표 = 오행값표(판정);
+  const 표 = 오행값표(판정, 설정);
   const 간값 = (g) => 표[GAN_OHAENG[g]];
   const 지값 = (j) =>
     JIJANGGAN[j].reduce((s, [g, n]) => s + 표[GAN_OHAENG[g]] * n / 30, 0) + 조습(j, 판정.계절);
   const { year, month, day, time } = birth.raw;
   const c = {
-    birth, gender, 표, 간값, 지값,
+    birth, gender, 설정, 표, 간값, 지값,
     기둥값: (p) => 0.5 * 간값(p.gan) + 0.5 * 지값(p.ji),
     대: daeun(birth, gender),
     // 원국 자리마다 무게. 월지가 가장 무겁고 일지가 그다음이다.
@@ -474,7 +492,7 @@ function 문맥(birth, 판정, gender) {
     연도: new Map(),
   };
   c.막힘 = 막힘찾기(birth, 판정);
-  문맥캐시.set(판정, c);
+  칸.set(열쇠, c);
   return c;
 }
 
@@ -614,10 +632,12 @@ function 하루근거(c, y, m, d, time) {
   const 근거 = [];
   const 넣기 = (말, 값) => 근거.push({ 말, 값 });
 
+  const { 순환, 합충 } = c.설정;
   for (const x of 아래) {
     넣기(`${x.이름} ${이름(x.p)}`, x.w * c.기둥값(x.p));
-    const r = 위아래(c, x.p, x.w);
+    const r = 순환 ? 위아래(c, x.p, x.w) : null;
     if (r) 넣기(r.말, r.값);
+    if (!합충) continue;
 
     // 원국에 대입한다. 위의 운도 같은 원국 글자를 같은 식으로 건드리고 있으면 겹친 것이다.
     for (const [자리, g, pw] of c.원간) {
@@ -644,13 +664,15 @@ function 하루근거(c, y, m, d, time) {
     }
   }
 
-  const 흐 = 판흐름(c, 위, 아래);
+  const 흐 = 순환 ? 판흐름(c, 위, 아래) : null;
   if (흐) {
     const 막 = c.막힘;
     넣기(`순환 · 원국에 대운·세운·월운·${time ? "일진·시운" : "일진"}을 얹은 판의 흐름 ${Math.round(흐.흐름 * 100)}%` +
       ` (${막.누르는} ${흐.누름.toFixed(1)} → ${막.다리} ${흐.다리.toFixed(1)} → ${막.눌리는}` +
       `${흐.끊음 >= 0.5 ? `, 다리를 치는 ${극받는곳[막.다리]} ${흐.끊음.toFixed(1)}` : ""})`, 흐.값);
   }
+
+  if (!합충) return 근거;
 
   if (time) {
     const [일, 시] = 아래;
@@ -712,8 +734,8 @@ function 바탕(c, y, m, d) {
 
 // 점수 하나와 그 근거. 근거 값은 점수와 같은 단위(점)로 바꿔서 돌려준다.
 // 백분위는 그해 안에서 이 날보다 못한 날의 비율이다. 0.03이면 하위 3%다.
-function dayScore(birth, 판정, gender, y, m, d, time) {
-  const c = 문맥(birth, 판정, gender);
+function dayScore(birth, 판정, gender, y, m, d, time, 설정 = 기본설정) {
+  const c = 문맥(birth, 판정, gender, 설정);
   const 통 = 연도통계(c, y);
   const 배 = 15 / 통.퍼짐;
   const 근거 = 하루근거(c, y, m, d, time);
@@ -737,17 +759,17 @@ function dayScore(birth, 판정, gender, y, m, d, time) {
 }
 
 // 하루를 열두 시진으로 나눈 점수. 시진 한가운데 시각(진태양시 보정 전 시계 기준)으로 잰다.
-function hourScores(birth, 판정, gender, y, m, d) {
+function hourScores(birth, 판정, gender, y, m, d, 설정 = 기본설정) {
   return JI.map((지, j) => {
     const h = (j * 2) % 24, mi = 32;   // 서울은 진태양시가 32분쯤 늦어 시진 가운데가 x시 32분이다
-    return { 지, 점수: dayScore(birth, 판정, gender, y, m, d, [h, mi]).점수 };
+    return { 지, 점수: dayScore(birth, 판정, gender, y, m, d, [h, mi], 설정).점수 };
   });
 }
 
 if (typeof window !== "undefined") {
   window.Manse = {
     saju, iljin, dayPillar, toJDN, majorTerms, solarLongitude,
-    sipseong, sipseongOf, daeun, fortune, strength, yongsin, dayScore, hourScores,
+    sipseong, sipseongOf, daeun, fortune, strength, yongsin, dayScore, hourScores, 적용법들,
     GAN, JI, GAN_OHAENG, JI_OHAENG, GAN_EUMYANG, JI_BONGI, SIPSEONG_영역,
   };
 }
