@@ -375,6 +375,9 @@
     <button type="button" class="tab" id="tabChanged" role="tab" aria-selected="false">
       간판 교체 <span class="dot" id="dotChanged" hidden></span>
     </button>
+    <button type="button" class="tab" id="tabMap" role="tab" aria-selected="false">
+      지도 신상 <span class="dot" id="dotMap" hidden></span>
+    </button>
     <button type="button" class="tab" id="tabBlog" role="tab" aria-selected="false">
       블로그 <span class="dot" id="dotBlog" hidden></span>
     </button>
@@ -475,6 +478,21 @@ const TABS = {
     hint: "인허가는 그 전이지만 최근 90일 안에 기록이 바뀐 곳입니다. " +
           "기존 허가를 넘겨받아 상호만 바뀐 경우가 여기 들어옵니다.",
     dateField: "modifiedDate", dateLabel: "정보 변경",
+    places: null, baseline: null, page: 1,
+  },
+  /* 영업신고와 상관없이 지도에 새로 올라온 가게. 두 곳에서 모은다.
+     네이버: 통합검색 '새로 오픈했어요' 칸(collect_naver_new.py)
+     카카오: 어제 카카오맵에 없던 서울 카페·음식점(collect_kakao.py)
+     같은 가게가 양쪽에 있으면 한 장으로 합친다. */
+  map: {
+    kind: "map",
+    files: ["data/naver-new.json", "data/kakao-new.json"],
+    tabId: "tabMap", dotId: "dotMap",
+    baselineKey: "seoul-radar:baseline:map", lastDayKey: "seoul-radar:lastDay:map",
+    hint: "영업신고와 상관없이 지도에 새로 올라온 곳입니다. 신고가 늦거나 신고 목록에 없는 업종(카페만 하는 곳 등)도 잡힙니다. "
+        + "네이버는 검색 결과의 '새로 오픈했어요' 칸에 뜬 가게이고, 카카오는 어제 카카오맵에 없던 가게입니다. "
+        + "네이버는 10/18부터, 카카오는 10/19부터 모았습니다. 첫날(네이버 10/18)은 그날 '새로 오픈' 표시가 붙어 있던 곳이 한꺼번에 들어와 있습니다.",
+    dateField: "firstSeen", dateLabel: "처음 본 날",
     places: null, baseline: null, page: 1,
   },
   blog: {
@@ -1333,8 +1351,7 @@ function markAllSeen() {
   store(t.lastDayKey, today);
   t.baseline = today;
   onlyFresh = false;
-  $("statNewBox").hidden = true;
-  render();
+  refreshForTab();
 }
 
 /* ---------- 다중 선택 드롭다운 ---------- */
@@ -1710,7 +1727,10 @@ function matches(place, f, t) {
       !place.address.toLowerCase().includes(f.q)) return false;
   if (selected.district.size && !selected.district.has(place.district)) return false;
   if (selected.bizType.size && !selected.bizType.has(place.bizType)) return false;
-  if (f.category && place.category !== f.category) return false;
+  // 지도 신상 탭에서는 '구분' 칸이 출처(네이버·카카오·둘 다)를 고른다.
+  if (f.category && t.kind === "map") {
+    if (f.category === "both" ? place.sources.length < 2 : !place.sources.includes(f.category)) return false;
+  } else if (f.category && place.category !== f.category) return false;
   if (f.month && !day.startsWith(f.month)) return false;
   if (f.from && day < f.from) return false;
   if (f.to && day > f.to) return false;
@@ -1836,6 +1856,11 @@ function render() {
     group.innerHTML = `<h2>${fmtDate(date)} ${t.dateLabel} <span class="count">${byDate[date].length}${unit}</span></h2>`;
     if (t.kind === "blog") {
       byDate[date].forEach(p => group.appendChild(blogCard(p)));
+      list.appendChild(group);
+      return;
+    }
+    if (t.kind === "map") {
+      byDate[date].forEach(p => group.appendChild(mapCard(p)));
       list.appendChild(group);
       return;
     }
@@ -2016,6 +2041,21 @@ function refreshForTab() {
       + "다만 ‘오픈’이 무른 말이라 ‘오픈런’·‘오픈 시간’까지 걸립니다. "
       + "‘신상·가오픈’ 같은 확실한 말이 든 글만 보려면 왼쪽을 누르세요.";
   }
+  // '구분' 칸은 지도 신상 탭에서만 출처 고르기로 바뀐다. 다른 탭으로 오면 원래대로.
+  const cat = $("categoryFilter");
+  if (!cat.dataset.orig) cat.dataset.orig = cat.innerHTML;
+  const wantMap = t.kind === "map";
+  if (wantMap !== (cat.dataset.mode === "map")) {
+    const n = s => places.filter(p => s === "both" ? p.sources.length > 1 : p.sources.includes(s)).length;
+    cat.innerHTML = wantMap
+      ? `<option value="">전체 출처</option>
+         <option value="naver">${MAP_SOURCES.naver} (${n("naver")})</option>
+         <option value="kakao">${MAP_SOURCES.kakao} (${n("kakao")})</option>
+         <option value="both">양쪽 다 뜬 곳 (${n("both")})</option>`
+      : cat.dataset.orig;
+    cat.dataset.mode = wantMap ? "map" : "";
+    cat.value = "";
+  }
   $("subtabs").hidden = !isBlog;
   [$("districtMulti"), $("bizTypeMulti"), $("categoryFilter")]
     .forEach(el => { el.hidden = isBlog; });
@@ -2026,11 +2066,15 @@ function refreshForTab() {
 
   const freshCount = places.filter(isNewToVisitor).length;
   if (freshCount === 0) onlyFresh = false;
-  $("statNewBox").hidden = freshCount === 0;
+  /* 새로 든 것이 없을 때 상자를 아예 감췄더니 '새로 들어온 것만 보기' 버튼이 어디
+     있는지 모르겠다는 말을 들었다. 상자는 늘 두고, 없으면 0과 함께 버튼만 감춘다. */
+  $("statNewBox").hidden = !t.baseline;
+  $("onlyFreshBtn").hidden = $("markSeenBtn").hidden = freshCount === 0;
   $("onlyFreshBtn").textContent = onlyFresh ? "← 전체 보기" : "새로 들어온 것만 보기";
-  $("statNew").textContent = freshCount > 0 ? freshCount.toLocaleString("ko-KR") : "–";
-  $("statNewLabel").textContent =
-    freshCount > 0 ? `${t.baseline} 이후 새로 추가` : "새로 추가";
+  $("statNew").textContent = freshCount.toLocaleString("ko-KR");
+  $("statNewLabel").textContent = freshCount > 0
+    ? `${t.baseline} 이후 새로 추가`
+    : `${t.baseline} 이후 새로 든 곳 없음`;
   $("statTotal").textContent = places.length.toLocaleString("ko-KR");
   if (isBlog) {
     $("statTotal").nextElementSibling.textContent = "블로그 글";
@@ -2039,7 +2083,7 @@ function refreshForTab() {
     $("statBiz").textContent = countBy(places, "blogger").size;
     $("statBiz").nextElementSibling.textContent = "블로거";
   } else {
-    $("statTotal").nextElementSibling.textContent = "신규 음식점";
+    $("statTotal").nextElementSibling.textContent = t.kind === "map" ? "지도 새 가게" : "신규 음식점";
     $("statDistricts").textContent = countBy(places, "district").size;
     $("statDistricts").nextElementSibling.textContent = "지역(구)";
     $("statBiz").textContent = countBy(places, "bizType").size;
@@ -2074,6 +2118,111 @@ function refreshForTab() {
   render();
 }
 
+/* ---------- 지도 신상: 네이버 '새로 오픈'과 카카오맵 새 가게를 한 목록으로 ---------- */
+
+const MAP_SOURCES = { naver: "네이버 새로 오픈", kakao: "카카오맵 신규" };
+
+/** '서울 마포구 연남동'·'서울 은평구 대조동 14-1'에서 구를 뽑는다. */
+function guOf(text) {
+  const m = (text || "").match(/([가-힣]+구)(\s|$)/);
+  return m ? m[1] : "";
+}
+
+function fromNaver(p) {
+  return {
+    id: "n" + p.id, name: p.name, sources: ["naver"],
+    address: p.area || "", district: guOf(p.area),
+    bizType: (p.category || "").split(",")[0] || "기타",
+    lat: p.lat, lng: p.lng, firstSeen: p.firstSeen,
+    naverUrl: p.url,
+  };
+}
+
+function fromKakao(p) {
+  // '음식점 > 한식 > 감자탕'에서 둘째 칸이 쓸 만한 업종이다. 카페는 '카페' 그대로.
+  const parts = (p.category || "").split(">").map(s => s.trim()).filter(Boolean);
+  return {
+    id: "k" + p.id, name: p.name, sources: ["kakao"],
+    address: p.road || p.address || "", district: guOf(p.address || p.road),
+    bizType: parts[0] === "카페" ? "카페" : parts[1] || parts[0] || "기타",
+    phone: p.phone || "",
+    lat: parseFloat(p.y), lng: parseFloat(p.x), firstSeen: p.firstSeen,
+    kakaoUrl: p.url,
+  };
+}
+
+/* 같은 가게가 양쪽에 다 있으면 한 장으로 합친다. 이름(띄어쓰기 빼고)이 같고
+   200m 안이면 같은 가게로 본다. 처음 본 날은 더 이른 쪽을 쓴다. */
+function mergeMapPlaces(naver, kakao) {
+  const key = s => (s || "").replace(/\s+/g, "").toLowerCase();
+  const near = (a, b) => Math.abs(a.lat - b.lat) < 0.0018 && Math.abs(a.lng - b.lng) < 0.0023;
+  const out = naver.map(fromNaver);
+  kakao.map(fromKakao).forEach(k => {
+    const twin = out.find(n => n.sources[0] === "naver" && !n.kakaoUrl
+      && key(n.name) === key(k.name) && near(n, k));
+    if (!twin) { out.push(k); return; }
+    twin.sources.push("kakao");
+    twin.kakaoUrl = k.kakaoUrl;
+    twin.address = k.address || twin.address;     // 카카오가 도로명까지 준다
+    twin.phone = k.phone;
+    if (k.firstSeen < twin.firstSeen) twin.firstSeen = k.firstSeen;
+  });
+  // 쪽 나누기가 이 순서를 따르므로 최근 본 것부터 놓는다.
+  return out.sort((a, b) => (b.firstSeen || "").localeCompare(a.firstSeen || "")
+    || a.name.localeCompare(b.name, "ko"));
+}
+
+async function loadMapPlaces(files) {
+  const read = async file => {
+    try {
+      const res = await fetch(file);
+      return res.ok ? ((await res.json()).places || []) : [];
+    } catch (e) { return []; }
+  };
+  const [naver, kakao] = await Promise.all(files.map(read));
+  return mergeMapPlaces(naver, kakao);
+}
+
+/** 지도 신상 카드. 신고 자료가 아니라서 면적·신고 구분이 없다. */
+function mapCard(p) {
+  const fresh = isNewToVisitor(p);
+  const card = document.createElement("article");
+  card.className = "card" + (fresh ? " is-new" : "");
+  card.innerHTML = `
+    <div>
+      <div class="name"></div>
+      <div class="addr"></div>
+      <div class="detail"></div>
+      <div class="meta">
+        ${fresh ? `<span class="badge new">NEW</span>` : ""}
+        ${p.sources.includes("naver") ? `<span class="badge rest">${MAP_SOURCES.naver}</span>` : ""}
+        ${p.sources.includes("kakao") ? `<span class="badge general">${MAP_SOURCES.kakao}</span>` : ""}
+        <span class="badge plain biz-badge"></span>
+        ${p.district ? `<span class="badge plain district-badge"></span>` : ""}
+      </div>
+    </div>
+    <div class="actions">
+      <a class="map-link naver-link" target="_blank" rel="noopener">네이버 지도 →</a>
+      ${p.kakaoUrl ? `<a class="map-link kakao-link" target="_blank" rel="noopener">카카오맵 →</a>` : ""}
+      <div class="insta">
+        <button type="button" class="map-link insta-btn">인스타 <span class="caret">▾</span></button>
+        <div class="insta-panel" hidden></div>
+      </div>
+    </div>`;
+  card.querySelector(".name").textContent = p.name;
+  card.querySelector(".name").appendChild(copyButton(p.name, "name-copy"));
+  card.querySelector(".addr").textContent = p.address;
+  card.querySelector(".detail").textContent = p.phone || "";
+  card.querySelector(".biz-badge").textContent = p.bizType;
+  if (p.district) card.querySelector(".district-badge").textContent = p.district;
+  // 카카오에서만 본 가게는 네이버 플레이스 번호를 모르니 이름과 동네로 찾는다.
+  card.querySelector(".naver-link").href = p.naverUrl
+    || "https://map.naver.com/p/search/" + encodeURIComponent(`${p.name} ${p.address.split(" ").slice(1, 3).join(" ")}`);
+  if (p.kakaoUrl) card.querySelector(".kakao-link").href = p.kakaoUrl;
+  buildInstaMenu(card, p);
+  return card;
+}
+
 /* 원본이 같은 관리번호를 두 번 주는 경우가 있다. 수집기에서 걸러내지만
  * 이미 만들어져 있는 파일에도 남아 있으므로 화면에서 한 번 더 본다. */
 function dedupeById(places) {
@@ -2093,7 +2242,8 @@ async function openTab(key) {
   onlyStrongNew = false;
   const t = tab();
   if (!t.places) {
-    try {
+    if (t.kind === "map") t.places = await loadMapPlaces(t.files);
+    else try {
       const res = await fetch(t.file);
       if (!res.ok) throw new Error(res.status);
       const body = await res.json();
