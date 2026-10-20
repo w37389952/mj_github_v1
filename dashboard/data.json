@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-20T14:00:00+09:00",
+  "updated": "2026-10-20T14:30:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -577,6 +577,18 @@
     {
       "project": "radar",
       "title": "로그인 동기화·로스터리 수집 PR 합치기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "Supabase Site URL을 일진일기 주소로 되돌리고, ** 주소는 Redirect URLs에 넣기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "블로그 통계 9/1~10/20 유입분석·일간 조회수 엑셀 보내기",
       "owner": "MJ",
       "status": "할 일"
     }
