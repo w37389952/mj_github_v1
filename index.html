@@ -139,6 +139,13 @@
     }
     .seen-btn { font-size: 11px; padding-top: 2px; }
   }
+  .fresh-btn {
+    font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer;
+    color: var(--bg); background: var(--accent); border: 1px solid var(--accent);
+    border-radius: 999px; padding: 9px 18px;
+  }
+  .fresh-btn.on { color: var(--accent); background: var(--accent-soft); }
+  .fresh-btn:disabled { cursor: default; opacity: .45; }
   .seen-btn {
     font: inherit; font-size: 12px; cursor: pointer; color: var(--accent);
     background: none; border: none; padding: 4px 0 0; text-decoration: underline;
@@ -406,12 +413,8 @@
     <div class="stat" id="statNewBox" hidden>
       <div class="num" id="statNew" style="color:var(--accent)">–</div>
       <div class="label" id="statNewLabel">새로 추가</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button type="button" class="seen-btn" id="onlyFreshBtn"
-                title="신고일과 상관없이, 지난번에 본 뒤로 새로 들어온 것만 봅니다">새로 들어온 것만 보기</button>
-        <button type="button" class="seen-btn" id="markSeenBtn"
-                title="목록은 그대로 두고 NEW 표시만 지웁니다">모두 확인함</button>
-      </div>
+      <button type="button" class="seen-btn" id="markSeenBtn"
+              title="목록은 그대로 두고 NEW 표시만 지웁니다">모두 확인함</button>
     </div>
     <div class="stat"><div class="num" id="statTotal">–</div><div class="label">신규 음식점</div></div>
     <div class="stat"><div class="num" id="statDistricts">–</div><div class="label">지역(구)</div></div>
@@ -419,6 +422,11 @@
   </div>
 
   <div class="controls">
+    <!-- 이미 본 날짜를 건너뛰면 늦게 끼어든 가게를 놓친다. 그래서 눈에 띄는 버튼으로 둔다. -->
+    <div class="control-row">
+      <button type="button" class="fresh-btn" id="onlyFreshBtn"
+              title="신고일과 상관없이, 지난번에 본 뒤로 새로 들어온 것만 봅니다"></button>
+    </div>
     <div class="control-row">
       <input type="search" id="search" class="field" placeholder="상호명 · 주소 검색">
     </div>
@@ -490,7 +498,8 @@ const TABS = {
     tabId: "tabMap", dotId: "dotMap",
     baselineKey: "seoul-radar:baseline:map", lastDayKey: "seoul-radar:lastDay:map",
     hint: "영업신고와 상관없이 지도에 새로 올라온 곳입니다. 신고가 늦거나 신고 목록에 없는 업종(카페만 하는 곳 등)도 잡힙니다. "
-        + "네이버는 검색 결과의 '새로 오픈했어요' 칸에 뜬 가게이고, 카카오는 어제 카카오맵에 없던 가게입니다. "
+        + "네이버는 검색 결과의 '새로 오픈했어요' 칸에 뜬 가게이고, 카카오는 서울 카페·음식점 전체(약 12만 6천 곳)를 밤마다 훑어 어제 없던 가게입니다. "
+        + "날짜는 오픈일이 아니라 우리가 처음 본 날입니다(카카오·네이버 모두 오픈일을 알려 주지 않습니다). "
         + "네이버는 10/18부터, 카카오는 10/19부터 모았습니다. 첫날(네이버 10/18)은 그날 '새로 오픈' 표시가 붙어 있던 곳이 한꺼번에 들어와 있습니다.",
     dateField: "firstSeen", dateLabel: "처음 본 날",
     places: null, baseline: null, page: 1,
@@ -1990,6 +1999,16 @@ function drawAddedNote(add, places) {
   }, true));
 }
 
+/** '새로 들어온 것만' 버튼. 없을 때도 자리는 지키고 눌리지만 않게 한다. */
+function drawFreshBtn(freshCount) {
+  const b = $("onlyFreshBtn");
+  b.disabled = freshCount === 0;
+  b.classList.toggle("on", onlyFresh);
+  b.textContent = onlyFresh ? "← 전체 보기"
+    : freshCount ? `🆕 새로 들어온 것만 보기 (${freshCount.toLocaleString("ko-KR")})`
+    : "🆕 새로 들어온 곳 없음";
+}
+
 function countBy(places, key) {
   const counts = new Map();
   places.forEach(p => p[key] && counts.set(p[key], (counts.get(p[key]) || 0) + 1));
@@ -2069,8 +2088,8 @@ function refreshForTab() {
   /* 새로 든 것이 없을 때 상자를 아예 감췄더니 '새로 들어온 것만 보기' 버튼이 어디
      있는지 모르겠다는 말을 들었다. 상자는 늘 두고, 없으면 0과 함께 버튼만 감춘다. */
   $("statNewBox").hidden = !t.baseline;
-  $("onlyFreshBtn").hidden = $("markSeenBtn").hidden = freshCount === 0;
-  $("onlyFreshBtn").textContent = onlyFresh ? "← 전체 보기" : "새로 들어온 것만 보기";
+  $("markSeenBtn").hidden = freshCount === 0;
+  drawFreshBtn(freshCount);
   $("statNew").textContent = freshCount.toLocaleString("ko-KR");
   $("statNewLabel").textContent = freshCount > 0
     ? `${t.baseline} 이후 새로 추가`
@@ -2338,7 +2357,7 @@ function init(data) {
     $("fromDate").value = "";
     $("toDate").value = "";
     onlyFresh = false;
-    $("onlyFreshBtn").textContent = "새로 들어온 것만 보기";
+    drawFreshBtn((tab().places || []).filter(isNewToVisitor).length);
     selected.district.clear();
     selected.bizType.clear();
     $("districtMulti").sync();
