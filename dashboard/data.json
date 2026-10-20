@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-20T12:10:00+09:00",
+  "updated": "2026-10-20T12:40:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -555,9 +555,20 @@
       "owner": "Claude",
       "status": "완료",
       "done": "2026-09-30"
+    },
+    {
+      "project": "radar",
+      "title": "카카오맵 촘촘 수집 첫날 기록(lastRun)에서 못 본 곳이 0인지 확인",
+      "owner": "Claude",
+      "status": "할 일"
     }
   ],
   "log": [
+    {
+      "date": "2026-10-20",
+      "project": "radar",
+      "text": "카카오맵 수집이 먹자골목처럼 빽빽한 곳(100m에 45곳 넘음)을 다 못 보던 것을, 25m까지 쪼개고 다섯 점에서 더 묻게 고쳤다. 빠짐없이 봤는지는 매일 kakao-seen.json에 남긴다."
+    },
     {
       "date": "2026-10-20",
       "project": "radar",
