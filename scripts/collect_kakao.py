@@ -35,12 +35,21 @@ NEW = DATA / "kakao-new.json"
 
 KEY = os.environ.get("KAKAO_REST_KEY", "").strip()
 URL = "https://dapi.kakao.com/v2/local/search/category.json"
+KEYWORD_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
 GROUPS = {"CE7": "카페", "FD6": "음식점"}
+# 원두만 볶아 파는 로스팅 가게는 카카오가 카페·음식점이 아니라 '식품판매' 같은 데 넣어
+# 위 두 분류로는 안 잡힌다. 그래서 이름·분류에 이 말이 든 곳을 따로 키워드로 훑는다.
+# 카페로 이미 잡힌 로스터리는 같은 ID라 겹치지 않는다.
+KEYWORDS = ["로스터리", "로스터스", "로스팅", "원두"]
 
 # 서울을 넉넉히 덮는 사각형(경도, 위도). 밖으로 삐져나온 곳은 주소로 거른다.
 SEOUL = (126.76, 37.41, 127.19, 37.72)
 START_SPLIT = 8          # 처음에 8×8칸으로 나눈다
-MIN_SPAN = 0.0012        # 칸 너비가 이보다 작으면 더 안 쪼갠다(약 100m)
+# 칸 너비가 이보다 작으면 더 안 쪼갠다(약 25m). 처음엔 100m였는데, 먹자골목처럼
+# 100m 안에 가게가 45곳 넘게 몰린 곳은 일부를 못 봐 새 가게도 놓칠 수 있었다.
+MIN_SPAN = 0.0003
+# 훑는 범위가 바뀌면(칸 크기·키워드) 그날 처음 보이는 곳은 원래 있던 가게다. 이 값으로 알아챈다.
+SCOPE = f"span={MIN_SPAN};keywords={','.join(KEYWORDS)}"
 PAGE_SIZE = 15
 MAX_RESULTS = 45
 # 하루 무료 한도(10만 번)보다 넉넉히 아래에서 멈춘다. 서울을 한 번 도는 데 2만 번 안팎이다.
@@ -56,19 +65,25 @@ class Stop(Exception):
     """이번 회차를 더 이어 갈 수 없을 때(한도·인증 문제)."""
 
 
-def query(group, rect, page):
-    """칸 하나의 한 쪽을 받는다. 일시적 실패는 쉬었다 다시 묻는다."""
+def query(group, rect, page, near=None):
+    """칸 하나의 한 쪽을 받는다. 일시적 실패는 쉬었다 다시 묻는다.
+    near=(x, y, 반경m)를 주면 사각형 대신 그 점에서 가까운 순으로 받는다."""
     global calls
     if calls >= MAX_CALLS:
         raise Stop(f"이번 회차 호출 상한({MAX_CALLS:,}번)에 닿았습니다.")
+    where = ({"x": f"{near[0]:.6f}", "y": f"{near[1]:.6f}", "radius": near[2], "sort": "distance"}
+             if near else {"rect": ",".join(f"{v:.6f}" for v in rect)})
+    # group이 'kw:원두'처럼 오면 분류 대신 키워드로 찾는다.
+    what = {"query": group[3:]} if group.startswith("kw:") else {"category_group_code": group}
     params = urllib.parse.urlencode({
-        "category_group_code": group,
-        "rect": ",".join(f"{v:.6f}" for v in rect),
+        **what,
+        **where,
         "page": page,
         "size": PAGE_SIZE,
     })
+    base = KEYWORD_URL if group.startswith("kw:") else URL
     request = urllib.request.Request(
-        f"{URL}?{params}", headers={"Authorization": f"KakaoAK {KEY}"})
+        f"{base}?{params}", headers={"Authorization": f"KakaoAK {KEY}"})
     last_error = None
     for attempt in range(1, 6):
         calls += 1
@@ -90,6 +105,41 @@ def query(group, rect, page):
     raise Stop(f"{group} 칸 {rect} {page}쪽을 끝내 못 받았습니다: {last_error}")
 
 
+def all_pages(group, rect, first, near=None):
+    """첫 쪽을 받아 둔 질문의 나머지 쪽(최대 45곳까지)을 마저 받는다."""
+    total = int((first.get("meta") or {}).get("total_count") or 0)
+    docs = list(first.get("documents") or [])
+    pages = (min(total, MAX_RESULTS) + PAGE_SIZE - 1) // PAGE_SIZE
+    page, data = 1, first
+    while page < pages and not (data.get("meta") or {}).get("is_end"):
+        page += 1
+        data = query(group, rect, page, near)
+        docs.extend(data.get("documents") or [])
+    return docs
+
+
+def sweep_dense(group, rect):
+    """25m 칸에도 45곳이 넘는 곳(건물 안 식당가 등). 사각형으로는 45곳까지만 주므로
+    가운데와 네 귀퉁이에서 '가까운 순'으로 45곳씩 더 물어 겹치지 않는 곳을 모은다."""
+    x1, y1, x2, y2 = rect
+    # 경도 1도 ≈ 88km, 위도 1도 ≈ 111km(서울 위도). 귀퉁이에서 칸 전체가 들어오게 대각선만큼.
+    diag = (((x2 - x1) * 88_000) ** 2 + ((y2 - y1) * 111_000) ** 2) ** 0.5
+    radius = max(30, int(diag) + 5)
+    docs = []
+    for x, y in (((x1 + x2) / 2, (y1 + y2) / 2), (x1, y1), (x2, y1), (x1, y2), (x2, y2)):
+        near = (x, y, radius)
+        docs.extend(all_pages(group, None, query(group, None, 1, near), near))
+    return docs
+
+
+def inside(doc, rect):
+    try:
+        x, y = float(doc.get("x")), float(doc.get("y"))
+    except (TypeError, ValueError):
+        return False
+    return rect[0] <= x <= rect[2] and rect[1] <= y <= rect[3]
+
+
 def crawl_cell(group, rect, found, stats):
     """칸 하나를 훑는다. 45곳이 넘으면 네 칸으로 쪼개 다시 훑는다."""
     data = query(group, rect, 1)
@@ -102,26 +152,34 @@ def crawl_cell(group, rect, found, stats):
                     (x1, my, mx, y2), (mx, my, x2, y2)):
             crawl_cell(group, sub, found, stats)
         return
-    if total > MAX_RESULTS:
-        stats["capped"] += 1          # 아주 좁은 칸에 45곳이 넘으면 45곳만 본다
 
-    docs = list(data.get("documents") or [])
-    pages = (min(total, MAX_RESULTS) + PAGE_SIZE - 1) // PAGE_SIZE
-    page = 1
-    while page < pages and not (data.get("meta") or {}).get("is_end"):
-        page += 1
-        data = query(group, rect, page)
-        docs.extend(data.get("documents") or [])
+    docs = all_pages(group, rect, data)
+    if total > MAX_RESULTS:
+        stats["capped"] += 1
+        docs.extend(sweep_dense(group, rect))
+        # 그래도 못 본 곳이 몇 곳인지 남긴다. 0이면 빽빽한 곳까지 다 본 것이다.
+        here = {str(d.get("id")) for d in docs if inside(d, rect)}
+        short = max(0, total - len(here))
+        stats["short"] += short
+        if short:
+            stats["shortCells"].append({"group": GROUPS.get(group, group),
+                                        "x": round((x1 + x2) / 2, 5), "y": round((y1 + y2) / 2, 5),
+                                        "total": total, "seen": len(here)})
     stats["cells"] += 1
 
     for doc in docs:
         address = doc.get("address_name") or ""
         if not address.startswith("서울"):
             continue
-        found[str(doc.get("id"))] = {
-            "id": str(doc.get("id")),
+        if group.startswith("kw:") and not is_food(doc):
+            continue                     # '원두' 이름의 사무실 같은 것은 뺀다
+        pid = str(doc.get("id"))
+        if pid in found:
+            continue                     # 카페·음식점으로 이미 본 곳
+        found[pid] = {
+            "id": pid,
             "name": doc.get("place_name") or "",
-            "group": GROUPS.get(group, group),
+            "group": GROUPS.get(group) or doc.get("category_group_name") or "식품 판매",
             "category": doc.get("category_name") or "",
             "address": address,
             "road": doc.get("road_address_name") or "",
@@ -132,21 +190,29 @@ def crawl_cell(group, rect, found, stats):
         }
 
 
+def is_food(doc):
+    """키워드로 찾은 곳 중 먹고 마시는 것을 파는 곳만 남긴다."""
+    if doc.get("category_group_code") in GROUPS:
+        return True
+    return any(w in (doc.get("category_name") or "") for w in ("식품", "커피", "원두", "음료", "차,"))
+
+
 def crawl():
     """서울 전체를 훑는다. 다 못 돌았으면 None을 돌려준다."""
     found = {}
-    stats = {"cells": 0, "capped": 0}
+    stats = {"cells": 0, "capped": 0, "short": 0, "shortCells": []}
     left, bottom, right, top = SEOUL
     dx = (right - left) / START_SPLIT
     dy = (top - bottom) / START_SPLIT
     try:
-        for group in GROUPS:
+        for group in [*GROUPS, *(f"kw:{w}" for w in KEYWORDS)]:
             for i in range(START_SPLIT):
                 for j in range(START_SPLIT):
                     rect = (left + dx * i, bottom + dy * j,
                             left + dx * (i + 1), bottom + dy * (j + 1))
                     crawl_cell(group, rect, found, stats)
-            print(f"  {GROUPS[group]}까지 훑음 — 지금까지 {len(found):,}곳, 호출 {calls:,}번")
+            label = GROUPS.get(group) or f"'{group[3:]}' 키워드"
+            print(f"  {label}까지 훑음 — 지금까지 {len(found):,}곳, 호출 {calls:,}번")
     except Stop as exc:
         print(f"  중단: {exc}", file=sys.stderr)
         return None, stats
@@ -158,7 +224,9 @@ def load_seen():
         return {"first": {}, "missing": {}}
     try:
         body = json.loads(SEEN.read_text(encoding="utf-8"))
-        return {"first": body.get("first") or {}, "missing": body.get("missing") or {}}
+        # scope가 없던 때는 100m 칸에 카페·음식점만 돌았다.
+        return {"first": body.get("first") or {}, "missing": body.get("missing") or {},
+                "scope": body.get("scope", "span=0.0012")}
     except Exception as exc:
         print(f"kakao-seen.json을 읽지 못했습니다: {exc}", file=sys.stderr)
         return {"first": {}, "missing": {}}
@@ -181,7 +249,8 @@ def main():
 
     print("카카오맵에서 서울 카페·음식점을 훑습니다.")
     found, stats = crawl()
-    print(f"  칸 {stats['cells']:,}개, 호출 {calls:,}번, 45곳 넘어 잘린 칸 {stats['capped']}개")
+    print(f"  칸 {stats['cells']:,}개, 호출 {calls:,}번, 25m 칸에도 45곳 넘은 곳 {stats['capped']}개, "
+          f"그래도 못 본 곳 {stats['short']}곳")
 
     # 다 못 돌았거나 평소보다 확 적으면 그날은 버린다. 반쯤 돈 날을 기준으로 삼으면
     # 다음 날 멀쩡한 가게가 무더기로 '새 가게'로 보인다.
@@ -195,8 +264,14 @@ def main():
 
     baseline = not first_of
     new_ids = [pid for pid in found if pid not in first_of]
+    # 칸을 더 잘게 나눈 첫날에는, 원래 있었는데 빽빽해서 못 보던 가게가 한꺼번에 보인다.
+    # 이것들을 '새 가게'로 띄우면 안 되므로 그날 처음 본 것은 기준일 것으로 친다.
+    regrid = bool(first_of) and seen.get("scope") != SCOPE
+    first_day = min(first_of.values()) if first_of else today
     for pid in new_ids:
-        first_of[pid] = today
+        first_of[pid] = first_day if regrid else today
+    if regrid:
+        print(f"훑는 범위(칸 크기·키워드)가 바뀐 첫날이라 처음 본 {len(new_ids):,}곳은 새 가게가 아닌 기준으로 넣습니다.")
 
     # 안 보이는 가게는 바로 잊지 않고, GRACE_DAYS 넘게 안 보이면 그때 지운다.
     missing = dict(seen["missing"])
@@ -224,6 +299,11 @@ def main():
         "baseline": min(groups) if groups else today,
         "first": dict(sorted(groups.items())),
         "missing": dict(sorted(missing.items())),
+        "scope": SCOPE,
+        # 실행 기록은 깃허브 로그인이 있어야 보이므로, 얼마나 빠짐없이 봤는지 여기에도 남긴다.
+        "lastRun": {"date": today, "places": len(found), "calls": calls,
+                    "cells": stats["cells"], "denseCells": stats["capped"],
+                    "missedMaybe": stats["short"], "missedCells": stats["shortCells"][:50]},
     })
 
     base_day = min(groups) if groups else today
