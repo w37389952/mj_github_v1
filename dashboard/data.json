@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-20T12:40:00+09:00",
+  "updated": "2026-10-20T14:00:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -561,9 +561,32 @@
       "title": "카카오맵 촘촘 수집 첫날 기록(lastRun)에서 못 본 곳이 0인지 확인",
       "owner": "Claude",
       "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "Supabase SQL Editor에서 radar-sync.sql 실행하기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "Supabase URL Configuration의 Redirect URLs에 레이더 주소 더하기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "radar",
+      "title": "로그인 동기화·로스터리 수집 PR 합치기",
+      "owner": "MJ",
+      "status": "할 일"
     }
   ],
   "log": [
+    {
+      "date": "2026-10-20",
+      "project": "radar",
+      "text": "카카오 로그인으로 폰·PC의 '어디까지 봤나'를 맞추는 기능을 만들었다(일진일기와 같은 로그인, 표는 따로). 카카오 수집에 로스터리·원두 가게를 더했다."
+    },
     {
       "date": "2026-10-20",
       "project": "radar",
