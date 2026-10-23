@@ -418,6 +418,8 @@
   </div>
   <!-- 새 목록을 모으기 시작한 직후에만 뜨는 안내. 내용은 ADDITIONS를 보고 그린다. -->
   <div class="tab-hint added-note" id="addedNote" hidden style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
+  <!-- '다 봤어요'를 잘못 눌렀을 때 되돌리는 길. 안내 기간(30일) 안에만 보인다. -->
+  <button type="button" class="seen-btn" id="reopenAdded" hidden></button>
   <div class="tab-hint" id="blogNote" hidden style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <button type="button" class="stats-toggle" id="onlyStrong" style="margin:0"></button>
     <span id="blogWhy"></span>
@@ -1959,9 +1961,25 @@ function seenAdditions() {
 /** 아직 '다 봤어요'를 안 눌렀고 더한 지 30일이 안 된 것 하나. 없으면 null. */
 function activeAddition() {
   const seen = seenAdditions();
+  return ADDITIONS.find(a => !seen.includes(a.key) && additionFresh(a)) || null;
+}
+
+function additionFresh(a) {
   const now = today || new Date().toLocaleDateString("sv-SE");
-  const daysSince = since => (new Date(now) - new Date(since)) / 86400000;
-  return ADDITIONS.find(a => !seen.includes(a.key) && daysSince(a.since) <= ADDITION_DAYS) || null;
+  return (new Date(now) - new Date(a.since)) / 86400000 <= ADDITION_DAYS;
+}
+
+/** 닫았지만 아직 안내 기간 안인 것. '다시 열기'에 쓴다. */
+function closedAddition() {
+  const seen = seenAdditions();
+  return ADDITIONS.find(a => seen.includes(a.key) && additionFresh(a)) || null;
+}
+
+function reopenAddition(add) {
+  seenThisVisit.delete(add.key);
+  store(ADDITION_SEEN_KEY, JSON.stringify(seenAdditions().filter(k => k !== add.key)));
+  resetPaging();
+  refreshForTab();
 }
 
 function dayBefore(iso) {
@@ -2049,6 +2067,12 @@ function refreshForTab() {
   const addition = activeTab === "opened" ? activeAddition() : null;
   $("addedNote").hidden = !addition;
   if (addition) drawAddedNote(addition, places);
+  const closed = activeTab === "opened" && !addition ? closedAddition() : null;
+  $("reopenAdded").hidden = !closed;
+  if (closed) {
+    $("reopenAdded").textContent = `↺ 닫은 '그동안 놓친 ${closed.label}' 안내 다시 열기`;
+    $("reopenAdded").onclick = () => reopenAddition(closed);
+  }
 
   // kind는 블로그 탭에만 붙어 있다. 나머지는 열쇠 이름으로 가른다.
   const isChanged = activeTab === "changed";
