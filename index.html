@@ -1923,7 +1923,7 @@ function render() {
             <span class="badge ${badgeClass}">${p.category}</span>
             ${p.bizType ? `<span class="badge plain biz-badge"></span>` : ""}
             <span class="badge plain district-badge"></span>
-            ${lateJoinedOn(t, p) ? `<span class="badge change" title="이 날짜 칸이 먼저 생긴 뒤에 나중에 끼어든 가게입니다.">⏱ ${fmtShort(lateJoinedOn(t, p))} 끼어듦</span>` : ""}
+            ${lateBadge(t, p)}
             ${p.mapSeen ? `<a class="badge mapped" target="_blank" rel="noopener" title="신고 뒤 지도에 새로 올라온 날입니다. 문을 열었다는 신호예요.">📍 지도 등록 ${Number(p.mapSeen.slice(5, 7))}/${Number(p.mapSeen.slice(8, 10))}</a>` : ""}
             ${isPopupBooth(p) ? `<span class="badge change" title="상호에 '한시적'이 붙은 곳입니다. 백화점·행사장에서 며칠만 여는 부스라 신상 가게와는 다릅니다.">행사 부스</span>` : ""}
           </div>
@@ -2112,6 +2112,23 @@ function lateJoinedOn(t, p) {
 
 function isUnseenLate(p) {
   return !!lateJoinedOn(tab(), p);
+}
+
+/* 카드의 '끼어듦' 표시. 처음엔 들어온 날짜(10/18)를 적었더니 '신고 3일 뒤면 정상인데
+   왜 끼어들었냐'는 말을 들었다. 늦은 기준은 신고일이 아니라 같은 날짜 칸의 다른 가게다.
+   그래서 그 차이를 적는다. 날짜는 수집이 도는 밤 기준이라 화면엔 다음 날 아침에 보인다. */
+function lateBadge(t, p) {
+  const got = lateJoinedOn(t, p);
+  if (!got) return "";
+  const { bulk } = dayStats(t);
+  const day = p[t.dateField];
+  const gap = Math.round((new Date(got) - new Date(bulk[day])) / 86400000);
+  const morning = iso => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + 1); return fmtShort(d.toLocaleDateString("sv-SE")); };
+  const text = gap > 0 ? `⏱ 같은 날짜 다른 가게보다 ${gap === 1 ? "하루" : gap + "일"} 늦게 들어옴` : "⏱ 지난번 보신 뒤 이 칸에 들어옴";
+  const why = gap > 0
+    ? `이 날짜 칸의 가게 대부분은 ${morning(bulk[day])} 아침에 올라왔고, 이 가게는 ${morning(got)} 아침에 올라왔어요.`
+    : `지난번 보셨을 때 이미 있던 날짜 칸에 ${morning(got)} 아침에 들어왔어요.`;
+  return `<span class="badge change" title="${why}">${text}</span>`;
 }
 
 /** '새로 들어온 것만' 버튼. 없을 때도 자리는 지키고 눌리지만 않게 한다. */
