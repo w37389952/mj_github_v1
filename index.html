@@ -424,9 +424,6 @@
   <div class="tab-hint added-note" id="addedNote" hidden style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
   <!-- '다 봤어요'를 잘못 눌렀을 때 되돌리는 길. 안내 기간(30일) 안에만 보인다. -->
   <button type="button" class="seen-btn" id="reopenAdded" hidden></button>
-  <!-- '새로 들어온 것만 보기'가 생기기 전에 늦게 끼어든 가게. 버튼은 그 뒤 것만 잡으므로 따로 모은다. -->
-  <div class="tab-hint added-note" id="lateNote" hidden style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"></div>
-  <button type="button" class="seen-btn" id="reopenLate" hidden>↺ 닫은 '버튼 생기기 전 늦게 끼어든 곳' 안내 다시 열기</button>
   <div class="tab-hint" id="blogNote" hidden style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <button type="button" class="stats-toggle" id="onlyStrong" style="margin:0"></button>
     <span id="blogWhy"></span>
@@ -451,7 +448,7 @@
     <!-- 이미 본 날짜를 건너뛰면 늦게 끼어든 가게를 놓친다. 그래서 눈에 띄는 버튼으로 둔다. -->
     <div class="control-row">
       <button type="button" class="fresh-btn" id="onlyFreshBtn"
-              title="신고일과 상관없이, 지난번에 본 뒤로 새로 들어온 것만 봅니다"></button>
+              title="이미 지나간 날짜 칸에 나중에 끼어든 가게만 모읍니다(최근 90일). 모두 확인함을 누르면 그 뒤에 끼어든 것만 남습니다."></button>
       <!-- 신고하고 한 달 뒤에 여는 가게가 있다(세이메이). 지도에 올라온 날을 오픈 신호로 쓴다. -->
       <button type="button" class="fresh-btn" id="onlyMappedBtn" hidden
               title="신고만 해 두었다가 이제 네이버 '새로 오픈'이나 카카오맵에 올라온 가게입니다. 실제로 문을 열었다는 신호예요."></button>
@@ -506,6 +503,7 @@ const TABS = {
     file: "data/latest.json",
     tabId: "tabOpened", dotId: "dotOpened",
     baselineKey: "seoul-radar:baseline", lastDayKey: "seoul-radar:lastDay",
+    lateSeenKey: "seoul-radar:lateSeen",
     hint: "최근 90일 안에 새로 인허가가 난 곳입니다.",
     dateField: "licenseDate", dateLabel: "인허가",
     places: null, baseline: null, page: 1,
@@ -514,6 +512,7 @@ const TABS = {
     file: "data/changed.json",
     tabId: "tabChanged", dotId: "dotChanged",
     baselineKey: "seoul-radar:baseline:changed", lastDayKey: "seoul-radar:lastDay:changed",
+    lateSeenKey: "seoul-radar:lateSeen:changed",
     hint: "인허가는 그 전이지만 최근 90일 안에 기록이 바뀐 곳입니다. " +
           "기존 허가를 넘겨받아 상호만 바뀐 경우가 여기 들어옵니다.",
     dateField: "modifiedDate", dateLabel: "정보 변경",
@@ -1393,6 +1392,7 @@ function markAllSeen() {
   const t = tab();
   store(t.baselineKey, today);
   store(t.lastDayKey, today);
+  if (t.lateSeenKey) store(t.lateSeenKey, today);   // 끼어든 가게도 여기까지 다 봤다
   t.baseline = today;
   onlyFresh = false;
   refreshForTab();
@@ -1758,9 +1758,8 @@ function matches(place, f, t) {
   /* 신고일이 지난 날짜인데 우리 목록에는 며칠 늦게 들어오는 가게가 있다(원본이 늦게
      올라오거나 주말·연휴가 끼면 사흘~나흘, 드물게 몇 주). 이미 본 날짜를 건너뛰면
      이런 가게를 놓친다. 그래서 신고일과 상관없이 '새로 들어온 것'만 볼 수 있게 한다. */
-  if (onlyFresh && !isNewToVisitor(place)) return false;
+  if (onlyFresh && !isUnseenLate(place)) return false;
   if (onlyMapped && !place.mapSeen) return false;
-  if (onlyLate && !isLateArrival(place)) return false;
   if (t.kind === "blog") return matchesPost(place, f);
   // 무엇이 바뀌었는지 아는 것만 보겠다고 했으면 그것만 남긴다.
   if (onlyKnownChanges && activeTab === "changed"
@@ -1924,6 +1923,7 @@ function render() {
             <span class="badge ${badgeClass}">${p.category}</span>
             ${p.bizType ? `<span class="badge plain biz-badge"></span>` : ""}
             <span class="badge plain district-badge"></span>
+            ${lateJoinedOn(t, p) ? `<span class="badge change" title="이 날짜 칸이 먼저 생긴 뒤에 나중에 끼어든 가게입니다.">⏱ ${fmtShort(lateJoinedOn(t, p))} 끼어듦</span>` : ""}
             ${p.mapSeen ? `<a class="badge mapped" target="_blank" rel="noopener" title="신고 뒤 지도에 새로 올라온 날입니다. 문을 열었다는 신호예요.">📍 지도 등록 ${Number(p.mapSeen.slice(5, 7))}/${Number(p.mapSeen.slice(8, 10))}</a>` : ""}
             ${isPopupBooth(p) ? `<span class="badge change" title="상호에 '한시적'이 붙은 곳입니다. 백화점·행사장에서 며칠만 여는 부스라 신상 가게와는 다릅니다.">행사 부스</span>` : ""}
           </div>
@@ -2053,66 +2053,65 @@ function drawAddedNote(add, places) {
   }, true));
 }
 
-/* ---------- '새로 들어온 것만 보기'가 생기기 전에 늦게 끼어든 가게 ----------
-   그 버튼(2026-10-20)은 '지난번 본 뒤로 들어온 것'만 보여 준다. 그래서 그전에, 그 신고일
-   칸이 이미 화면에 있었는데 하루라도 뒤에 들어와 끼어든 가게는 어디에도 다시 안 뜬다.
-   (같은 신고일의 다른 가게보다 늦게 들어온 것. 그 칸을 이미 본 사람은 못 봤을 수 있다.)
-   그런 곳만 한 번 모아 보여 주고, 다 보면 닫는다. 빵집·즉석판매는 10/16에야 모으기
-   시작해 한꺼번에 들어왔으므로 뺀다. */
-const LATE = { key: "late-before-2026-10-20", before: "2026-10-20" };
-let onlyLate = false;
-let lateCache = { of: null, ids: new Set() };
+/* ---------- '새로 들어온 것만 보기': 이미 본 날짜 칸에 나중에 끼어든 가게 ----------
+   목록은 날짜(신고일·정보 변경일) 칸으로 묶여 있고, 사용자는 본 날짜 칸을 건너뛴다.
+   그런데 같은 날짜의 다른 가게보다 하루라도 늦게 우리 목록에 들어와 이미 있던 칸에
+   끼어드는 가게가 있다(원본이 늦게 실리거나 주말·연휴가 낀 경우). 그 칸을 먼저 봤다면
+   못 본다. 이 버튼은 그런 '끼어든 가게'만 모은다. 목록이 받는 90일 전부를 보며,
+   '모두 확인함'을 누른 날 뒤에 끼어든 것만 남긴다(처음엔 90일 치 전부).
+   새 날짜 칸은 목록 맨 위에 새로 생기므로 여기 넣지 않는다. 그건 NEW 표시로 본다. */
+const lateCache = new Map();         // 탭별 목록 → 날짜 칸마다 처음·대부분 들어온 날
 
-function lateIds(places) {
-  if (lateCache.of === places) return lateCache.ids;
-  const pool = places.filter(p => ["휴게음식점", "일반음식점"].includes(p.category)
-    && p.firstSeen && p.licenseDate && p.firstSeen < LATE.before);
-  const first = {};
-  pool.forEach(p => {
-    if (!first[p.licenseDate] || p.firstSeen < first[p.licenseDate]) first[p.licenseDate] = p.firstSeen;
+function fmtShort(iso) { return `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`; }
+
+/* 들어온 날. 신규 오픈은 처음 본 날이고, 간판 교체는 바뀐 내용이 들어온 날이다.
+   빵집·즉석판매처럼 목록을 새로 더한 날 한꺼번에 들어온 것은 '그동안 놓친 곳' 안내가 맡는다. */
+function arrivedOn(t, p) {
+  if (ADDITIONS.some(a => p.firstSeen === a.since && a.cats.some(([c]) => c === p.category))) return "";
+  return (t.dateField === "licenseDate" ? p.firstSeen : p.updatedSeen || p.firstSeen) || "";
+}
+
+function dayStats(t) {
+  const places = t.places || [];
+  const hit = lateCache.get(t);
+  if (hit && hit.of === places) return hit;
+  const tally = {};
+  places.forEach(p => {
+    const day = p[t.dateField], got = arrivedOn(t, p);
+    if (day && got) (tally[day] = tally[day] || {})[got] = (tally[day][got] || 0) + 1;
   });
-  lateCache = { of: places, ids: new Set(pool.filter(p => p.firstSeen > first[p.licenseDate]).map(p => p.id)) };
-  return lateCache.ids;
+  const first = {}, bulk = {};
+  Object.entries(tally).forEach(([day, counts]) => {
+    const days = Object.keys(counts).sort();
+    first[day] = days[0];
+    // 보통 하루 이틀 먼저 한두 곳이 오고 나머지가 한꺼번에 온다. 가장 많이 온 날이 '대부분'이다.
+    bulk[day] = days.reduce((a, b) => (counts[b] > counts[a] ? b : a));
+  });
+  const stats = { of: places, first, bulk };
+  lateCache.set(t, stats);
+  return stats;
 }
 
-function isLateArrival(p) {
-  return lateIds(TABS.opened.places || []).has(p.id);
+function lateSeen(t) {
+  if (!t.lateSeenKey) return "";
+  try { return localStorage.getItem(t.lateSeenKey) || ""; } catch (e) { return ""; }
 }
 
-function drawLateNote(places) {
-  const box = $("lateNote");
-  const closed = seenAdditions().includes(LATE.key);
-  const show = activeTab === "opened" && !closed;
-  box.hidden = !show;
-  $("reopenLate").hidden = !(activeTab === "opened" && closed);
-  if (!show) { onlyLate = false; return; }
-  const n = places.filter(isLateArrival).length;
-  box.innerHTML = "";
-  const msg = document.createElement("span");
-  msg.style.flex = "1 1 100%";
-  msg.textContent = `🕒 '새로 들어온 것만 보기'(10/20)가 생기기 전에, 그 신고일 칸이 이미 화면에 `
-    + `있었는데 하루 이상 뒤에 끼어든 가게가 ${n.toLocaleString("ko-KR")}곳 있어요. 그 날짜를 먼저 보셨다면 못 봤을 수 있는 곳이에요.`;
-  box.append(msg);
-  const chip = (text, onClick, ghost) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = ghost ? "chip ghost" : "chip";
-    b.textContent = text;
-    b.addEventListener("click", onClick);
-    return b;
-  };
-  box.append(chip(onlyLate ? "← 전체 보기" : `늦게 끼어든 ${n.toLocaleString("ko-KR")}곳만 보기`, () => {
-    onlyLate = !onlyLate;
-    resetPaging();
-    refreshForTab();
-  }, onlyLate));
-  box.append(chip("✓ 다 봤어요 · 안내 닫기", () => {
-    seenThisVisit.add(LATE.key);
-    store(ADDITION_SEEN_KEY, JSON.stringify(seenAdditions()));
-    onlyLate = false;
-    resetPaging();
-    refreshForTab();
-  }, true));
+/** 이미 있던 날짜 칸에 끼어든 가게면 들어온 날, 아니면 "". */
+function lateJoinedOn(t, p) {
+  const day = p[t.dateField], got = arrivedOn(t, p);
+  if (!day || !got) return "";
+  const { first, bulk } = dayStats(t);
+  // ① 지난번 보신 날에 이미 있던 칸인데, 그 뒤에 들어왔다.
+  const base = t.baseline;
+  if (base && got > base && first[day] <= base) return got;
+  // ② 아직 '모두 확인함'을 한 번도 안 눌렀으면, 90일 치에서 칸의 대부분보다 늦게 온 것도 보여 준다.
+  if (!lateSeen(t) && got > bulk[day]) return got;
+  return "";
+}
+
+function isUnseenLate(p) {
+  return !!lateJoinedOn(tab(), p);
 }
 
 /** '새로 들어온 것만' 버튼. 없을 때도 자리는 지키고 눌리지만 않게 한다. */
@@ -2208,7 +2207,6 @@ function refreshForTab() {
   const addition = activeTab === "opened" ? activeAddition() : null;
   $("addedNote").hidden = !addition;
   if (addition) drawAddedNote(addition, places);
-  drawLateNote(places);
   const closed = activeTab === "opened" && !addition ? closedAddition() : null;
   $("reopenAdded").hidden = !closed;
   if (closed) {
@@ -2269,12 +2267,13 @@ function refreshForTab() {
   );
 
   const freshCount = places.filter(isNewToVisitor).length;
-  if (freshCount === 0) onlyFresh = false;
+  const lateCount = places.filter(isUnseenLate).length;
+  if (lateCount === 0) onlyFresh = false;
   /* 새로 든 것이 없을 때 상자를 아예 감췄더니 '새로 들어온 것만 보기' 버튼이 어디
      있는지 모르겠다는 말을 들었다. 상자는 늘 두고, 없으면 0과 함께 버튼만 감춘다. */
   $("statNewBox").hidden = !t.baseline;
-  $("markSeenBtn").hidden = freshCount === 0;
-  drawFreshBtn(freshCount);
+  $("markSeenBtn").hidden = freshCount === 0 && lateCount === 0;
+  drawFreshBtn(lateCount);
   drawMappedBtn(places);
   $("statNew").textContent = freshCount.toLocaleString("ko-KR");
   $("statNewLabel").textContent = freshCount > 0
@@ -2448,7 +2447,6 @@ async function openTab(key) {
   onlyKnownChanges = false;          // 탭을 옮기면 걸러 둔 것을 푼다
   onlyFresh = false;
   onlyMapped = false;
-  onlyLate = false;
   onlyStrongNew = false;
   const t = tab();
   if (!t.places) {
@@ -2504,12 +2502,6 @@ function init(data) {
     refreshForTab();
     render();
   });
-  $("reopenLate").addEventListener("click", () => {
-    seenThisVisit.delete(LATE.key);
-    store(ADDITION_SEEN_KEY, JSON.stringify(seenAdditions().filter(k => k !== LATE.key)));
-    resetPaging();
-    refreshForTab();
-  });
   $("onlyMappedBtn").addEventListener("click", () => {
     onlyMapped = !onlyMapped;
     tab().page = 1;
@@ -2561,8 +2553,7 @@ function init(data) {
     $("toDate").value = "";
     onlyFresh = false;
     onlyMapped = false;
-    onlyLate = false;
-    drawFreshBtn((tab().places || []).filter(isNewToVisitor).length);
+    drawFreshBtn((tab().places || []).filter(isUnseenLate).length);
     selected.district.clear();
     selected.bizType.clear();
     $("districtMulti").sync();
@@ -2598,7 +2589,7 @@ let syncDirty = new Set();
 let syncTimer = null;
 
 function syncKeys() {
-  return [...Object.values(TABS).flatMap(t => [t.baselineKey, t.lastDayKey]),
+  return [...Object.values(TABS).flatMap(t => [t.baselineKey, t.lastDayKey, t.lateSeenKey].filter(Boolean)),
           FIRST_VISIT_KEY, ADDITION_SEEN_KEY, HIDDEN_KEY];
 }
 
