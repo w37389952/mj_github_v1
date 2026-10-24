@@ -263,6 +263,10 @@
     background: transparent; color: var(--ink-soft);
     border: 1px dashed var(--line);
   }
+  .badge.mapped {
+    background: var(--accent-soft); color: var(--accent);
+    border: 1px solid var(--accent); text-decoration: none;
+  }
   /* 상호가 바뀐 것은 그 자리에 다른 가게가 들어왔다는 뜻이라 가장 중요하다. */
   .badge.change.strong {
     background: var(--accent); color: var(--bg); border-color: var(--accent);
@@ -445,6 +449,9 @@
     <div class="control-row">
       <button type="button" class="fresh-btn" id="onlyFreshBtn"
               title="신고일과 상관없이, 지난번에 본 뒤로 새로 들어온 것만 봅니다"></button>
+      <!-- 신고하고 한 달 뒤에 여는 가게가 있다(세이메이). 지도에 올라온 날을 오픈 신호로 쓴다. -->
+      <button type="button" class="fresh-btn" id="onlyMappedBtn" hidden
+              title="신고만 해 두었다가 이제 네이버 '새로 오픈'이나 카카오맵에 올라온 가게입니다. 실제로 문을 열었다는 신호예요."></button>
     </div>
     <div class="control-row">
       <input type="search" id="search" class="field" placeholder="상호명 · 주소 검색">
@@ -541,6 +548,7 @@ let activeTab = "opened";
 // 간판 교체 탭에서 '바뀐 내용 아는 것만' 볼지. 탭을 옮기면 풀린다.
 let onlyKnownChanges = false;
 let onlyFresh = false;               // NEW 붙은 것(지난번 본 뒤로 들어온 것)만
+let onlyMapped = false;              // 신고 뒤 지도에 막 올라온 것만
 
 /* 블로그 검색은 '연남동 신상카페'처럼 지명과 신상 낌새를 함께 보낸다.
    네이버가 그 둘을 다 보긴 한다 — 2026-09-10에 905건을 세어 보니 99%에
@@ -1302,7 +1310,9 @@ function detailLine(place) {
  * 그래서 '마지막으로 달라진 날'을 쓴다. */
 function isNewToVisitor(place) {
   const base = tab().baseline;
-  const when = place.updatedSeen || place.firstSeen;
+  // 신고만 해 두었던 가게가 나중에 지도에 올라오면 그날 다시 NEW로 띄운다.
+  const seen = place.updatedSeen || place.firstSeen;
+  const when = place.mapSeen && place.mapSeen > (seen || "") ? place.mapSeen : seen;
   if (!base || !when) return false;
   return when > base;
 }
@@ -1746,6 +1756,7 @@ function matches(place, f, t) {
      올라오거나 주말·연휴가 끼면 사흘~나흘, 드물게 몇 주). 이미 본 날짜를 건너뛰면
      이런 가게를 놓친다. 그래서 신고일과 상관없이 '새로 들어온 것'만 볼 수 있게 한다. */
   if (onlyFresh && !isNewToVisitor(place)) return false;
+  if (onlyMapped && !place.mapSeen) return false;
   if (t.kind === "blog") return matchesPost(place, f);
   // 무엇이 바뀌었는지 아는 것만 보겠다고 했으면 그것만 남긴다.
   if (onlyKnownChanges && activeTab === "changed"
@@ -1909,6 +1920,7 @@ function render() {
             <span class="badge ${badgeClass}">${p.category}</span>
             ${p.bizType ? `<span class="badge plain biz-badge"></span>` : ""}
             <span class="badge plain district-badge"></span>
+            ${p.mapSeen ? `<a class="badge mapped" target="_blank" rel="noopener" title="신고 뒤 지도에 새로 올라온 날입니다. 문을 열었다는 신호예요.">📍 지도 등록 ${Number(p.mapSeen.slice(5, 7))}/${Number(p.mapSeen.slice(8, 10))}</a>` : ""}
             ${isPopupBooth(p) ? `<span class="badge change" title="상호에 '한시적'이 붙은 곳입니다. 백화점·행사장에서 며칠만 여는 부스라 신상 가게와는 다릅니다.">행사 부스</span>` : ""}
           </div>
         </div>
@@ -1927,6 +1939,7 @@ function render() {
       if (p.bizType) card.querySelector(".biz-badge").textContent = p.bizType;
       card.querySelector(".district-badge").textContent = p.district;
       card.querySelector(".map-link").href = naverMapUrl(p);
+      if (p.mapSeen && p.mapUrl) card.querySelector(".badge.mapped").href = p.mapUrl;
       buildInstaMenu(card, p);
       group.appendChild(card);
     });
@@ -2037,6 +2050,68 @@ function drawAddedNote(add, places) {
 }
 
 /** '새로 들어온 것만' 버튼. 없을 때도 자리는 지키고 눌리지만 않게 한다. */
+function drawMappedBtn(places) {
+  const b = $("onlyMappedBtn");
+  const n = activeTab === "map" ? 0 : places.filter(p => p.mapSeen).length;
+  if (n === 0) onlyMapped = false;
+  b.hidden = n === 0;
+  b.classList.toggle("on", onlyMapped);
+  b.textContent = onlyMapped ? "← 전체 보기" : `📍 신고 후 문 연 곳 (${n.toLocaleString("ko-KR")})`;
+}
+
+/* ---------- 신고 목록 × 지도 신상: 신고만 해 둔 가게가 지도에 올라왔는지 ----------
+   신고한 뒤 한 달쯤 지나 문을 여는 가게가 있다. 신고 때는 이름뿐이라 지나치기 쉽고,
+   막상 열 때는 우리 목록에서 이미 '본 것'이 돼 있다. 네이버 '새로 오픈'이나 카카오맵에
+   새로 올라온 날을 '진짜 문 연 날'의 신호로 보고, 신고 목록의 가게와 이어 붙인다.
+   같은 가게인지는 150m 안이고 이름이 겹치는지로 가른다. */
+
+/* '○○점'은 지점 이름이라 같은 건물·역의 다른 가게와 겹친다('투썸플레이스 선유도역점' ↔
+   '샐러디 선유도역점'). 그래서 지점 말을 떼고 가게 이름끼리만 견준다. 괄호 속 영문
+   이름은 따로 하나 더 본다('키슈(keeshu)', '밋엣 식스 에이엠 Meet at 6 am'). */
+function shopKeys(s) {
+  // '주식회사'는 남의 가게와도 겹친다. '시점'처럼 두 글자로 '점'이 끝나는 상호는 지점이 아니다.
+  const raw = (s || "").toLowerCase().replace(/주식회사|유한회사|\(주\)|㈜/g, " ");
+  const inParen = [...raw.matchAll(/\(([^)]*)\)/g)].map(m => m[1]);
+  const base = raw.replace(/\([^)]*\)/g, " ");
+  const strip = t => t.split(/\s+/).filter(w => !(w.length >= 3 && /점$/.test(w)))
+    .join("").replace(/[^0-9a-z가-힣]/g, "");
+  return [strip(base), ...inParen.map(strip)].filter(k => k.length >= 2);
+}
+function keysMatch(a, b) {
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  // 두 글자 이름은 우연히 겹치기 쉬워 똑같을 때만 같은 가게로 본다.
+  return short.length <= 2 ? short === long : long.includes(short);
+}
+function sameShop(lic, map) {
+  if (!(lic.lat && lic.lon && map.lat && map.lng)) return false;
+  if (Math.abs(lic.lat - map.lat) > 0.00135 || Math.abs(lic.lon - map.lng) > 0.0017) return false;
+  const mk = shopKeys(map.name);
+  return shopKeys(lic.name).some(a => mk.some(b => keysMatch(a, b)));
+}
+
+let mapPlacesCache = null;
+
+/** 신고 목록 가게에 '지도에 올라온 날(mapSeen)'과 그 지도 링크를 붙인다. */
+function annotateMapped(places) {
+  if (!mapPlacesCache || !places) return;
+  places.forEach(p => {
+    if (p.mapSeen !== undefined) return;
+    const hit = mapPlacesCache.find(m => sameShop(p, m));
+    p.mapSeen = hit ? hit.firstSeen : null;
+    if (hit) p.mapUrl = hit.naverUrl || hit.kakaoUrl;
+  });
+}
+
+function loadMappedSignals() {
+  loadMapPlaces(TABS.map.files).then(list => {
+    mapPlacesCache = list;
+    if (!TABS.map.places) TABS.map.places = list;
+    annotateMapped(TABS.opened.places);
+    annotateMapped(TABS.changed.places);
+    refreshForTab();
+  });
+}
+
 function drawFreshBtn(freshCount) {
   const b = $("onlyFreshBtn");
   b.disabled = freshCount === 0;
@@ -2133,6 +2208,7 @@ function refreshForTab() {
   $("statNewBox").hidden = !t.baseline;
   $("markSeenBtn").hidden = freshCount === 0;
   drawFreshBtn(freshCount);
+  drawMappedBtn(places);
   $("statNew").textContent = freshCount.toLocaleString("ko-KR");
   $("statNewLabel").textContent = freshCount > 0
     ? `${t.baseline} 이후 새로 추가`
@@ -2304,6 +2380,7 @@ async function openTab(key) {
   activeTab = key;
   onlyKnownChanges = false;          // 탭을 옮기면 걸러 둔 것을 푼다
   onlyFresh = false;
+  onlyMapped = false;
   onlyStrongNew = false;
   const t = tab();
   if (!t.places) {
@@ -2316,6 +2393,7 @@ async function openTab(key) {
       t.places = t.kind === "blog"
         ? (body.posts || []).map(p => ({ ...p, id: p.link, firstSeen: p.date }))
         : dedupeById(body.places || []);
+      annotateMapped(t.places);
     } catch (e) {
       t.places = [];
       $("tabHint").textContent = "이 목록을 불러오지 못했습니다.";
@@ -2357,6 +2435,11 @@ function init(data) {
     tab().page = 1;
     refreshForTab();
     render();
+  });
+  $("onlyMappedBtn").addEventListener("click", () => {
+    onlyMapped = !onlyMapped;
+    tab().page = 1;
+    refreshForTab();
   });
 
   $("search").addEventListener("input", resetPaging);
@@ -2403,6 +2486,7 @@ function init(data) {
     $("fromDate").value = "";
     $("toDate").value = "";
     onlyFresh = false;
+    onlyMapped = false;
     drawFreshBtn((tab().places || []).filter(isNewToVisitor).length);
     selected.district.clear();
     selected.bizType.clear();
@@ -2416,6 +2500,7 @@ function init(data) {
   );
 
   openTab("opened");
+  loadMappedSignals();               // 목록을 먼저 띄우고, 지도 신호는 받아지는 대로 붙인다
 }
 
 /* ---------- 카카오 로그인으로 기기끼리 '어디까지 봤나' 맞추기 ----------
