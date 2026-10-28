@@ -1086,7 +1086,8 @@ tr.done td.title { text-decoration: line-through; }
   }
 
   // 올릴 글 박스 (data.json의 posts). 예약하면 체크 → 오늘은 흐리게, 다음 날 사라진다.
-  const postKey = x => `${x.project}::글 ${x.date}`;
+  // 체크 키는 글의 id(없으면 날짜)라서, 글을 다른 날짜로 옮겨도 체크가 글을 따라간다.
+  const postKey = x => `${x.project}::글 ${x.id || x.date}`;
   function postsHtml(pid, today) {
     const posts = (data.posts || []).filter(x => x.project === pid && x.text)
       .filter(x => { const c = checkOf(postKey(x)); return !c || c >= today; })
