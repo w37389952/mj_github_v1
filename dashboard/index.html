@@ -300,6 +300,7 @@ a.room:hover { text-decoration: none; }
 .post-box .copy { align-self: flex-start; font: inherit; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); cursor: pointer; }
 .post-box.done { opacity: .55; }
 .post-box.done .pt { text-decoration: line-through; }
+.post-box .pt .memo { color: var(--text-3); font-size: 12px; }
 .studio-panel .req-box { margin-top: 12px; }
 .studio-panel h4 { margin: 14px 0 2px; font-size: 13px; color: var(--text-2); }
 .done-list { list-style: none; margin: 0; padding: 4px 16px; }
@@ -1088,6 +1089,19 @@ tr.done td.title { text-decoration: line-through; }
   // 올릴 글 박스 (data.json의 posts). 예약하면 체크 → 오늘은 흐리게, 다음 날 사라진다.
   // 체크 키는 글의 id(없으면 날짜)라서, 글을 다른 날짜로 옮겨도 체크가 글을 따라간다.
   const postKey = x => `${x.project}::글 ${x.id || x.date}`;
+  // 줄 전체가 (괄호)인 줄은 MJ가 볼 메모라서 흐리게 보이고 복사에서 빠진다.
+  // "[첫 댓글]"로 시작하는 줄부터는 첫 댓글로 따로 복사한다.
+  const isMemo = line => /^\s*\(.*\)\s*$/.test(line);
+  const tidy = lines => lines.filter(l => !isMemo(l)).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  function postCopy(text) {
+    const lines = text.split("\n");
+    const i = lines.findIndex(l => l.trim().startsWith("[첫 댓글]"));
+    if (i < 0) return { main: tidy(lines), comment: "" };
+    const comment = lines.slice(i);
+    comment[0] = comment[0].replace(/^\s*\[첫 댓글\]\s*/, "");
+    return { main: tidy(lines.slice(0, i)), comment: tidy(comment) };
+  }
+  const postBody = text => text.split("\n").map(l => isMemo(l) ? `<span class="memo">${esc(l)}</span>` : esc(l)).join("\n");
   function postsHtml(pid, today) {
     const posts = (data.posts || []).filter(x => x.project === pid && x.text)
       .filter(x => { const c = checkOf(postKey(x)); return !c || c >= today; })
@@ -1099,8 +1113,9 @@ tr.done td.title { text-decoration: line-through; }
         return `<div class="panel post-box${on ? " done" : ""}">
           <div class="ph">${x.date ? `${md(x.date)} (${wd(x.date)})` : ""}${x.kind ? `<span class="kind">${esc(x.kind)}</span>` : ""}
             <label><input type="checkbox" class="check" data-key="${esc(postKey(x))}" ${on ? "checked" : ""}>예약함</label></div>
-          <p class="pt">${esc(x.text)}</p>
-          <button type="button" class="copy" data-text="${esc(x.text)}">복사</button>
+          <p class="pt">${postBody(x.text)}</p>
+          <button type="button" class="copy" data-text="${esc(postCopy(x.text).main)}">복사</button>${postCopy(x.text).comment ? `
+          <button type="button" class="copy" data-text="${esc(postCopy(x.text).comment)}">첫 댓글 복사</button>` : ""}
         </div>`;
       }).join("")}</div>`;
   }
