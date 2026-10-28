@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-28T13:10:00+09:00",
+  "updated": "2026-10-28T13:50:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -370,7 +370,8 @@
       "title": "글 15~20편 쌓이면 애드센스 신청",
       "term": "장기",
       "owner": "MJ",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-10-28"
     },
     {
       "project": "shorts",
@@ -596,6 +597,18 @@
     {
       "project": "radar",
       "title": "'신고 후 문 연 곳'·'새로 들어온 것만 보기' 개편 PR 합치기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "tistory",
+      "title": "애드센스 승인 결과 메일 오면 알려주기",
+      "owner": "MJ",
+      "status": "할 일"
+    },
+    {
+      "project": "tistory",
+      "title": "블로그 소개 페이지 초안 확인 → 올리기",
       "owner": "MJ",
       "status": "할 일"
     }
