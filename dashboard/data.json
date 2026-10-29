@@ -71,9 +71,15 @@
       "id": "suno",
       "name": "수노 플레이리스트",
       "group": "수익화",
-      "status": "기획",
-      "summary": "수노로 만든 곡을 주제별 플레이리스트로.",
-      "progress": 0
+      "status": "진행 중",
+      "summary": "매장·카페에서 틀어두는 한국어 어쿠스틱 발라드 플레이리스트 유튜브 채널(84분, 3일 간격). 10/29 플리 시장지도 분석으로 경쟁이 적은 자리를 골랐다.",
+      "progress": 10,
+      "links": [
+        {
+          "label": "플리 사이트 분석 문서",
+          "url": "https://claude.ai/artifact/3VhP4PyRLjfnztboFcKaow"
+        }
+      ]
     },
     {
       "id": "radar",
@@ -388,6 +394,36 @@
       "status": "할 일"
     },
     {
+      "project": "suno",
+      "title": "유튜브 API 키를 클라우드 환경 네트워크 시크릿에 넣기",
+      "owner": "MJ",
+      "status": "할 일",
+      "due": "2026-10-31",
+      "term": "단기"
+    },
+    {
+      "project": "suno",
+      "title": "채널 이름·유튜브 계정 정하기",
+      "owner": "MJ",
+      "status": "할 일",
+      "term": "단기"
+    },
+    {
+      "project": "suno",
+      "title": "타깃 문장·수노 프롬프트 세트·첫 영상 기획서",
+      "owner": "Claude",
+      "status": "진행 중",
+      "due": "2026-10-31",
+      "term": "단기"
+    },
+    {
+      "project": "suno",
+      "title": "매장 발라드 자리 경쟁 채널 10월 기준 재수집·판정",
+      "owner": "Claude",
+      "status": "할 일",
+      "term": "단기"
+    },
+    {
       "project": "radar",
       "title": "글쓰기 도구 수정분 푸시",
       "owner": "MJ",
@@ -628,6 +664,11 @@
     }
   ],
   "log": [
+    {
+      "date": "2026-10-29",
+      "project": "suno",
+      "text": "플리 사이트 2곳(플리 시작 지도·플리 시장지도) 분석, 채널 자리를 매장·카페 BGM 발라드로 정했다."
+    },
     {
       "date": "2026-10-30",
       "project": "radar",
