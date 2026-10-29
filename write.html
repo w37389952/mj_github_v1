@@ -428,6 +428,7 @@
     <div class="row">
       <button type="button" class="btn" id="go">만들기</button>
       <button type="button" class="btn ghost" id="clear">새 글 쓰기 (입력 비우기)</button>
+      <button type="button" class="btn ghost" id="undoClear" hidden>↺ 방금 비운 글 되돌리기</button>
       <span class="sub" style="font-size:12.5px;color:var(--ink-faint)">입력은 이 브라우저에만 저장됩니다</span>
     </div>
   </section>
@@ -3993,9 +3994,28 @@ $("go").addEventListener("click", render);
 /* 지우는 것은 오직 이 단추다. 새로고침으로는 아무것도 안 없어진다.
    초안까지 지우므로 한 번 묻는다 — 돈 주고 받은 것이기 때문이다.
    '지난 API 결과'는 여기서도 안 지운다. 거기서 하나씩 지우면 된다. */
+/* 모르고 눌러 글을 통째로 날린 일이 있었다. 비우기 전 것을 한 벌 남겨 두고
+   '방금 비운 글 되돌리기'로 살린다. 다음에 또 비우면 그때 것으로 바뀐다. */
+const CLEARED_STORE = "seoul-radar:writeCleared";
+
+function drawUndoClear() {
+  let has = false;
+  try { has = !!localStorage.getItem(CLEARED_STORE); } catch (e) {}
+  $("undoClear").hidden = !has;
+}
+
 $("clear").addEventListener("click", () => {
   const hasDraft = ($("draft").textContent || "").trim().length > 0;
-  if (hasDraft && !confirm("입력과 초안을 비웁니다. '지난 API 결과'는 그대로 남습니다. 비울까요?")) return;
+  const hasInput = F.some(id => ($(id).value || "").trim());
+  if (!hasDraft && !hasInput) return;
+  if (!confirm(hasDraft
+    ? "입력과 초안을 비웁니다. 잘못 눌렀으면 '방금 비운 글 되돌리기'로 살릴 수 있어요. 비울까요?"
+    : "입력을 비웁니다. 잘못 눌렀으면 '방금 비운 글 되돌리기'로 살릴 수 있어요. 비울까요?")) return;
+  save();
+  try {
+    const snap = localStorage.getItem(KEY);
+    if (snap) localStorage.setItem(CLEARED_STORE, snap);
+  } catch (e) {}
   F.forEach(id => { $(id).value = ""; });
   autoFilled = { station: "", near: "" };
   SHOP_SPOT = null;
@@ -4014,8 +4034,23 @@ $("clear").addEventListener("click", () => {
   $("draftBox").hidden = true;
   $("copyDraft").hidden = true;
   refreshTitleCost();
+  drawUndoClear();
   $("fName").focus();
 });
+
+$("undoClear").addEventListener("click", () => {
+  let snap = null;
+  try { snap = localStorage.getItem(CLEARED_STORE); } catch (e) {}
+  if (!snap) return;
+  if (F.some(id => ($(id).value || "").trim())
+      && !confirm("지금 쓰던 입력 대신 비우기 전 글로 돌아갑니다. 괜찮을까요?")) return;
+  try {
+    localStorage.setItem(KEY, snap);
+    localStorage.removeItem(CLEARED_STORE);
+  } catch (e) {}
+  location.reload();                  // 저장된 글을 불러오는 길은 하나라 그대로 쓴다
+});
+drawUndoClear();
 $("copyPrompt").addEventListener("click", e => copy($("prompt").textContent, e.target, "지시문 복사"));
 $("copyTags").addEventListener("click", e => copy($("tags").textContent, e.target, "전부 한 줄로 복사"));
 $("nextTag").addEventListener("click", e => {
