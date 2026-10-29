@@ -357,7 +357,8 @@
       "project": "tistory",
       "title": "블로그 메뉴에 소개 페이지 링크 추가",
       "owner": "Claude",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-10-29"
     },
     {
       "project": "tistory",
@@ -610,7 +611,8 @@
       "project": "tistory",
       "title": "블로그 소개 페이지 초안 확인 → 올리기",
       "owner": "MJ",
-      "status": "할 일"
+      "status": "완료",
+      "done": "2026-10-29"
     }
   ],
   "log": [
