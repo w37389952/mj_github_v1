@@ -472,7 +472,10 @@
       <div class="row">
         <button type="button" class="btn ghost" id="copyPrompt">지시문 복사</button>
         <button type="button" class="btn ghost" id="openApi">초안 생성 (API)</button>
+        <button type="button" class="btn ghost" id="openClaude"
+                title="API 키 없이, 내 클로드 계정 대화창에서 초안을 받습니다">Claude 앱에서 쓰기 (키 없이) ↗</button>
       </div>
+      <div class="chip-hint" id="claudeMsg"></div>
 
       <details class="fold" id="apiFold">
         <summary hidden></summary>
@@ -1762,6 +1765,16 @@ ${[["영업시간", v.hours], ["주차", v.park], ["위치 / 인스타", v.insta
 차례가 곧 눈길의 순서다. 밖에서 안으로, 큰 것에서 작은 것으로 좁혀 간다.
 3번에서 소품이나 조명을 말하지 마라 — 그것은 5번 자리다.
 방문 시각과 웨이팅은 글 한가운데(4번)에 둔다. 첫 문단에 몰아넣지 마라.
+
+[검색에 걸리는 자리 — 2026-10-30 카페 검색어 8개의 상위 글 16편에서 뽑음]
+말투는 위 규칙 그대로 두고, 아래 자리에만 검색어를 놓아라. 억지로 늘리지 마라.
+- '${v.area} ${t}'라는 말을 세 번 안팎 쓴다: 첫 소개 줄, 소제목 하나, 맺음 문단.
+- 소제목에는 가게 이름을 넣는다 — '${v.name || "가게 이름"} 내부', '${v.name || "가게 이름"} 메뉴, 가격'처럼.
+  상위 글 소제목도 '티커피 메뉴', '필담 카페 내부 인테리어'처럼 가게 이름이 붙어 있다.
+- 맺음 문단 마지막 문장에는 동네·업종과 '어떤 때 가면 좋은지'(혼자, 작업, 대화, 데이트 등
+  내가 적은 것 중에서)를 함께 담는다. 상위 글은 '삼각지 분위기 좋은 카페를 찾고 있다면'처럼
+  검색하는 사람의 상황으로 끝맺는다. 내 말투로 쓰면: '${v.area}에서 조용히 작업할 ${t}를
+  찾는다면 들러볼 만한 곳.' 다만 내가 안 적은 상황을 지어내지는 마라.
 
 [사진]
 - 사진 자리를 표시하지 마라. 사진은 내가 직접 넣는다.
@@ -4051,7 +4064,31 @@ $("undoClear").addEventListener("click", () => {
   location.reload();                  // 저장된 글을 불러오는 길은 하나라 그대로 쓴다
 });
 drawUndoClear();
-$("copyPrompt").addEventListener("click", e => copy($("prompt").textContent, e.target, "지시문 복사"));
+/* 복사·Claude 앱으로 넘길 때도 말투 예시를 앞에 붙인다. 전에는 지시문만 복사돼서
+   대화창에 붙이면 내 글 예시 없이 규칙만 넘어갔다. */
+function fullPrompt() {
+  const prompt = $("prompt").textContent;
+  return prompt ? styleBlock() + prompt : "";
+}
+$("copyPrompt").addEventListener("click", e => copy(fullPrompt(), e.target, "지시문 복사"));
+
+/* 다른 브라우저에서는 API 키가 없어 초안을 못 뽑는다. 그럴 때 내 클로드 계정 대화창을 연다.
+   지시문이 말투 예시까지 붙어 1만 자가 넘으니 주소(?q=)에 다 못 싣는다. 짧을 때만 주소에
+   싣고, 길면 클립보드에 복사해 두고 빈 대화창을 연 뒤 붙여넣으라고 알린다. */
+const CLAUDE_URL_MAX = 6000;           // 인코딩한 주소 길이. 넘으면 서버가 거절하거나 자를 수 있다
+$("openClaude").addEventListener("click", () => {
+  const text = fullPrompt();
+  if (!text) { $("claudeMsg").textContent = "먼저 위에서 ‘만들기’를 눌러주세요."; return; }
+  copyText(text);
+  const q = encodeURIComponent(text);
+  const fits = q.length <= CLAUDE_URL_MAX;
+  window.open("https://claude.ai/new" + (fits ? "?q=" + q : ""), "_blank", "noopener");
+  $("claudeMsg").textContent = fits
+    ? "클로드 창에 지시문을 채워 열었습니다. 보내기만 누르세요. (클립보드에도 복사해 뒀어요)"
+    : `지시문(${text.length.toLocaleString("ko-KR")}자)이 길어 클립보드에 복사해 두고 새 대화창을 열었습니다. `
+      + "입력칸에 붙여넣기(Ctrl+V · 폰은 길게 눌러 붙여넣기)만 하세요."
+      + (PICS.length ? " 사진은 대화창에 직접 올려 주세요." : "");
+});
 $("copyTags").addEventListener("click", e => copy($("tags").textContent, e.target, "전부 한 줄로 복사"));
 $("nextTag").addEventListener("click", e => {
   const tag = nextUnusedTag();
