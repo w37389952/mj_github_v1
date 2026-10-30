@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-30T15:00:00+09:00",
+  "updated": "2026-10-30T14:40:00+09:00",
   "projects": [
     {
       "id": "band",
@@ -174,8 +174,9 @@
       "project": "tistory",
       "title": "PC 켜고 Claude 앱 열어두기 (2주차 예약 발행용)",
       "owner": "MJ",
-      "status": "할 일",
-      "due": "2026-10-06"
+      "status": "완료",
+      "due": "2026-10-06",
+      "done": "2026-10-06"
     },
     {
       "project": "threads",
@@ -252,8 +253,9 @@
       "project": "tistory",
       "title": "10/5 월요일 아침 9시 전후 PC 켜두기",
       "owner": "MJ",
-      "status": "할 일",
-      "due": "2026-10-05"
+      "status": "완료",
+      "due": "2026-10-05",
+      "done": "2026-10-05"
     },
     {
       "project": "talk",
