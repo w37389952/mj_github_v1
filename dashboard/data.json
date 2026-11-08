@@ -212,8 +212,9 @@
       "project": "tistory",
       "title": "6주차 글의 같이보기 빠진 3줄 보강 (예약 글 공개 뒤)",
       "owner": "Claude",
-      "status": "할 일",
-      "due": "2026-11-11"
+      "status": "완료",
+      "due": "2026-11-11",
+      "done": "2026-11-09"
     },
     {
       "project": "tistory",
