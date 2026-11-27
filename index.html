@@ -465,6 +465,7 @@
         <option value="일반음식점">일반음식점</option>
         <option value="제과점영업">제과점(빵집)</option>
         <option value="즉석판매제조가공업">즉석판매제조가공(로스팅·수제청·디저트·반찬 등)</option>
+        <option value="small">면적이 작게 적힌 곳 (10㎡ 미만 · 다시 보기)</option>
       </select>
       <select id="monthFilter" class="field"><option value="">전체 기간</option></select>
       <button type="button" class="multi-btn" id="rangeToggle">기간검색 <span class="caret">▾</span></button>
@@ -1294,12 +1295,22 @@ function instagramHandles(place) {
   return out.slice(0, 20);
 }
 
-// 면적은 제곱미터로 들어온다. 평수가 더 직관적이라 함께 보여준다.
+/* 면적은 제곱미터로 들어온다. 평수가 더 직관적이라 함께 보여준다.
+   다만 이 값은 '신고한 면적'이지 매장 크기가 아니다. 제조·조리하는 자리만 신고하는 일이
+   많아서, 3.3㎡(약 1평)로 적힌 '벌(BEOL)'이 실제로는 넓은 매장이었다(2026-11-27 확인).
+   90일 자료 4,004곳 중 459곳이 10㎡ 미만이다. 그래서 '신고 면적'이라고 밝히고,
+   작게 적힌 곳에는 실제와 다를 수 있다고 붙인다. */
+const SMALL_AREA = 10;
+function isSmallArea(place) {
+  const area = parseFloat(place.area);
+  return area > 0 && area < SMALL_AREA;
+}
 function detailLine(place) {
   const bits = [];
   const area = parseFloat(place.area);
   if (area > 0) {
-    bits.push(`${area.toLocaleString("ko-KR")}㎡ (약 ${Math.round(area / 3.3058)}평)`);
+    bits.push(`신고 면적 ${area.toLocaleString("ko-KR")}㎡ (약 ${Math.round(area / 3.3058)}평)`
+      + (area < SMALL_AREA ? " — 일부만 신고한 듯, 실제 매장은 더 넓을 수 있어요" : ""));
   }
   if (place.phone) bits.push(place.phone);
   return bits.join("  ·  ");
@@ -1774,6 +1785,8 @@ function matches(place, f, t) {
   // 지도 신상 탭에서는 '구분' 칸이 출처(네이버·카카오·둘 다)를 고른다.
   if (f.category && t.kind === "map") {
     if (f.category === "both" ? place.sources.length < 2 : !place.sources.includes(f.category)) return false;
+  } else if (f.category === "small") {
+    if (!isSmallArea(place)) return false;
   } else if (f.category && place.category !== f.category) return false;
   if (f.month && !day.startsWith(f.month)) return false;
   if (f.from && day < f.from) return false;
