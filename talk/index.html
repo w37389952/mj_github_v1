@@ -262,10 +262,12 @@ main { flex: 1 1 auto; min-height: 0; display: flex; overflow: hidden; }
 .lhead-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .lhead-top h2 { margin: 0; font-size: 15px; letter-spacing: -.02em; }
 .lhead-top .spacer { flex: 1; }
-.lhead select {
-  border: 1px solid var(--line); background: var(--panel); color: var(--text-2);
-  border-radius: 8px; padding: 5px 9px; font-size: 12.5px; font-weight: 600; font-family: inherit;
+.lsorts { display: flex; gap: 4px; padding: 3px; background: var(--panel-2); border-radius: 10px; margin-bottom: 8px; width: fit-content; max-width: 100%; }
+.lsorts button {
+  border: 0; background: transparent; color: var(--text-2); border-radius: 7px;
+  padding: 5px 12px; font-size: 12.5px; font-weight: 700; font-family: inherit; white-space: nowrap;
 }
+.lsorts button.on { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 .dchips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; }
 .dchips::-webkit-scrollbar { height: 0; }
 .dchip {
@@ -2858,12 +2860,12 @@ function renderLinks(main) {
       <h2>링크 ${all.length.toLocaleString()}개</h2>
       ${list.length !== all.length ? `<span style="font-size:12px;color:var(--text-3)">${list.length.toLocaleString()}개 보는 중</span>` : ""}
       <span class="spacer"></span>
-      <select id="lsort" aria-label="정렬">
-        <option value="new">최신순</option>
-        <option value="likes">반응 많은 순</option>
-        <option value="old">오래된순</option>
-      </select>
       <button class="btn sm" id="lmd">마크다운(.md)</button>
+    </div>
+    <div class="lsorts" id="lsorts" role="group" aria-label="정렬">
+      <button data-sort="new">최신순</button>
+      <button data-sort="likes">👍 반응 많은 순</button>
+      <button data-sort="old">오래된순</button>
     </div>
     <input class="search-box" id="lq" type="search" placeholder="제목, 주소, 사이트, 올린 사람으로 찾기">
     <div class="dchips" id="dchips"></div>
@@ -2872,9 +2874,11 @@ function renderLinks(main) {
       : "유튜브는 미리보기가 바로 떠요. 다른 사이트는 미리보기 서버를 붙이면 떠요. "}<button id="lproxy">미리보기 설정</button></div>`;
   page.appendChild(head);
 
-  const sel = head.querySelector("#lsort");
-  sel.value = S.linkSort;
-  sel.onchange = () => { S.linkSort = sel.value; render(); };
+  head.querySelectorAll("#lsorts button").forEach(b => {
+    b.classList.toggle("on", b.dataset.sort === S.linkSort);
+    b.setAttribute("aria-pressed", b.dataset.sort === S.linkSort);
+    b.onclick = () => { S.linkSort = b.dataset.sort; render(); };
+  });
 
   const input = head.querySelector("#lq");
   input.value = S.linkQuery;
