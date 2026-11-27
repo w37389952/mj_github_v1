@@ -71,18 +71,26 @@ UPTAE_FILTER = {u.strip() for u in os.environ.get("UPTAE", "").split(",") if u.s
 
 # 목록에서 빼고 싶은 체인. EXCLUDE 환경변수로 통째로 갈아끼울 수 있다.
 DEFAULT_EXCLUDE = [
-    "씨유", "CU ", "지에스25", "GS25", "세븐일레븐", "이마트24", "미니스톱",
+    "씨유", "CU ", "CU(", "지에스25", "지에스(GS)25", "GS25", "지에스리테일", "지에스더프레시",
+    "지에스더프레스", "세븐일레븐", "이마트24", "미니스톱",
     "스타벅스", "투썸플레이스", "이디야", "메가엠지씨", "메가커피", "컴포즈커피",
     "빽다방", "더벤티", "커피빈", "탐앤탐스", "할리스", "파스쿠찌", "엔제리너스",
     "파리바게뜨", "뚜레쥬르", "던킨", "배스킨라빈스",
     "롯데리아", "맥도날드", "버거킹", "KFC", "맘스터치", "써브웨이",
 ]
-_exclude_env = os.environ.get("EXCLUDE")
+# 워크플로는 저장소 변수(vars.EXCLUDE)가 없어도 EXCLUDE를 빈 문자열로 넘긴다.
+# 전에는 빈 문자열도 '설정함'으로 봐서 목록이 통째로 비었고, 씨유·GS25가 그대로
+# 레이더에 떴다(2026-11-27, 90일 목록에 186곳). 비어 있으면 기본 목록을 쓴다.
+_exclude_env = (os.environ.get("EXCLUDE") or "").strip()
 EXCLUDE = [
     e.strip()
-    for e in (_exclude_env.split(",") if _exclude_env is not None else DEFAULT_EXCLUDE)
+    for e in (_exclude_env.split(",") if _exclude_env else DEFAULT_EXCLUDE)
     if e.strip()
 ]
+
+# 업태가 편의점이면 이름과 상관없이 뺀다. 체인 이름을 'CU세종대후문점'처럼
+# 붙여 쓰거나 '(주)OO 편의점'처럼 적어 이름으로는 다 못 걸러낸다.
+EXCLUDE_UPTAE = {"편의점"}
 
 TRDSTATE_OPEN = "01"  # 영업/정상 (03 = 폐업)
 
@@ -198,6 +206,9 @@ def is_excluded(name):
     브랜드명으로 시작하므로 앞부분만 본다. 뒤에 붙는 형태는 '…점'으로
     끝나는 경우만 함께 처리한다.
     """
+    # 'CU세종대후문점'처럼 띄어 쓰지 않은 것도 잡는다. 'Cucumbird'는 대소문자가 달라 안 걸린다.
+    if name.startswith("CU") and (len(name) == 2 or not name[2].isascii()):
+        return True
     for keyword in EXCLUDE:
         if name.startswith(keyword):
             return True
@@ -472,7 +483,7 @@ def main():
             item = normalize(row, category)
             if DISTRICTS and item["district"] not in DISTRICTS:
                 continue
-            if is_excluded(item["name"]):
+            if is_excluded(item["name"]) or item["bizType"] in EXCLUDE_UPTAE:
                 excluded += 1
                 continue
             bucket.append(item)
